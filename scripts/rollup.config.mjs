@@ -77,6 +77,7 @@ const rollupOptions = {
         buildDelay: 500,
     },
     external: [
+        'https://esm.run/@google/generative-ai',
     ],
 }
 

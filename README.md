@@ -1,7 +1,8 @@
 # GAI
-An example extension for [Xcratch](https://xcratch.github.io/)
 
-This extension add extra-block "do it", that executes string in its input field as a sentence in Javascript and return the result.
+Google generative AI, Gemini extension for Xcratch
+
+This extension add extra-blocks for [Google Gemini AI](https://deepmind.google/technologies/gemini/#introduction) to [Xcratch](https://xcratch.github.io/).
 
 
 ## ✨ What You Can Do With This Extension

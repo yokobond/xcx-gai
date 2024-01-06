@@ -1,9 +1,29 @@
 import BlockType from '../../extension-support/block-type';
 import ArgumentType from '../../extension-support/argument-type';
 import Cast from '../../util/cast';
-import log from '../../util/log';
 import translations from './translations.json';
 import blockIcon from './block-icon.png';
+
+import {DEBUG, checkDebugMode} from './dev-util.js';
+import GeminiAdapter from './gemini-adapter.js';
+import {parseContentPartsText, interpretContentPartDirectives} from './gemini-directive.js';
+
+
+const HarmCategory = {
+    HARM_CATEGORY_UNSPECIFIED: 'HARM_CATEGORY_UNSPECIFIED',
+    HARM_CATEGORY_HATE_SPEECH: 'HARM_CATEGORY_HATE_SPEECH',
+    HARM_CATEGORY_SEXUALLY_EXPLICIT: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+    HARM_CATEGORY_HARASSMENT: 'HARM_CATEGORY_HARASSMENT',
+    HARM_CATEGORY_DANGEROUS_CONTENT: 'HARM_CATEGORY_DANGEROUS_CONTENT'
+};
+
+const HarmBlockThreshold = {
+    HARM_BLOCK_THRESHOLD_UNSPECIFIED: 'HARM_BLOCK_THRESHOLD_UNSPECIFIED',
+    BLOCK_LOW_AND_ABOVE: 'BLOCK_LOW_AND_ABOVE',
+    BLOCK_MEDIUM_AND_ABOVE: 'BLOCK_MEDIUM_AND_ABOVE',
+    BLOCK_ONLY_HIGH: 'BLOCK_ONLY_HIGH',
+    BLOCK_NONE: 'BLOCK_NONE'
+};
 
 /**
  * Formatter which is used for translation.
@@ -38,7 +58,7 @@ let extensionURL = 'https://yokobond.github.io/xcx-gai/dist/gai.mjs';
 /**
  * Scratch 3.0 blocks for example of Xcratch.
  */
-class ExtensionBlocks {
+class GeminiBlocks {
     /**
      * A translation object which is used in this class.
      * @param {FormatObject} formatter - translation object
@@ -55,7 +75,7 @@ class ExtensionBlocks {
         return formatMessage({
             id: 'gai.name',
             default: 'GAI',
-            description: 'name of the extension'
+            description: 'name of google generative AI extension'
         });
     }
 
@@ -84,7 +104,7 @@ class ExtensionBlocks {
     }
 
     /**
-     * Construct a set of blocks for GAI.
+     * Construct a set of blocks for Gemini.
      * @param {Runtime} runtime - the Scratch 3.0 runtime.
      */
     constructor (runtime) {
@@ -98,6 +118,14 @@ class ExtensionBlocks {
             // Replace 'formatMessage' to a formatter which is used in the runtime.
             formatMessage = runtime.formatMessage;
         }
+
+        runtime.on('EXTENSION_ADDED', this.onExtensionAdded.bind(this));
+    }
+
+    onExtensionAdded (extensionInfo) {
+        if (extensionInfo.id === 'gai') {
+            checkDebugMode();
+        }
     }
 
     /**
@@ -106,41 +134,918 @@ class ExtensionBlocks {
     getInfo () {
         setupTranslations();
         return {
-            id: ExtensionBlocks.EXTENSION_ID,
-            name: ExtensionBlocks.EXTENSION_NAME,
-            extensionURL: ExtensionBlocks.extensionURL,
+            id: GeminiBlocks.EXTENSION_ID,
+            name: GeminiBlocks.EXTENSION_NAME,
+            extensionURL: GeminiBlocks.extensionURL,
             blockIconURI: blockIcon,
             showStatusButton: false,
             blocks: [
                 {
-                    opcode: 'do-it',
-                    blockType: BlockType.REPORTER,
-                    blockAllThreads: false,
+                    opcode: 'prompt',
+                    blockType: BlockType.COMMAND,
                     text: formatMessage({
-                        id: 'gai.doIt',
-                        default: 'do it [SCRIPT]',
-                        description: 'execute javascript for example'
+                        id: 'gai.prompt',
+                        default: 'prompt [PROMPT]',
+                        description: 'prompt block text of GAI'
                     }),
-                    func: 'doIt',
+                    func: 'prompt',
                     arguments: {
-                        SCRIPT: {
+                        PROMPT: {
                             type: ArgumentType.STRING,
-                            defaultValue: '3 + 4'
+                            defaultValue: formatMessage({
+                                id: 'gai.promptDefault',
+                                default: 'The position of [costume:Sprite1:costume1] in [snapshot]?',
+                                description: 'default prompt for Gemini'
+                            })
+                        }
+                    }
+                },
+                {
+                    opcode: 'chat',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.chat',
+                        default: 'chat [MESSAGE]',
+                        description: 'chat block text of GAI'
+                    }),
+                    func: 'chat',
+                    arguments: {
+                        MESSAGE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: formatMessage({
+                                id: 'gai.chatDefault',
+                                default: 'Hello Gemini!',
+                                description: 'default chat message for GAI'
+                            })
+                        }
+                    }
+                },
+                '---',
+                {
+                    opcode: 'responseText',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.responseText',
+                        default: 'response draft #[CANDIDATE_INDEX]',
+                        description: 'last result of Gemini'
+                    }),
+                    disableMonitor: true,
+                    func: 'responseText',
+                    arguments: {
+                        CANDIDATE_INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'responseSafetyRating',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.responseSafetyRating',
+                        default: 'response #[CANDIDATE_INDEX] safety rating [HARM_CATEGORY]',
+                        description: 'last result text for Gemini'
+                    }),
+                    disableMonitor: true,
+                    func: 'responseSafetyRating',
+                    arguments: {
+                        CANDIDATE_INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        },
+                        HARM_CATEGORY: {
+                            type: ArgumentType.STRING,
+                            menu: 'harmCategoryMenu'
+                        }
+                    }
+                },
+                '---',
+                {
+                    opcode: 'setSafetyRating',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setSafetyRating',
+                        default: 'set [HARM_CATEGORY] to [BLOCK_THRESHOLD]',
+                        description: 'set safety rating for Gemini'
+                    }),
+                    disableMonitor: true,
+                    func: 'setSafetyRating',
+                    arguments: {
+                        HARM_CATEGORY: {
+                            type: ArgumentType.STRING,
+                            menu: 'harmCategorySettingMenu'
+                        },
+                        BLOCK_THRESHOLD: {
+                            type: ArgumentType.STRING,
+                            menu: 'harmBlockThresholdMenu'
+                        }
+                    }
+                },
+                {
+                    opcode: 'setMaxOutputTokens',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setMaxOutputTokens',
+                        default: 'set max output tokens to [COUNT]',
+                        description: 'set max output tokens for Gemini'
+                    }),
+                    func: 'setMaxOutputTokens',
+                    arguments: {
+                        COUNT: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 100
+                        }
+                    }
+                },
+                {
+                    opcode: 'setCandidateCount',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setCandidateCount',
+                        default: 'set candidate count to [COUNT]',
+                        description: 'set candidate count for Gemini'
+                    }),
+                    func: 'setCandidateCount',
+                    arguments: {
+                        COUNT: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'setStopSequences',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setStopSequences',
+                        default: 'set stop sequences to [STOP_SEQUENCES]',
+                        description: 'setup model for Gemini'
+                    }),
+                    func: 'setStopSequences',
+                    arguments: {
+                        STOP_SEQUENCES: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '。,！,？,!,?,.'
+                        }
+                    }
+                },
+                {
+                    opcode: 'setTemperature',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setTemperature',
+                        default: 'set temperature to [TEMPERATURE]',
+                        description: 'set temperature for Gemini'
+                    }),
+                    func: 'setTemperature',
+                    arguments: {
+                        TEMPERATURE: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1.0
+                        }
+                    }
+                },
+                {
+                    opcode: 'setTopP',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setTopP',
+                        default: 'set Top P to[TOP_P]',
+                        description: 'set top P for Gemini'
+                    }),
+                    func: 'setTopP',
+                    arguments: {
+                        TOP_P: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1.0
+                        }
+                    }
+                },
+                {
+                    opcode: 'setTopK',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setTopK',
+                        default: 'set Top K to [TOP_K]',
+                        description: 'set top K for Gemini'
+                    }),
+                    func: 'setTopK',
+                    arguments: {
+                        TOP_K: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'setApiKey',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setApiKey',
+                        default: 'set API key to [KEY]',
+                        description: 'set API key for Gemini'
+                    }),
+                    func: 'setApiKey',
+                    arguments: {
+                        KEY: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ' ',
+                            description: 'API key for Gemini'
+                        }
+                    }
+                },
+                {
+                    opcode: 'startChat',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.startChat',
+                        default: 'start chat with history [HISTORY]',
+                        description: 'start chat for Gemini'
+                    }),
+                    func: 'startChat',
+                    arguments: {
+                        HISTORY: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ' '
+                        }
+                    }
+                },
+                '---',
+                {
+                    opcode: 'countPromptTokens',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.countPromptTokens',
+                        default: 'count tokens as prompt [PROMPT]',
+                        description: 'count tokens as prompt for Gemini'
+                    }),
+                    func: 'countPromptTokens',
+                    arguments: {
+                        PROMPT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ' '
+                        }
+                    }
+                },
+                {
+                    opcode: 'countChatTokens',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.countChatTokens',
+                        default: 'count tokens as chat [MESSAGE]',
+                        description: 'count tokens as chat for Gemini'
+                    }),
+                    func: 'countChatTokens',
+                    arguments: {
+                        MESSAGE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ' '
                         }
                     }
                 }
             ],
             menus: {
+                harmCategorySettingMenu: {
+                    acceptReporters: false,
+                    items: 'getHarmCategorySettingMenu'
+                },
+                harmCategoryMenu: {
+                    acceptReporters: false,
+                    items: 'getHarmCategoryMenu'
+                },
+                harmBlockThresholdMenu: {
+                    acceptReporters: false,
+                    items: 'getHarmBlockThresholdMenu'
+                }
             }
         };
     }
 
-    doIt (args) {
-        const statement = Cast.toString(args.SCRIPT);
-        const func = new Function(`return (${statement})`);
-        log.log(`doIt: ${statement}`);
-        return func.call(this);
+    getHarmCategoryMenu () {
+        const menu = [
+            {
+                text: formatMessage({
+                    id: 'gai.harmCategoryMenu.hateSpeech',
+                    default: 'Hate Speech',
+                    description: 'harm category menu item for hate speech in Gemini'
+                }),
+                value: HarmCategory.HARM_CATEGORY_HATE_SPEECH
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.harmCategoryMenu.sexuallyExplicit',
+                    default: 'Sexually Explicit',
+                    description: 'harm category menu item for sexually explicit in Gemini'
+                }),
+                value: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.harmCategoryMenu.harassment',
+                    default: 'Harassment',
+                    description: 'harm category menu item for harassment in Gemini'
+                }),
+                value: HarmCategory.HARM_CATEGORY_HARASSMENT
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.harmCategoryMenu.dangerousContent',
+                    default: 'Dangerous Content',
+                    description: 'harm category menu item for dangerous content in Gemini'
+                }),
+                value: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT
+            }
+        ];
+        return menu;
+    }
+
+    getHarmCategorySettingMenu () {
+        const menu = this.getHarmCategoryMenu();
+        menu.unshift({
+            text: formatMessage({
+                id: 'gai.harmCategorySettingMenu.all',
+                default: 'All Harm Categories',
+                description: 'harm category menu item for all in Gemini'
+            }),
+            value: 'ALL'
+        });
+        return menu;
+    }
+
+    getHarmBlockThresholdMenu () {
+        const menu = [
+            {
+                text: formatMessage({
+                    id: 'gai.harmBlockThresholdMenu.unspecified',
+                    default: 'Unspecified',
+                    description: 'harm block threshold menu item for unspecified in Gemini'
+                }),
+                value: HarmBlockThreshold.HARM_BLOCK_THRESHOLD_UNSPECIFIED
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.harmBlockThresholdMenu.blockMost',
+                    default: 'Block most',
+                    description: 'harm block threshold menu item for block most in Gemini'
+                }),
+                value: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.harmBlockThresholdMenu.blockSome',
+                    default: 'Block some',
+                    description: 'harm block threshold menu item for block some in Gemini'
+                }),
+                value: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.harmBlockThresholdMenu.blockFew',
+                    default: 'Block few',
+                    description: 'harm block threshold menu item for block few in Gemini'
+                }),
+                value: HarmBlockThreshold.BLOCK_ONLY_HIGH
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.harmBlockThresholdMenu.blockNone',
+                    default: 'Block None',
+                    description: 'harm block threshold menu item for block none in Gemini'
+                }),
+                value: HarmBlockThreshold.BLOCK_NONE
+            }
+        ];
+        return menu;
+    }
+
+    /**
+     * Open dialog to input API key by user.
+     * @returns {Promise<string>} - a Promise that resolves API key
+     */
+    openApiKeyDialog () {
+        if (this.apiKeyDialogOpened) {
+            // prevent to open multiple dialogs
+            return Promise.resolve(null);
+        }
+        this.apiKeyDialogOpened = true;
+        const inputDialog = document.createElement('dialog');
+        inputDialog.style.padding = '0px';
+        const dialogFace = document.createElement('div');
+        dialogFace.style.padding = '16px';
+        inputDialog.appendChild(dialogFace);
+        const label = document.createTextNode(formatMessage({
+            id: 'gai.apiKeyDialog.message',
+            default: 'set API key',
+            description: 'label of API key input dialog for gemini'
+        }));
+        dialogFace.appendChild(label);
+        // Dialog form
+        const apiKeyForm = document.createElement('form');
+        apiKeyForm.setAttribute('method', 'dialog');
+        apiKeyForm.style.margin = '8px';
+        apiKeyForm.addEventListener('submit', e => {
+            e.preventDefault();
+        });
+        dialogFace.appendChild(apiKeyForm);
+        // API select
+        const apiKeyInput = document.createElement('input');
+        apiKeyInput.setAttribute('type', 'text');
+        apiKeyInput.setAttribute('id', 'apiKeyInput');
+        apiKeyInput.setAttribute('size', '50');
+        apiKeyInput.setAttribute('value', '');
+        apiKeyForm.appendChild(apiKeyInput);
+        // Cancel button
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = formatMessage({
+            id: 'gai.apiKeyDialog.cancel',
+            default: 'cancel',
+            description: 'cancel button on groupID input dialog for gemini'
+        });
+        cancelButton.style.margin = '8px';
+        dialogFace.appendChild(cancelButton);
+        // OK button
+        const confirmButton = document.createElement('button');
+        confirmButton.textContent = formatMessage({
+            id: 'gai.apiKeyDialog.set',
+            default: 'set',
+            description: 'set button on API key input dialog for gemini'
+        });
+        confirmButton.style.margin = '8px';
+        dialogFace.appendChild(confirmButton);
+        return new Promise(
+            resolve => {
+                // Add onClick action
+                const confirmed = () => {
+                    const inputValue = apiKeyInput.value.trim();
+                    if (inputValue === '') {
+                        return; // do not exit dialog
+                    }
+                    resolve(inputValue);
+                };
+                confirmButton.onclick = confirmed;
+                const canceled = () => {
+                    resolve('');
+                };
+                cancelButton.onclick = canceled;
+                inputDialog.addEventListener('keydown', e => {
+                    if (e.code === 'Enter') {
+                        confirmed();
+                    }
+                    if (e.code === 'Escape') {
+                        canceled();
+                    }
+                });
+                document.body.appendChild(inputDialog);
+                inputDialog.showModal();
+            })
+            .finally(() => {
+                document.body.removeChild(inputDialog);
+                this.apiKeyDialogOpened = false;
+            });
+    }
+
+    /**
+     * @param {Target} target - the target to get the AI
+     * @return {GeminiAdapter} - the AI for the target
+     */
+    getAI (target) {
+        return GeminiAdapter.getForTarget(target);
+    }
+
+    /**
+     * Confirm API key.
+     * @returns {Promise<void>} - a Promise that resolves when the API key is confirmed
+     * @throws {Error} - when API key is not set
+     */
+    async confirmAPIKey () {
+        if (!GeminiAdapter.getApiKey()) {
+            const apiKey = await this.openApiKeyDialog();
+            if (!apiKey || apiKey === '') {
+                throw new Error('API key is not set.');
+            }
+            GeminiAdapter.setApiKey(apiKey);
+        }
+    }
+
+    /**
+     * Prompt to AI.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.PROMPT - prompt to AI
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves response text
+     */
+    async prompt (args, util) {
+        const target = util.target;
+        const runtime = this.runtime;
+        let ai;
+        try {
+            await this.confirmAPIKey();
+            ai = this.getAI(target);
+            if (ai.isBlocked()) {
+                util.yield();
+                return;
+            }
+            ai.setBlock(true);
+            const promptText = Cast.toString(args.PROMPT);
+            const promptDirectives = parseContentPartsText(promptText);
+            const prompt = await interpretContentPartDirectives(promptDirectives, target, runtime);
+            const result = await ai.requestPrompt(prompt);
+            const response = result.response;
+            const text = response.text();
+            if (DEBUG) console.log(text);
+            return text;
+        } catch (error) {
+            return error.message;
+        } finally {
+            if (ai) ai.setBlock(false);
+        }
+    }
+
+    /**
+     * Chat to AI. Start chat if not started.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MESSAGE - message to AI
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves response text
+     */
+    async chat (args, util) {
+        const target = util.target;
+        const runtime = this.runtime;
+        let ai;
+        try {
+            await this.confirmAPIKey();
+            ai = this.getAI(target);
+            if (ai.isBlocked()) {
+                util.yield();
+                return;
+            }
+            ai.setBlock(true);
+            const messageText = Cast.toString(args.MESSAGE);
+            const contentDirectives = parseContentPartsText(messageText);
+            const message = await interpretContentPartDirectives(contentDirectives, target, runtime);
+            const result = await ai.requestChat(message);
+            const response = result.response;
+            const text = response.text();
+            if (DEBUG) console.log(text);
+            return text;
+        } catch (error) {
+            return error.message;
+        } finally {
+            if (ai) ai.setBlock(false);
+        }
+    }
+
+    /**
+     * Start chat with history.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.HISTORY - contents of the history of chat
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<void>} - a Promise that resolves when the chat is started
+     */
+    async startChat (args, util) {
+        const target = util.target;
+        const runtime = this.runtime;
+        const textHistory = JSON.parse(`[${String(args.HISTORY)}]`);
+        const interpretedHistory = textHistory.map(async contentText => {
+            if (contentText.parts) {
+                const contentDirectives = parseContentPartsText(contentText.parts);
+                const contentParts = await interpretContentPartDirectives(contentDirectives, target, runtime);
+                return {role: contentText.role, parts: contentParts};
+            }
+            return contentText;
+        });
+        const history = await Promise.all(interpretedHistory);
+        this.getAI(target).startChat(history);
+    }
+
+    /**
+     * Get response text from last result.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.CANDIDATE_INDEX - index of candidate
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - response text
+     */
+    responseText (args, util) {
+        const target = util.target;
+        if (!GeminiAdapter.existsForTarget(target)) {
+            return '';
+        }
+        const ai = GeminiAdapter.getForTarget(target);
+        const result = ai.getLastResult(target);
+        if (!result) {
+            return '';
+        }
+        const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+        const candidate = result.response.candidates[candidateIndex - 1];
+        if (!candidate) {
+            return `no candidate #${candidateIndex}`;
+        }
+        return candidate.content.parts[0].text;
+    }
+
+    /**
+     * Get response safety rating from last result.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.CANDIDATE_INDEX - index of candidate
+     * @param {string} args.HARM_CATEGORY - harm category
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - response safety rating
+     */
+    responseSafetyRating (args, util) {
+        const target = util.target;
+        if (!GeminiAdapter.existsForTarget(target)) {
+            return '';
+        }
+        const ai = GeminiAdapter.getForTarget(target);
+        const result = ai.getLastResult();
+        if (!result) {
+            return '';
+        }
+        const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+        const candidate = result.response.candidates[candidateIndex - 1];
+        if (!candidate) {
+            return `no candidate #${candidateIndex}`;
+        }
+        const category = args.HARM_CATEGORY;
+        const rating = candidate.safetyRatings.find(r => r.category === category);
+        if (!rating) {
+            return ``;
+        }
+        let probability = rating.probability;
+        switch (probability) {
+        case 'HARM_PROBABILITY_UNSPECIFIED':
+            probability = 'Unspecified';
+            break;
+        case 'NEGLIGIBLE':
+            probability = 'Negligible';
+            break;
+        case 'LOW':
+            probability = 'Low';
+            break;
+        case 'MEDIUM':
+            probability = 'Medium';
+            break;
+        case 'HIGH':
+            probability = 'High';
+            break;
+        default:
+            break;
+        }
+        return probability;
+    }
+
+    /**
+     * Set safety rating.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.HARM_CATEGORY - harm category
+     * @param {string} args.BLOCK_THRESHOLD - block threshold
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    setSafetyRating (args, util) {
+        try {
+            const target = util.target;
+            const ai = this.getAI(target);
+            const modelParams = ai.getModelParams();
+            const harmCategory = args.HARM_CATEGORY;
+            const harmBlockThreshold = args.BLOCK_THRESHOLD;
+            const setParams = (category, threshold) => {
+                const safetyRating = {
+                    category: category,
+                    threshold: threshold
+                };
+                const index = modelParams.safetySettings.findIndex(r => r.category === category);
+                if (index >= 0) {
+                    modelParams.safetySettings[index] = safetyRating;
+                } else {
+                    modelParams.safetySettings.push(safetyRating);
+                }
+            };
+            if (harmCategory === 'ALL') {
+                Object.keys(HarmCategory)
+                    .forEach(category => {
+                        if (category === 'HARM_CATEGORY_UNSPECIFIED') return;
+                        setParams(category, harmBlockThreshold);
+                    });
+            } else {
+                setParams(harmCategory, harmBlockThreshold);
+            }
+        } catch (error) {
+            console.error(error);
+            return error.message;
+        }
+    }
+
+    /**
+     * Set max output tokens.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.COUNT - count of max output tokens
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    setMaxOutputTokens (args, util) {
+        try {
+            const target = util.target;
+            const ai = this.getAI(target);
+            const modelParams = ai.getModelParams();
+            if (args.COUNT === '') {
+                delete modelParams.generationConfig.maxOutputTokens;
+            }
+            modelParams.generationConfig.maxOutputTokens = parseInt(args.COUNT, 10);
+        } catch (error) {
+            console.error(error);
+            return error.message;
+        }
+    }
+
+    /**
+     * Set candidate count.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.COUNT - count of candidate
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    setCandidateCount (args, util) {
+        try {
+            const target = util.target;
+            const ai = this.getAI(target);
+            const modelParams = ai.getModelParams();
+            if (args.COUNT === '') {
+                delete modelParams.generationConfig.candidateCount;
+            }
+            modelParams.generationConfig.candidateCount = parseInt(args.COUNT, 10);
+        } catch (error) {
+            console.error(error);
+            return error.message;
+        }
+    }
+
+    /**
+     * Set stop sequences.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.STOP_SEQUENCES - comma separated stop sequences
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    setStopSequences (args, util) {
+        try {
+            const target = util.target;
+            const ai = this.getAI(target);
+            const modelParams = ai.getModelParams();
+            if (args.STOP_SEQUENCES === '') {
+                delete modelParams.generationConfig.stopSequences;
+            }
+            modelParams.generationConfig.stopSequences = String(args.STOP_SEQUENCES).split(',')
+                .map(s => s.trim());
+        } catch (error) {
+            console.error(error);
+            return error.message;
+        }
+    }
+
+    /**
+     * Set temperature.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.TEMPERATURE - temperature [0.0, 1.0]
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    setTemperature (args, util) {
+        try {
+            const target = util.target;
+            const ai = this.getAI(target);
+            const modelParams = ai.getModelParams();
+            if (args.TEMPERATURE === '') {
+                delete modelParams.generationConfig.temperature;
+            }
+            modelParams.generationConfig.temperature = Math.max(0.0, Math.min(1.0, Number(args.TEMPERATURE)));
+        } catch (error) {
+            console.error(error);
+            return error.message;
+        }
+    }
+
+    /**
+     * Set top P.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.TOP_P - top P [0.0, 1.0]
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    setTopP (args, util) {
+        try {
+            const target = util.target;
+            const ai = this.getAI(target);
+            const modelParams = ai.getModelParams();
+            if (args.TOP_P === '') {
+                delete modelParams.generationConfig.topP;
+            }
+            modelParams.generationConfig.topP = Math.max(0.0, Math.min(1.0, Number(args.TOP_P)));
+        } catch (error) {
+            console.error(error);
+            return error.message;
+        }
+    }
+
+    /**
+     * Set top K.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.TOP_K - top K [>= 1]
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    setTopK (args, util) {
+        try {
+            const target = util.target;
+            const ai = this.getAI(target);
+            const modelParams = ai.getModelParams();
+            if (args.TOP_K === '') {
+                delete modelParams.generationConfig.topK;
+            }
+            modelParams.generationConfig.topK = Math.max(1, parseInt(args.TOP_K, 10));
+        } catch (error) {
+            console.error(error);
+            return error.message;
+        }
+    }
+
+    /**
+     * Set API key and reset AI.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.KEY - API key
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    setApiKey (args, util) {
+        const target = util.target;
+        const apiKey = Cast.toString(args.KEY).trim();
+        GeminiAdapter.setApiKey(apiKey);
+        if (GeminiAdapter.existsForTarget(target)) {
+            GeminiAdapter.removeForTarget(target);
+        }
+    }
+
+    /**
+     * Count tokens of prompt.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.PROMPT - prompt
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {number} - count of tokens
+     */
+    async countPromptTokens (args, util) {
+        const target = util.target;
+        const runtime = this.runtime;
+        let ai;
+        try {
+            await this.confirmAPIKey();
+            ai = this.getAI(target);
+            if (ai.isBlocked()) {
+                util.yield();
+                return;
+            }
+            ai.setBlock(true);
+            const promptText = Cast.toString(args.PROMPT);
+            const promptDirectives = parseContentPartsText(promptText);
+            const prompt = await interpretContentPartDirectives(promptDirectives, target, runtime);
+            const result = await ai.countTokens(prompt);
+            return result;
+        } catch (error) {
+            return error.message;
+        } finally {
+            if (ai) ai.setBlock(false);
+        }
+    }
+
+    /**
+     * Count tokens of chat.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MESSAGE - message
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {number} - count of tokens
+     */
+    async countChatTokens (args, util) {
+        const target = util.target;
+        let ai;
+        try {
+            await this.confirmAPIKey();
+            ai = this.getAI(target);
+            if (ai.isBlocked()) {
+                util.yield();
+                return;
+            }
+            ai.setBlock(true);
+            const messageText = Cast.toString(args.MESSAGE);
+            const history = await ai.getChatHistory();
+            const messageContent = {role: 'user', parts: [{text: messageText}]};
+            const contents = [...history, messageContent];
+            const result = await ai.countTokens({contents});
+            return result;
+        } catch (error) {
+            return error.message;
+        } finally {
+            if (ai) ai.setBlock(false);
+        }
     }
 }
 
-export {ExtensionBlocks as default, ExtensionBlocks as blockClass};
+export {GeminiBlocks as default, GeminiBlocks as blockClass};
