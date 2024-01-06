@@ -1,0 +1,14 @@
+{
+  "en": {
+    "gai.entry.name": "GAI",
+    "gai.entry.description": "Description of this extension"
+  },
+  "ja": {
+    "gai.entry.name": "GAI",
+    "gai.entry.description": "拡張機能の説明"
+  },
+  "ja-Hira": {
+    "gai.entry.name": "GAI",
+    "gai.entry.description": "かくちょうきのうのせつめい"
+  }
+}

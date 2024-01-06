@@ -1,0 +1,14 @@
+{
+  "en": {
+    "gai.name": "GAI",
+    "gai.doIt": "do it [SCRIPT]"
+  },
+  "ja": {
+    "gai.name": "GAI",
+    "gai.doIt": "[SCRIPT] を実行する"
+  },
+  "ja-Hira": {
+    "gai.name": "GAI",
+    "gai.doIt": "[SCRIPT] をじっこうする"
+  }
+}
