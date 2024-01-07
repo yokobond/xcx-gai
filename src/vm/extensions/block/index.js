@@ -242,98 +242,39 @@ class GeminiBlocks {
                     }
                 },
                 {
-                    opcode: 'setMaxOutputTokens',
+                    opcode: 'setGenerationConfig',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
-                        id: 'gai.setMaxOutputTokens',
-                        default: 'set max output tokens to [COUNT]',
-                        description: 'set max output tokens for Gemini'
+                        id: 'gai.setGenerationConfig',
+                        default: 'set generation [CONFIG] to [VALUE]',
+                        description: 'set generation config block text for Gemini'
                     }),
-                    func: 'setMaxOutputTokens',
+                    func: 'setGenerationConfig',
                     arguments: {
-                        COUNT: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 100
-                        }
-                    }
-                },
-                {
-                    opcode: 'setCandidateCount',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.setCandidateCount',
-                        default: 'set candidate count to [COUNT]',
-                        description: 'set candidate count for Gemini'
-                    }),
-                    func: 'setCandidateCount',
-                    arguments: {
-                        COUNT: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 1
-                        }
-                    }
-                },
-                {
-                    opcode: 'setStopSequences',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.setStopSequences',
-                        default: 'set stop sequences to [STOP_SEQUENCES]',
-                        description: 'setup model for Gemini'
-                    }),
-                    func: 'setStopSequences',
-                    arguments: {
-                        STOP_SEQUENCES: {
+                        CONFIG: {
                             type: ArgumentType.STRING,
-                            defaultValue: '。,！,？,!,?,.'
-                        }
-                    }
-                },
-                {
-                    opcode: 'setTemperature',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.setTemperature',
-                        default: 'set temperature to [TEMPERATURE]',
-                        description: 'set temperature for Gemini'
-                    }),
-                    func: 'setTemperature',
-                    arguments: {
-                        TEMPERATURE: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 1.0
-                        }
-                    }
-                },
-                {
-                    opcode: 'setTopP',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.setTopP',
-                        default: 'set Top P to[TOP_P]',
-                        description: 'set top P for Gemini'
-                    }),
-                    func: 'setTopP',
-                    arguments: {
-                        TOP_P: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 1.0
-                        }
-                    }
-                },
-                {
-                    opcode: 'setTopK',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.setTopK',
-                        default: 'set Top K to [TOP_K]',
-                        description: 'set top K for Gemini'
-                    }),
-                    func: 'setTopK',
-                    arguments: {
-                        TOP_K: {
+                            menu: 'generationConfigMenu'
+                        },
+                        VALUE: {
                             type: ArgumentType.NUMBER,
                             defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'generationConfig',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.generationConfig',
+                        default: 'generation [CONFIG]',
+                        description: 'generation config block text for Gemini'
+                    }),
+                    func: 'generationConfig',
+                    arguments: {
+                        CONFIG: {
+                            type: ArgumentType.STRING,
+                            menu: 'generationConfigMenu'
                         }
                     }
                 },
@@ -416,6 +357,10 @@ class GeminiBlocks {
                 harmBlockThresholdMenu: {
                     acceptReporters: false,
                     items: 'getHarmBlockThresholdMenu'
+                },
+                generationConfigMenu: {
+                    acceptReporters: false,
+                    items: 'getGenerationConfigMenu'
                 }
             }
         };
@@ -513,6 +458,60 @@ class GeminiBlocks {
                     description: 'harm block threshold menu item for block none in Gemini'
                 }),
                 value: HarmBlockThreshold.BLOCK_NONE
+            }
+        ];
+        return menu;
+    }
+
+    getGenerationConfigMenu () {
+        const menu = [
+            {
+                text: formatMessage({
+                    id: 'gai.generationConfigMenu.temperature',
+                    default: 'Temperature',
+                    description: 'generation config menu item for temperature in Gemini'
+                }),
+                value: 'temperature'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.generationConfigMenu.topP',
+                    default: 'Top P',
+                    description: 'generation config menu item for top P in Gemini'
+                }),
+                value: 'topP'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.generationConfigMenu.topK',
+                    default: 'Top K',
+                    description: 'generation config menu item for top K in Gemini'
+                }),
+                value: 'topK'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.generationConfigMenu.maxOutputTokens',
+                    default: 'Max Output Tokens',
+                    description: 'generation config menu item for max output tokens in Gemini'
+                }),
+                value: 'maxOutputTokens'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.generationConfigMenu.candidateCount',
+                    default: 'Candidate Count',
+                    description: 'generation config menu item for candidate count in Gemini'
+                }),
+                value: 'candidateCount'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.generationConfigMenu.stopSequences',
+                    default: 'Stop Sequences',
+                    description: 'generation config menu item for stop sequences in Gemini'
+                }),
+                value: 'stopSequences'
             }
         ];
         return menu;
@@ -837,21 +836,48 @@ class GeminiBlocks {
     }
 
     /**
-     * Set max output tokens.
+     * Set generation config.
      * @param {object} args - the block's arguments.
-     * @param {string} args.COUNT - count of max output tokens
+     * @param {string} args.CONFIG - config key
+     * @param {string} args.VALUE - config value
      * @param {object} util - utility object provided by the runtime.
      * @returns {void}
      */
-    setMaxOutputTokens (args, util) {
+    setGenerationConfig (args, util) {
         try {
             const target = util.target;
             const ai = this.getAI(target);
             const modelParams = ai.getModelParams();
-            if (args.COUNT === '') {
-                delete modelParams.generationConfig.maxOutputTokens;
+            const configKey = args.CONFIG;
+            let configValue = args.VALUE;
+            switch (configKey) {
+            case 'maxOutputTokens':
+                configValue = Math.max(1, parseInt(configValue, 10));
+                break;
+            case 'candidateCount':
+                configValue = Math.max(1, parseInt(configValue, 10));
+                break;
+            case 'stopSequences':
+                configValue = String(configValue).split(',')
+                    .map(s => s.trim());
+                break;
+            case 'temperature':
+                configValue = Math.max(0.0, Math.min(1.0, configValue));
+                break;
+            case 'topP':
+                configValue = Math.max(0.0, Math.min(1.0, configValue));
+                break;
+            case 'topK':
+                configValue = Math.max(1, parseInt(configValue, 10));
+                break;
+            default:
+                throw new Error(`unknown config key: ${configKey}`);
             }
-            modelParams.generationConfig.maxOutputTokens = parseInt(args.COUNT, 10);
+            if (configValue === '') {
+                delete modelParams.generationConfig[configKey];
+                return;
+            }
+            modelParams.generationConfig[configKey] = configValue;
         } catch (error) {
             console.error(error);
             return error.message;
@@ -859,110 +885,23 @@ class GeminiBlocks {
     }
 
     /**
-     * Set candidate count.
+     * Get generation config.
      * @param {object} args - the block's arguments.
-     * @param {string} args.COUNT - count of candidate
+     * @param {string} args.CONFIG - config key
      * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
+     * @returns {string} - config value
      */
-    setCandidateCount (args, util) {
+    generationConfig (args, util) {
         try {
             const target = util.target;
             const ai = this.getAI(target);
             const modelParams = ai.getModelParams();
-            if (args.COUNT === '') {
-                delete modelParams.generationConfig.candidateCount;
+            const configKey = args.CONFIG;
+            const configValue = modelParams.generationConfig[configKey];
+            if (typeof configValue === 'undefined') {
+                return '';
             }
-            modelParams.generationConfig.candidateCount = parseInt(args.COUNT, 10);
-        } catch (error) {
-            console.error(error);
-            return error.message;
-        }
-    }
-
-    /**
-     * Set stop sequences.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.STOP_SEQUENCES - comma separated stop sequences
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
-     */
-    setStopSequences (args, util) {
-        try {
-            const target = util.target;
-            const ai = this.getAI(target);
-            const modelParams = ai.getModelParams();
-            if (args.STOP_SEQUENCES === '') {
-                delete modelParams.generationConfig.stopSequences;
-            }
-            modelParams.generationConfig.stopSequences = String(args.STOP_SEQUENCES).split(',')
-                .map(s => s.trim());
-        } catch (error) {
-            console.error(error);
-            return error.message;
-        }
-    }
-
-    /**
-     * Set temperature.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.TEMPERATURE - temperature [0.0, 1.0]
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
-     */
-    setTemperature (args, util) {
-        try {
-            const target = util.target;
-            const ai = this.getAI(target);
-            const modelParams = ai.getModelParams();
-            if (args.TEMPERATURE === '') {
-                delete modelParams.generationConfig.temperature;
-            }
-            modelParams.generationConfig.temperature = Math.max(0.0, Math.min(1.0, Number(args.TEMPERATURE)));
-        } catch (error) {
-            console.error(error);
-            return error.message;
-        }
-    }
-
-    /**
-     * Set top P.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.TOP_P - top P [0.0, 1.0]
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
-     */
-    setTopP (args, util) {
-        try {
-            const target = util.target;
-            const ai = this.getAI(target);
-            const modelParams = ai.getModelParams();
-            if (args.TOP_P === '') {
-                delete modelParams.generationConfig.topP;
-            }
-            modelParams.generationConfig.topP = Math.max(0.0, Math.min(1.0, Number(args.TOP_P)));
-        } catch (error) {
-            console.error(error);
-            return error.message;
-        }
-    }
-
-    /**
-     * Set top K.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.TOP_K - top K [>= 1]
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
-     */
-    setTopK (args, util) {
-        try {
-            const target = util.target;
-            const ai = this.getAI(target);
-            const modelParams = ai.getModelParams();
-            if (args.TOP_K === '') {
-                delete modelParams.generationConfig.topK;
-            }
-            modelParams.generationConfig.topK = Math.max(1, parseInt(args.TOP_K, 10));
+            return configValue;
         } catch (error) {
             console.error(error);
             return error.message;

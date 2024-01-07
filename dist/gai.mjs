@@ -1159,12 +1159,14 @@ var en = {
 	"gai.responseText": "response draft #[CANDIDATE_INDEX] text",
 	"gai.responseSafetyRating": "response #[CANDIDATE_INDEX] safety rating [HARM_CATEGORY]",
 	"gai.setSafetyRating": "set [HARM_CATEGORY] to [BLOCK_THRESHOLD]",
-	"gai.setMaxOutputTokens": "set max output tokens to [COUNT]",
-	"gai.setCandidateCount": "set candidate count to [COUNT]",
-	"gai.setStopSequences": "set stop sequences to [STOP_SEQUENCES]",
-	"gai.setTemperature": "set temperature to [TEMPERATURE]",
-	"gai.setTopP": "set Top P to[TOP_P]",
-	"gai.setTopK": "set Top K to [TOP_K]",
+	"gai.setGenerationConfig": "set generation [CONFIG] to [VALUE]",
+	"gai.generationConfigMenu.maxOutputTokens": "max output tokens",
+	"gai.generationConfigMenu.candidateCount": "candidate count",
+	"gai.generationConfigMenu.stopSequences": "stop sequences",
+	"gai.generationConfigMenu.temperature": "temperature",
+	"gai.generationConfigMenu.topP": "Top P",
+	"gai.generationConfigMenu.topK": "Top K",
+	"gai.generationConfig": "generation [CONFIG]",
 	"gai.setApiKey": "set API key to [KEY]",
 	"gai.startChat": "start chat with history [HISTORY]",
 	"gai.countPromptTokens": "count tokens as prompt [PROMPT]",
@@ -1185,21 +1187,23 @@ var en = {
 };
 var ja = {
 	"gai.name": "GAI",
-	"gai.prompt": "AIに[PROMPT]をたずねる",
+	"gai.prompt": "AIに[PROMPT]とたずねる",
 	"gai.promptDefault": "[costume:スプライト1:コスチューム1]は[snapshot]のどこにいますか?",
 	"gai.chat": "AIに[MESSAGE]と話す",
 	"gai.chatDefault": "こんにちはジェミニ！",
 	"gai.responseText": "回答候補[CANDIDATE_INDEX]",
 	"gai.responseSafetyRating": "回答候補[CANDIDATE_INDEX]の安全度[HARM_CATEGORY]",
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
-	"gai.setMaxOutputTokens": "最大トークン数を[COUNT]にする",
-	"gai.setCandidateCount": "回答候補の数を[COUNT]にする",
-	"gai.setStopSequences": "ストップシーケンスを[STOP_SEQUENCES]にする",
-	"gai.setTemperature": "モデルの温度を[TEMPERATURE]にする",
-	"gai.setTopP": "モデルのTop Pを[TOP_P]にする",
-	"gai.setTopK": "モデルのTop Kを[TOP_K]にする",
+	"gai.setGenerationConfig": "生成の[CONFIG]を[VALUE]にする",
+	"gai.generationConfigMenu.maxOutputTokens": "最大トークン数",
+	"gai.generationConfigMenu.candidateCount": "回答候補の数",
+	"gai.generationConfigMenu.stopSequences": "ストップシーケンス",
+	"gai.generationConfigMenu.temperature": "温度",
+	"gai.generationConfigMenu.topP": "Top P",
+	"gai.generationConfigMenu.topK": "Top K",
+	"gai.generationConfig": "生成の[CONFIG]",
 	"gai.setApiKey": "APIキーを[KEY]にする",
-	"gai.startChat": "履歴[HISTORY]を使って対話を始める",
+	"gai.startChat": "[HISTORY]に続けて対話を始める",
 	"gai.countPromptTokens": "プロンプト[PROMPT]のトークン数",
 	"gai.countChatTokens": "対話[MESSAGE]のトークン数",
 	"gai.harmCategoryMenu.hateSpeech": "ヘイトスピーチ",
@@ -1221,21 +1225,23 @@ var translations = {
 	ja: ja,
 	"ja-Hira": {
 	"gai.name": "GAI",
-	"gai.prompt": "AIに[PROMPT]を たずねる",
+	"gai.prompt": "AIに[PROMPT]と たずねる",
 	"gai.promptDefault": "[costume:スプライト1:コスチューム1]は[snapshot]のどこにいますか?",
 	"gai.chat": "AI に[MESSAGE]と はなす",
 	"gai.chatDefault": "こんにちはジェミニ！",
 	"gai.responseText": "かいとうこうほ[CANDIDATE_INDEX]",
 	"gai.responseSafetyRating": "かいとうこうほ[CANDIDATE_INDEX]の あんぜんど[HARM_CATEGORY]",
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
-	"gai.setMaxOutputTokens": "さいだいトークンすう を[COUNT]に する",
-	"gai.setCandidateCount": "かいとうこうほ の かず を[COUNT]に する",
-	"gai.setStopSequences": "ストップシーケンス を[STOP_SEQUENCES]に する",
-	"gai.setTemperature": "モデル の おんど を[TEMPERATURE]に する",
-	"gai.setTopP": "モデル の トップP を[TOP_P]に する",
-	"gai.setTopK": "モデル の トップK を[TOP_K]に する",
+	"gai.setGenerationConfig": "せいせい の[CONFIG]を[VALUE]に する",
+	"gai.generationConfigMenu.maxOutputTokens": "さいだいトークンすう",
+	"gai.generationConfigMenu.candidateCount": "かいとうこうほ の かず",
+	"gai.generationConfigMenu.stopSequences": "ストップシーケンス",
+	"gai.generationConfigMenu.temperature": "おんど",
+	"gai.generationConfigMenu.topP": "トップP",
+	"gai.generationConfigMenu.topK": "トップK",
+	"gai.generationConfig": "せいせい の[CONFIG]",
 	"gai.setApiKey": "APIキー を[KEY]に する",
-	"gai.startChat": "りれき[HISTORY]を つかって たいわ を はじめる",
+	"gai.startChat": "[HISTORY]に つづけて たいわ を はじめる",
 	"gai.countPromptTokens": "プロンプト[PROMPT]の トークンすう",
 	"gai.countChatTokens": "たいわ[MESSAGE]の トークンすう",
 	"gai.harmCategoryMenu.hateSpeech": "ヘイトスピーチ",
@@ -2079,93 +2085,38 @@ var GeminiBlocks = /*#__PURE__*/function () {
             }
           }
         }, {
-          opcode: 'setMaxOutputTokens',
+          opcode: 'setGenerationConfig',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
-            id: 'gai.setMaxOutputTokens',
-            default: 'set max output tokens to [COUNT]',
-            description: 'set max output tokens for Gemini'
+            id: 'gai.setGenerationConfig',
+            default: 'set generation [CONFIG] to [VALUE]',
+            description: 'set generation config block text for Gemini'
           }),
-          func: 'setMaxOutputTokens',
+          func: 'setGenerationConfig',
           arguments: {
-            COUNT: {
-              type: ArgumentType$1.NUMBER,
-              defaultValue: 100
-            }
-          }
-        }, {
-          opcode: 'setCandidateCount',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.setCandidateCount',
-            default: 'set candidate count to [COUNT]',
-            description: 'set candidate count for Gemini'
-          }),
-          func: 'setCandidateCount',
-          arguments: {
-            COUNT: {
-              type: ArgumentType$1.NUMBER,
-              defaultValue: 1
-            }
-          }
-        }, {
-          opcode: 'setStopSequences',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.setStopSequences',
-            default: 'set stop sequences to [STOP_SEQUENCES]',
-            description: 'setup model for Gemini'
-          }),
-          func: 'setStopSequences',
-          arguments: {
-            STOP_SEQUENCES: {
+            CONFIG: {
               type: ArgumentType$1.STRING,
-              defaultValue: '。,！,？,!,?,.'
-            }
-          }
-        }, {
-          opcode: 'setTemperature',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.setTemperature',
-            default: 'set temperature to [TEMPERATURE]',
-            description: 'set temperature for Gemini'
-          }),
-          func: 'setTemperature',
-          arguments: {
-            TEMPERATURE: {
-              type: ArgumentType$1.NUMBER,
-              defaultValue: 1.0
-            }
-          }
-        }, {
-          opcode: 'setTopP',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.setTopP',
-            default: 'set Top P to[TOP_P]',
-            description: 'set top P for Gemini'
-          }),
-          func: 'setTopP',
-          arguments: {
-            TOP_P: {
-              type: ArgumentType$1.NUMBER,
-              defaultValue: 1.0
-            }
-          }
-        }, {
-          opcode: 'setTopK',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.setTopK',
-            default: 'set Top K to [TOP_K]',
-            description: 'set top K for Gemini'
-          }),
-          func: 'setTopK',
-          arguments: {
-            TOP_K: {
+              menu: 'generationConfigMenu'
+            },
+            VALUE: {
               type: ArgumentType$1.NUMBER,
               defaultValue: 1
+            }
+          }
+        }, {
+          opcode: 'generationConfig',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.generationConfig',
+            default: 'generation [CONFIG]',
+            description: 'generation config block text for Gemini'
+          }),
+          func: 'generationConfig',
+          arguments: {
+            CONFIG: {
+              type: ArgumentType$1.STRING,
+              menu: 'generationConfigMenu'
             }
           }
         }, {
@@ -2242,6 +2193,10 @@ var GeminiBlocks = /*#__PURE__*/function () {
           harmBlockThresholdMenu: {
             acceptReporters: false,
             items: 'getHarmBlockThresholdMenu'
+          },
+          generationConfigMenu: {
+            acceptReporters: false,
+            items: 'getGenerationConfigMenu'
           }
         }
       };
@@ -2332,6 +2287,54 @@ var GeminiBlocks = /*#__PURE__*/function () {
           description: 'harm block threshold menu item for block none in Gemini'
         }),
         value: HarmBlockThreshold.BLOCK_NONE
+      }];
+      return menu;
+    }
+  }, {
+    key: "getGenerationConfigMenu",
+    value: function getGenerationConfigMenu() {
+      var menu = [{
+        text: formatMessage({
+          id: 'gai.generationConfigMenu.temperature',
+          default: 'Temperature',
+          description: 'generation config menu item for temperature in Gemini'
+        }),
+        value: 'temperature'
+      }, {
+        text: formatMessage({
+          id: 'gai.generationConfigMenu.topP',
+          default: 'Top P',
+          description: 'generation config menu item for top P in Gemini'
+        }),
+        value: 'topP'
+      }, {
+        text: formatMessage({
+          id: 'gai.generationConfigMenu.topK',
+          default: 'Top K',
+          description: 'generation config menu item for top K in Gemini'
+        }),
+        value: 'topK'
+      }, {
+        text: formatMessage({
+          id: 'gai.generationConfigMenu.maxOutputTokens',
+          default: 'Max Output Tokens',
+          description: 'generation config menu item for max output tokens in Gemini'
+        }),
+        value: 'maxOutputTokens'
+      }, {
+        text: formatMessage({
+          id: 'gai.generationConfigMenu.candidateCount',
+          default: 'Candidate Count',
+          description: 'generation config menu item for candidate count in Gemini'
+        }),
+        value: 'candidateCount'
+      }, {
+        text: formatMessage({
+          id: 'gai.generationConfigMenu.stopSequences',
+          default: 'Stop Sequences',
+          description: 'generation config menu item for stop sequences in Gemini'
+        }),
+        value: 'stopSequences'
       }];
       return menu;
     }
@@ -2793,23 +2796,51 @@ var GeminiBlocks = /*#__PURE__*/function () {
     }
 
     /**
-     * Set max output tokens.
+     * Set generation config.
      * @param {object} args - the block's arguments.
-     * @param {string} args.COUNT - count of max output tokens
+     * @param {string} args.CONFIG - config key
+     * @param {string} args.VALUE - config value
      * @param {object} util - utility object provided by the runtime.
      * @returns {void}
      */
   }, {
-    key: "setMaxOutputTokens",
-    value: function setMaxOutputTokens(args, util) {
+    key: "setGenerationConfig",
+    value: function setGenerationConfig(args, util) {
       try {
         var target = util.target;
         var ai = this.getAI(target);
         var modelParams = ai.getModelParams();
-        if (args.COUNT === '') {
-          delete modelParams.generationConfig.maxOutputTokens;
+        var configKey = args.CONFIG;
+        var configValue = args.VALUE;
+        switch (configKey) {
+          case 'maxOutputTokens':
+            configValue = Math.max(1, parseInt(configValue, 10));
+            break;
+          case 'candidateCount':
+            configValue = Math.max(1, parseInt(configValue, 10));
+            break;
+          case 'stopSequences':
+            configValue = String(configValue).split(',').map(function (s) {
+              return s.trim();
+            });
+            break;
+          case 'temperature':
+            configValue = Math.max(0.0, Math.min(1.0, configValue));
+            break;
+          case 'topP':
+            configValue = Math.max(0.0, Math.min(1.0, configValue));
+            break;
+          case 'topK':
+            configValue = Math.max(1, parseInt(configValue, 10));
+            break;
+          default:
+            throw new Error("unknown config key: ".concat(configKey));
         }
-        modelParams.generationConfig.maxOutputTokens = parseInt(args.COUNT, 10);
+        if (configValue === '') {
+          delete modelParams.generationConfig[configKey];
+          return;
+        }
+        modelParams.generationConfig[configKey] = configValue;
       } catch (error) {
         console.error(error);
         return error.message;
@@ -2817,121 +2848,25 @@ var GeminiBlocks = /*#__PURE__*/function () {
     }
 
     /**
-     * Set candidate count.
+     * Get generation config.
      * @param {object} args - the block's arguments.
-     * @param {string} args.COUNT - count of candidate
+     * @param {string} args.CONFIG - config key
      * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
+     * @returns {string} - config value
      */
   }, {
-    key: "setCandidateCount",
-    value: function setCandidateCount(args, util) {
+    key: "generationConfig",
+    value: function generationConfig(args, util) {
       try {
         var target = util.target;
         var ai = this.getAI(target);
         var modelParams = ai.getModelParams();
-        if (args.COUNT === '') {
-          delete modelParams.generationConfig.candidateCount;
+        var configKey = args.CONFIG;
+        var configValue = modelParams.generationConfig[configKey];
+        if (typeof configValue === 'undefined') {
+          return '';
         }
-        modelParams.generationConfig.candidateCount = parseInt(args.COUNT, 10);
-      } catch (error) {
-        console.error(error);
-        return error.message;
-      }
-    }
-
-    /**
-     * Set stop sequences.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.STOP_SEQUENCES - comma separated stop sequences
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
-     */
-  }, {
-    key: "setStopSequences",
-    value: function setStopSequences(args, util) {
-      try {
-        var target = util.target;
-        var ai = this.getAI(target);
-        var modelParams = ai.getModelParams();
-        if (args.STOP_SEQUENCES === '') {
-          delete modelParams.generationConfig.stopSequences;
-        }
-        modelParams.generationConfig.stopSequences = String(args.STOP_SEQUENCES).split(',').map(function (s) {
-          return s.trim();
-        });
-      } catch (error) {
-        console.error(error);
-        return error.message;
-      }
-    }
-
-    /**
-     * Set temperature.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.TEMPERATURE - temperature [0.0, 1.0]
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
-     */
-  }, {
-    key: "setTemperature",
-    value: function setTemperature(args, util) {
-      try {
-        var target = util.target;
-        var ai = this.getAI(target);
-        var modelParams = ai.getModelParams();
-        if (args.TEMPERATURE === '') {
-          delete modelParams.generationConfig.temperature;
-        }
-        modelParams.generationConfig.temperature = Math.max(0.0, Math.min(1.0, Number(args.TEMPERATURE)));
-      } catch (error) {
-        console.error(error);
-        return error.message;
-      }
-    }
-
-    /**
-     * Set top P.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.TOP_P - top P [0.0, 1.0]
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
-     */
-  }, {
-    key: "setTopP",
-    value: function setTopP(args, util) {
-      try {
-        var target = util.target;
-        var ai = this.getAI(target);
-        var modelParams = ai.getModelParams();
-        if (args.TOP_P === '') {
-          delete modelParams.generationConfig.topP;
-        }
-        modelParams.generationConfig.topP = Math.max(0.0, Math.min(1.0, Number(args.TOP_P)));
-      } catch (error) {
-        console.error(error);
-        return error.message;
-      }
-    }
-
-    /**
-     * Set top K.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.TOP_K - top K [>= 1]
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
-     */
-  }, {
-    key: "setTopK",
-    value: function setTopK(args, util) {
-      try {
-        var target = util.target;
-        var ai = this.getAI(target);
-        var modelParams = ai.getModelParams();
-        if (args.TOP_K === '') {
-          delete modelParams.generationConfig.topK;
-        }
-        modelParams.generationConfig.topK = Math.max(1, parseInt(args.TOP_K, 10));
+        return configValue;
       } catch (error) {
         console.error(error);
         return error.message;
