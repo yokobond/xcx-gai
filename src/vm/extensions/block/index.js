@@ -1,6 +1,7 @@
 import BlockType from '../../extension-support/block-type';
 import ArgumentType from '../../extension-support/argument-type';
 import Cast from '../../util/cast';
+import log from '../../util/log';
 import translations from './translations.json';
 import blockIcon from './block-icon.png';
 
@@ -651,7 +652,7 @@ class GeminiBlocks {
             const result = await ai.requestPrompt(prompt);
             const response = result.response;
             const text = response.text();
-            if (DEBUG) console.log(text);
+            if (DEBUG) log.log(text);
             return text;
         } catch (error) {
             return error.message;
@@ -685,7 +686,7 @@ class GeminiBlocks {
             const result = await ai.requestChat(message);
             const response = result.response;
             const text = response.text();
-            if (DEBUG) console.log(text);
+            if (DEBUG) log.log(text);
             return text;
         } catch (error) {
             return error.message;
@@ -830,7 +831,7 @@ class GeminiBlocks {
                 setParams(harmCategory, harmBlockThreshold);
             }
         } catch (error) {
-            console.error(error);
+            log.error(error);
             return error.message;
         }
     }
@@ -879,7 +880,7 @@ class GeminiBlocks {
             }
             modelParams.generationConfig[configKey] = configValue;
         } catch (error) {
-            console.error(error);
+            log.error(error);
             return error.message;
         }
     }
@@ -903,7 +904,7 @@ class GeminiBlocks {
             }
             return configValue;
         } catch (error) {
-            console.error(error);
+            log.error(error);
             return error.message;
         }
     }
