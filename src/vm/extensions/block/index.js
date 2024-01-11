@@ -518,91 +518,6 @@ class GeminiBlocks {
         return menu;
     }
 
-    /**
-     * Open dialog to input API key by user.
-     * @returns {Promise<string>} - a Promise that resolves API key
-     */
-    openApiKeyDialog () {
-        if (this.apiKeyDialogOpened) {
-            // prevent to open multiple dialogs
-            return Promise.resolve(null);
-        }
-        this.apiKeyDialogOpened = true;
-        const inputDialog = document.createElement('dialog');
-        inputDialog.style.padding = '0px';
-        const dialogFace = document.createElement('div');
-        dialogFace.style.padding = '16px';
-        inputDialog.appendChild(dialogFace);
-        const label = document.createTextNode(formatMessage({
-            id: 'gai.apiKeyDialog.message',
-            default: 'set API key',
-            description: 'label of API key input dialog for gemini'
-        }));
-        dialogFace.appendChild(label);
-        // Dialog form
-        const apiKeyForm = document.createElement('form');
-        apiKeyForm.setAttribute('method', 'dialog');
-        apiKeyForm.style.margin = '8px';
-        apiKeyForm.addEventListener('submit', e => {
-            e.preventDefault();
-        });
-        dialogFace.appendChild(apiKeyForm);
-        // API select
-        const apiKeyInput = document.createElement('input');
-        apiKeyInput.setAttribute('type', 'text');
-        apiKeyInput.setAttribute('id', 'apiKeyInput');
-        apiKeyInput.setAttribute('size', '50');
-        apiKeyInput.setAttribute('value', '');
-        apiKeyForm.appendChild(apiKeyInput);
-        // Cancel button
-        const cancelButton = document.createElement('button');
-        cancelButton.textContent = formatMessage({
-            id: 'gai.apiKeyDialog.cancel',
-            default: 'cancel',
-            description: 'cancel button on groupID input dialog for gemini'
-        });
-        cancelButton.style.margin = '8px';
-        dialogFace.appendChild(cancelButton);
-        // OK button
-        const confirmButton = document.createElement('button');
-        confirmButton.textContent = formatMessage({
-            id: 'gai.apiKeyDialog.set',
-            default: 'set',
-            description: 'set button on API key input dialog for gemini'
-        });
-        confirmButton.style.margin = '8px';
-        dialogFace.appendChild(confirmButton);
-        return new Promise(
-            resolve => {
-                // Add onClick action
-                const confirmed = () => {
-                    const inputValue = apiKeyInput.value.trim();
-                    if (inputValue === '') {
-                        return; // do not exit dialog
-                    }
-                    resolve(inputValue);
-                };
-                confirmButton.onclick = confirmed;
-                const canceled = () => {
-                    resolve('');
-                };
-                cancelButton.onclick = canceled;
-                inputDialog.addEventListener('keydown', e => {
-                    if (e.code === 'Enter') {
-                        confirmed();
-                    }
-                    if (e.code === 'Escape') {
-                        canceled();
-                    }
-                });
-                document.body.appendChild(inputDialog);
-                inputDialog.showModal();
-            })
-            .finally(() => {
-                document.body.removeChild(inputDialog);
-                this.apiKeyDialogOpened = false;
-            });
-    }
 
     /**
      * @param {Target} target - the target to get the AI
@@ -612,20 +527,6 @@ class GeminiBlocks {
         return GeminiAdapter.getForTarget(target);
     }
 
-    /**
-     * Confirm API key.
-     * @returns {Promise<void>} - a Promise that resolves when the API key is confirmed
-     * @throws {Error} - when API key is not set
-     */
-    async confirmAPIKey () {
-        if (!GeminiAdapter.getApiKey()) {
-            const apiKey = await this.openApiKeyDialog();
-            if (!apiKey || apiKey === '') {
-                throw new Error('API key is not set.');
-            }
-            GeminiAdapter.setApiKey(apiKey);
-        }
-    }
 
     /**
      * Prompt to AI.
@@ -635,17 +536,18 @@ class GeminiBlocks {
      * @returns {Promise<string>} - a Promise that resolves response text
      */
     async prompt (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return 'API key is not set.';
+        }
         const target = util.target;
         const runtime = this.runtime;
-        let ai;
+        const ai = this.getAI(target);
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
         try {
-            await this.confirmAPIKey();
-            ai = this.getAI(target);
-            if (ai.isBlocked()) {
-                util.yield();
-                return;
-            }
-            ai.setBlock(true);
+            ai.setRequesting(true);
             const promptText = Cast.toString(args.PROMPT);
             const promptDirectives = parseContentPartsText(promptText);
             const prompt = await interpretContentPartDirectives(promptDirectives, target, runtime);
@@ -657,7 +559,7 @@ class GeminiBlocks {
         } catch (error) {
             return error.message;
         } finally {
-            if (ai) ai.setBlock(false);
+            if (ai) ai.setRequesting(false);
         }
     }
 
@@ -669,17 +571,18 @@ class GeminiBlocks {
      * @returns {Promise<string>} - a Promise that resolves response text
      */
     async chat (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return 'API key is not set.';
+        }
         const target = util.target;
         const runtime = this.runtime;
-        let ai;
+        const ai = this.getAI(target);
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
         try {
-            await this.confirmAPIKey();
-            ai = this.getAI(target);
-            if (ai.isBlocked()) {
-                util.yield();
-                return;
-            }
-            ai.setBlock(true);
+            ai.setRequesting(true);
             const messageText = Cast.toString(args.MESSAGE);
             const contentDirectives = parseContentPartsText(messageText);
             const message = await interpretContentPartDirectives(contentDirectives, target, runtime);
@@ -691,7 +594,7 @@ class GeminiBlocks {
         } catch (error) {
             return error.message;
         } finally {
-            if (ai) ai.setBlock(false);
+            if (ai) ai.setRequesting(false);
         }
     }
 
@@ -731,12 +634,12 @@ class GeminiBlocks {
             return '';
         }
         const ai = GeminiAdapter.getForTarget(target);
-        const result = ai.getLastResult(target);
-        if (!result) {
+        const response = ai.getLastResponse(target);
+        if (!response) {
             return '';
         }
         const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-        const candidate = result.response.candidates[candidateIndex - 1];
+        const candidate = response.candidates[candidateIndex - 1];
         if (!candidate) {
             return `no candidate #${candidateIndex}`;
         }
@@ -757,12 +660,12 @@ class GeminiBlocks {
             return '';
         }
         const ai = GeminiAdapter.getForTarget(target);
-        const result = ai.getLastResult();
-        if (!result) {
+        const response = ai.getLastResponse();
+        if (!response) {
             return '';
         }
         const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-        const candidate = result.response.candidates[candidateIndex - 1];
+        const candidate = response.candidates[candidateIndex - 1];
         if (!candidate) {
             return `no candidate #${candidateIndex}`;
         }
@@ -933,17 +836,18 @@ class GeminiBlocks {
      * @returns {number} - count of tokens
      */
     async countPromptTokens (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return 'API key is not set.';
+        }
         const target = util.target;
         const runtime = this.runtime;
-        let ai;
+        const ai = this.getAI(target);
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
         try {
-            await this.confirmAPIKey();
-            ai = this.getAI(target);
-            if (ai.isBlocked()) {
-                util.yield();
-                return;
-            }
-            ai.setBlock(true);
+            ai.setRequesting(true);
             const promptText = Cast.toString(args.PROMPT);
             const promptDirectives = parseContentPartsText(promptText);
             const prompt = await interpretContentPartDirectives(promptDirectives, target, runtime);
@@ -952,7 +856,7 @@ class GeminiBlocks {
         } catch (error) {
             return error.message;
         } finally {
-            if (ai) ai.setBlock(false);
+            if (ai) ai.setRequesting(false);
         }
     }
 
@@ -964,16 +868,17 @@ class GeminiBlocks {
      * @returns {number} - count of tokens
      */
     async countChatTokens (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return 'API key is not set.';
+        }
         const target = util.target;
-        let ai;
+        const ai = this.getAI(target);
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
         try {
-            await this.confirmAPIKey();
-            ai = this.getAI(target);
-            if (ai.isBlocked()) {
-                util.yield();
-                return;
-            }
-            ai.setBlock(true);
+            ai.setRequesting(true);
             const messageText = Cast.toString(args.MESSAGE);
             const history = await ai.getChatHistory();
             const messageContent = {role: 'user', parts: [{text: messageText}]};
@@ -983,7 +888,7 @@ class GeminiBlocks {
         } catch (error) {
             return error.message;
         } finally {
-            if (ai) ai.setBlock(false);
+            if (ai) ai.setRequesting(false);
         }
     }
 }

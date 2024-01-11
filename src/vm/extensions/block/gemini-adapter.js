@@ -63,6 +63,7 @@ export default class GeminiAdapter {
         GoogleGenerativeAI.apiKey = key;
     }
 
+
     constructor (target) {
         this.target = target;
         target.setCustomState(GeminiAdapter.CUSTOM_STATE_AI, this);
@@ -73,8 +74,9 @@ export default class GeminiAdapter {
             safetySettings: []
         };
         this.chatSession = null;
-        this.lastResult = null;
-        this.blocked = false;
+        this.lastResponse = null;
+        this.lastPartialResponse = null;
+        this.requesting = false;
     }
 
     /**
@@ -150,37 +152,34 @@ export default class GeminiAdapter {
      * Check if target is requesting to AI.
      * @returns {boolean} - whether target is requesting to AI
      */
-    isBlocked () {
-        return !!this.blocked;
+    isRequesting () {
+        return this.requesting;
     }
 
     /**
-     * Set whether block state.
-     * @param {boolean} blockState - whether this is blocked
+     * Set whether target is requesting to AI.
+     * @param {boolean} requesting - whether target is requesting to AI
      * @returns {void}
      */
-    setBlock (blockState) {
-        this.blocked = blockState;
+    setRequesting (requesting) {
+        this.requesting = requesting;
     }
 
     /**
-     * Get last result from AI.
-     * @returns {GenerateContentResult} - last result
+     * Get last response from AI.
+     * @returns {GenerateContentResponse} - last response
      */
-    getLastResult () {
-        return this.lastResult;
+    getLastResponse () {
+        return this.lastResponse;
     }
 
     /**
-     * Generate content from AI.
-     * @param {string} type - type of model
-     * @param {string} prompt - prompt to AI
-     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the content is generated
+     * Set last response from AI.
+     * @param {GenerateContentResponse} response - last response
+     * @returns {void}
      */
-    async generate (type, prompt) {
-        const model = this.getModel(type);
-        const result = await model.generateContent(prompt);
-        return result;
+    setLastResponse (response) {
+        this.lastResponse = response;
     }
 
     /**
@@ -201,8 +200,9 @@ export default class GeminiAdapter {
             // prompt is multimodal
             type = 'gemini-pro-vision';
         }
-        result = await this.generate(type, prompt);
-        this.lastResult = result;
+        const model = this.getModel(type);
+        result = await model.generateContent(prompt);
+        this.setLastResponse(result.response);
         return result;
     }
 
@@ -226,7 +226,7 @@ export default class GeminiAdapter {
             this.startChat([]);
         }
         const result = await this.chatSession.sendMessage(message);
-        this.lastResult = result;
+        this.setLastResponse(result.response);
         return result;
     }
 }
