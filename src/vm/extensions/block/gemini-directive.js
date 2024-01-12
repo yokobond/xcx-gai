@@ -126,3 +126,16 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
     });
     return Promise.all(contentParts);
 };
+
+/**
+ * Interpret content parts text.
+ * @param {string} contentPartsText - content parts text
+ * @param {Target} requester - target which is requesting to AI
+ * @param {Runtime} runtime - runtime
+ * @returns {Promise<object[]>} - a Promise that resolves content parts
+ */
+export const interpretContentPartsText = async function (contentPartsText, requester, runtime) {
+    const contentPartDirectives = parseContentPartsText(contentPartsText);
+    const contentParts = await interpretContentPartDirectives(contentPartDirectives, requester, runtime);
+    return contentParts;
+};

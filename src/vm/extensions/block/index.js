@@ -7,7 +7,7 @@ import blockIcon from './block-icon.png';
 
 import {DEBUG, checkDebugMode} from './dev-util.js';
 import GeminiAdapter from './gemini-adapter.js';
-import {parseContentPartsText, interpretContentPartDirectives} from './gemini-directive.js';
+import {interpretContentPartsText} from './gemini-directive.js';
 
 
 const HarmCategory = {
@@ -142,21 +142,21 @@ class GeminiBlocks {
             showStatusButton: false,
             blocks: [
                 {
-                    opcode: 'prompt',
+                    opcode: 'generate',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
-                        id: 'gai.prompt',
-                        default: 'prompt [PROMPT]',
-                        description: 'prompt block text of GAI'
+                        id: 'gai.generate',
+                        default: 'generate [PROMPT]',
+                        description: 'generate block text of GAI'
                     }),
-                    func: 'prompt',
+                    func: 'generate',
                     arguments: {
                         PROMPT: {
                             type: ArgumentType.STRING,
                             defaultValue: formatMessage({
-                                id: 'gai.promptDefault',
+                                id: 'gai.generateDefault',
                                 default: 'The position of [costume:Sprite1:costume1] in [snapshot]?',
-                                description: 'default prompt for Gemini'
+                                description: 'default generate prompt for Gemini'
                             })
                         }
                     }
@@ -218,6 +218,30 @@ class GeminiBlocks {
                             type: ArgumentType.STRING,
                             menu: 'harmCategoryMenu'
                         }
+                    }
+                },
+                {
+                    opcode: 'whenPartialResponseReceived',
+                    blockType: BlockType.EVENT,
+                    text: formatMessage({
+                        id: 'gai.whenPartialResponseReceived',
+                        default: 'when partial response received',
+                        description: 'when partial response received for Gemini'
+                    }),
+                    isEdgeActivated: false,
+                    shouldRestartExistingThreads: true
+                },
+                {
+                    opcode: 'partialResponseText',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.partialResponseText',
+                        default: 'partial response text',
+                        description: 'partial response text of Gemini'
+                    }),
+                    disableMonitor: true,
+                    func: 'partialResponseText',
+                    arguments: {
                     }
                 },
                 '---',
@@ -314,14 +338,14 @@ class GeminiBlocks {
                 },
                 '---',
                 {
-                    opcode: 'countPromptTokens',
+                    opcode: 'countTokensToGenerate',
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
-                        id: 'gai.countPromptTokens',
-                        default: 'count tokens as prompt [PROMPT]',
-                        description: 'count tokens as prompt for Gemini'
+                        id: 'gai.countTokensToGenerate',
+                        default: 'count tokens to prompt [PROMPT]',
+                        description: 'count tokens to prompt for Gemini'
                     }),
-                    func: 'countPromptTokens',
+                    func: 'countTokensToGenerate',
                     arguments: {
                         PROMPT: {
                             type: ArgumentType.STRING,
@@ -330,14 +354,14 @@ class GeminiBlocks {
                     }
                 },
                 {
-                    opcode: 'countChatTokens',
+                    opcode: 'countTokensToChat',
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
-                        id: 'gai.countChatTokens',
-                        default: 'count tokens as chat [MESSAGE]',
-                        description: 'count tokens as chat for Gemini'
+                        id: 'gai.countTokensToChat',
+                        default: 'count tokens to chat [MESSAGE]',
+                        description: 'count tokens to chat for Gemini'
                     }),
-                    func: 'countChatTokens',
+                    func: 'countTokensToChat',
                     arguments: {
                         MESSAGE: {
                             type: ArgumentType.STRING,
@@ -518,7 +542,6 @@ class GeminiBlocks {
         return menu;
     }
 
-
     /**
      * @param {Target} target - the target to get the AI
      * @return {GeminiAdapter} - the AI for the target
@@ -527,20 +550,112 @@ class GeminiBlocks {
         return GeminiAdapter.getForTarget(target);
     }
 
+    /**
+     * Get partial response text from last result.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - partial response text
+     */
+    partialResponseText (args, util) {
+        const target = util.target;
+        if (!GeminiAdapter.existsForTarget(target)) {
+            return '';
+        }
+        const ai = GeminiAdapter.getForTarget(target);
+        const response = ai.getLastPartialResponse();
+        if (!response) {
+            return '';
+        }
+        return response.text();
+    }
 
     /**
-     * Prompt to AI.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.PROMPT - prompt to AI
+     * Whether the block is using in the target.
+     * @param {string} blockOpcode - block opcode
+     * @param {Target} target - the target to check
+     * @returns {boolean} - whether the block is using in the target
+     */
+    blockIsUsingInTarget (blockOpcode, target) {
+        const executableBlocks = target.blocks._blocks;
+        for (const block in executableBlocks) {
+            if (executableBlocks[block].opcode === blockOpcode) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Request content to AI and get streaming result.
+     * @param {object} args - request data to AI
+     * @param {string} args.promptText - prompt text to AI
+     * @param {string} args.requestType - request type {'generate' | 'chat'}
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves response text
+     * @private
      */
-    async prompt (args, util) {
+    async requestContentStream ({promptText, requestType}, util) {
+        const target = util.target;
+        const runtime = this.runtime;
+        const ai = this.getAI(target);
+        if (ai.isStreaming()) {
+            util.yield();
+            return;
+        }
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
+        try {
+            ai.setRequesting(true);
+            const prompt = await interpretContentPartsText(promptText, target, runtime);
+            let streamingResult;
+            if (requestType === 'generate') {
+                streamingResult = await ai.requestGeneratorStream(prompt);
+            } else if (requestType === 'chat') {
+                streamingResult = await ai.requestChatStream(prompt);
+            } else {
+                throw new Error(`unknown request type: ${requestType}`);
+            }
+            ai.setStreaming(streamingResult);
+            const {stream: partialResponseStream, response: totalResponseReceived} = streamingResult;
+            for await (const partialResponse of partialResponseStream) {
+                if (DEBUG) log.log(`partial response for ${requestType}:${partialResponse.text()}`);
+                ai.setLastPartialResponse(partialResponse);
+                runtime.startHats('gai_whenPartialResponseReceived', null, target);
+            }
+            const totalResponse = await totalResponseReceived;
+            if (DEBUG) log.log(`response for ${requestType}:${totalResponse.text()}`);
+            ai.setLastResponse(totalResponse);
+            return totalResponse.text();
+        } catch (error) {
+            return error.message;
+        } finally {
+            ai.setStreaming(null);
+            ai.setRequesting(false);
+        }
+    }
+
+    /**
+     * Request content to AI.
+     * @param {object} args - request data to AI
+     * @param {string} args.promptText - prompt text to AI
+     * @param {string} args.requestType - request type {'generate' | 'chat'}
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves response text
+     * @private
+     */
+    async requestContent ({promptText, requestType}, util) {
         if (!GeminiAdapter.getApiKey()) {
             return 'API key is not set.';
         }
         const target = util.target;
-        const runtime = this.runtime;
+        if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
+            // use streaming request
+            return this.requestContentStream({promptText, requestType}, util);
+        }
+        // use non-streaming request
+        const runtime = util.runtime;
         const ai = this.getAI(target);
         if (ai.isRequesting()) {
             util.yield();
@@ -548,19 +663,38 @@ class GeminiBlocks {
         }
         try {
             ai.setRequesting(true);
-            const promptText = Cast.toString(args.PROMPT);
-            const promptDirectives = parseContentPartsText(promptText);
-            const prompt = await interpretContentPartDirectives(promptDirectives, target, runtime);
-            const result = await ai.requestPrompt(prompt);
+            const prompt = await interpretContentPartsText(promptText, target, runtime);
+            let result;
+            if (requestType === 'generate') {
+                result = await ai.requestGenerate(prompt);
+            } else if (requestType === 'chat') {
+                result = await ai.requestChat(prompt);
+            } else {
+                throw new Error(`unknown request type: ${requestType}`);
+            }
             const response = result.response;
-            const text = response.text();
-            if (DEBUG) log.log(text);
-            return text;
+            ai.setLastResponse(response);
+            if (DEBUG) log.log(`response for ${requestType}:${response.text()}`);
+            return response.text();
         } catch (error) {
             return error.message;
         } finally {
-            if (ai) ai.setRequesting(false);
+            if (ai) {
+                ai.setRequesting(false);
+            }
         }
+    }
+
+    /**
+     * Request AI to generate content.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.PROMPT - prompt to AI
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves response text
+     */
+    generate (args, util) {
+        const promptText = Cast.toString(args.PROMPT);
+        return this.requestContent({promptText, requestType: 'generate'}, util);
     }
 
     /**
@@ -570,32 +704,9 @@ class GeminiBlocks {
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves response text
      */
-    async chat (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
-            return 'API key is not set.';
-        }
-        const target = util.target;
-        const runtime = this.runtime;
-        const ai = this.getAI(target);
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
-        try {
-            ai.setRequesting(true);
-            const messageText = Cast.toString(args.MESSAGE);
-            const contentDirectives = parseContentPartsText(messageText);
-            const message = await interpretContentPartDirectives(contentDirectives, target, runtime);
-            const result = await ai.requestChat(message);
-            const response = result.response;
-            const text = response.text();
-            if (DEBUG) log.log(text);
-            return text;
-        } catch (error) {
-            return error.message;
-        } finally {
-            if (ai) ai.setRequesting(false);
-        }
+    chat (args, util) {
+        const promptText = Cast.toString(args.MESSAGE);
+        return this.requestContent({promptText, requestType: 'chat'}, util);
     }
 
     /**
@@ -611,8 +722,7 @@ class GeminiBlocks {
         const textHistory = JSON.parse(`[${String(args.HISTORY)}]`);
         const interpretedHistory = textHistory.map(async contentText => {
             if (contentText.parts) {
-                const contentDirectives = parseContentPartsText(contentText.parts);
-                const contentParts = await interpretContentPartDirectives(contentDirectives, target, runtime);
+                const contentParts = await interpretContentPartsText(contentText.parts, target, runtime);
                 return {role: contentText.role, parts: contentParts};
             }
             return contentText;
@@ -829,13 +939,13 @@ class GeminiBlocks {
     }
 
     /**
-     * Count tokens of prompt.
+     * Count tokens to generate.
      * @param {object} args - the block's arguments.
      * @param {string} args.PROMPT - prompt
      * @param {object} util - utility object provided by the runtime.
      * @returns {number} - count of tokens
      */
-    async countPromptTokens (args, util) {
+    async countTokensToGenerate (args, util) {
         if (!GeminiAdapter.getApiKey()) {
             return 'API key is not set.';
         }
@@ -849,8 +959,7 @@ class GeminiBlocks {
         try {
             ai.setRequesting(true);
             const promptText = Cast.toString(args.PROMPT);
-            const promptDirectives = parseContentPartsText(promptText);
-            const prompt = await interpretContentPartDirectives(promptDirectives, target, runtime);
+            const prompt = await interpretContentPartsText(promptText, target, runtime);
             const result = await ai.countTokens(prompt);
             return result;
         } catch (error) {
@@ -861,13 +970,13 @@ class GeminiBlocks {
     }
 
     /**
-     * Count tokens of chat.
+     * Count tokens to chat.
      * @param {object} args - the block's arguments.
      * @param {string} args.MESSAGE - message
      * @param {object} util - utility object provided by the runtime.
      * @returns {number} - count of tokens
      */
-    async countChatTokens (args, util) {
+    async countTokensToChat (args, util) {
         if (!GeminiAdapter.getApiKey()) {
             return 'API key is not set.';
         }
@@ -881,7 +990,8 @@ class GeminiBlocks {
             ai.setRequesting(true);
             const messageText = Cast.toString(args.MESSAGE);
             const history = await ai.getChatHistory();
-            const messageContent = {role: 'user', parts: [{text: messageText}]};
+            const message = await interpretContentPartsText(messageText, target, this.runtime);
+            const messageContent = {role: 'user', parts: message};
             const contents = [...history, messageContent];
             const result = await ai.countTokens({contents});
             return result;

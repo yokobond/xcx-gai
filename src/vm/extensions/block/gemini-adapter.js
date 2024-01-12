@@ -183,12 +183,59 @@ export default class GeminiAdapter {
     }
 
     /**
-     * Send prompt to AI.
-     * @param {Array.<string | object>} prompt - prompt to AI
-     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the prompt is sent
+     * Set streaming object from AI.
+     * @param {object} streaming - streaming object
+     * @returns {void}
      */
-    async requestPrompt (prompt) {
-        let result = null;
+    setStreaming (streaming) {
+        this.streaming = streaming;
+    }
+
+    /**
+     * Check if streaming object exists.
+     * @returns {boolean} - whether streaming object exists
+     */
+    isStreaming () {
+        return !!this.streaming;
+    }
+
+    /**
+     * Get streaming object from AI.
+     * @returns {object} - streaming object
+     * @returns {AsyncGenerator<EnhancedGenerateContentResponse>} result.stream - stream of responses
+     * @returns {Promise<EnhancedGenerateContentResponse>}
+     *         result.response - a Promise that resolves when the all responses are received
+     */
+    getStreaming () {
+        return this.streaming;
+    }
+
+    /**
+     * Set last partial response from AI.
+     * @param {EnhancedGenerateContentResponse} response - last partial response
+     * @returns {void}
+     */
+    setLastPartialResponse (response) {
+        this.lastPartialResponse = response;
+    }
+
+    /**
+     * Get last partial response from AI.
+     * @returns {EnhancedGenerateContentResponse} - last partial response
+     */
+    getLastPartialResponse () {
+        return this.lastPartialResponse;
+    }
+
+    /**
+     * Send generator type prompt to AI and get stream.
+     * @param {Array.<string | object>} prompt - prompt to AI
+     * @returns {object} result - a Promise that resolves when the prompt is sent
+     * @returns {AsyncGenerator<EnhancedGenerateContentResponse>} result.stream - stream of responses
+     * @returns {Promise<EnhancedGenerateContentResponse>}
+     *          result.response - a Promise that resolves when the all responses are received
+     */
+    requestGeneratorStream (prompt) {
         let type = '';
         if (typeof prompt === 'string') {
             // prompt is a string
@@ -201,9 +248,42 @@ export default class GeminiAdapter {
             type = 'gemini-pro-vision';
         }
         const model = this.getModel(type);
-        result = await model.generateContent(prompt);
-        this.setLastResponse(result.response);
-        return result;
+        return model.generateContentStream(prompt);
+    }
+
+    /**
+     * Send chat type prompt to AI and get stream.
+     * @param {Array.<string | object>} prompt - prompt to AI
+     * @returns {AsyncGenerator<EnhancedGenerateContentResponse>} - stream of responses
+     * @returns {Promise<EnhancedGenerateContentResponse>} - a Promise that resolves when the all responses are received
+     * @async
+     */
+    requestChatStream (prompt) {
+        if (!this.chatSession) {
+            this.startChat([]);
+        }
+        return this.chatSession.sendMessageStream(prompt);
+    }
+
+    /**
+     * Send generator type prompt to AI.
+     * @param {Array.<string | object>} prompt - prompt to AI
+     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the prompt is sent
+     */
+    requestGenerate (prompt) {
+        let type = '';
+        if (typeof prompt === 'string') {
+            // prompt is a string
+            type = 'gemini-pro';
+        } else if (prompt.every(p => typeof p === 'string')) {
+            // prompt is a list of strings
+            type = 'gemini-pro';
+        } else {
+            // prompt is multimodal
+            type = 'gemini-pro-vision';
+        }
+        const model = this.getModel(type);
+        return model.generateContent(prompt);
     }
 
     /**
@@ -221,12 +301,10 @@ export default class GeminiAdapter {
      * @param {string} message - message to AI
      * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the message is sent
      */
-    async requestChat (message) {
+    requestChat (message) {
         if (!this.chatSession) {
             this.startChat([]);
         }
-        const result = await this.chatSession.sendMessage(message);
-        this.setLastResponse(result.response);
-        return result;
+        return this.chatSession.sendMessage(message);
     }
 }
