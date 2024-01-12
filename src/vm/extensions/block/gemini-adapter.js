@@ -115,26 +115,35 @@ export default class GeminiAdapter {
 
     /**
      * Count tokens by model.
-     * @param {Array.<string | object>} prompt - prompt to AI
+     * @param {Array.<string | object>} content - content to AI
+     * @param {string} requestType - type of request {'generate' | 'chat'}
      * @returns {Promise<number>} - a Promise that resolves when the tokens are counted
      */
-    async countTokens (prompt) {
+    async countTokensAs (content, requestType) {
         let model;
-        if (prompt.contents) {
-            // prompt is a chat history
-            model = this.getModel('gemini-pro');
-        } else if (typeof prompt === 'string') {
+        if (typeof content === 'string') {
             // prompt is a string
             model = this.getModel('gemini-pro');
-        } else if (prompt.every(p => typeof p === 'string')) {
+        } else if (content.every(p => typeof p === 'string')) {
             // prompt is a list of strings
             model = this.getModel('gemini-pro');
         } else {
             // prompt is multimodal
             model = this.getModel('gemini-pro-vision');
         }
-        const {totalTokens} = await model.countTokens(prompt);
-        return totalTokens;
+        let result;
+        if (requestType === 'generate') {
+            result = await model.countTokens(content);
+        } else if (requestType === 'chat') {
+            const history = await this.getChatHistory();
+            const messageContent = {
+                role: 'user',
+                parts: [{text: content[0]}] // chat message is always a string at API v1
+            };
+            const contents = [...history, messageContent];
+            result = await model.countTokens({contents});
+        }
+        return result.totalTokens;
     }
 
     /**

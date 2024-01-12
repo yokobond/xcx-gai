@@ -304,23 +304,6 @@ class GeminiBlocks {
                     }
                 },
                 {
-                    opcode: 'setApiKey',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.setApiKey',
-                        default: 'set API key to [KEY]',
-                        description: 'set API key for Gemini'
-                    }),
-                    func: 'setApiKey',
-                    arguments: {
-                        KEY: {
-                            type: ArgumentType.STRING,
-                            defaultValue: ' ',
-                            description: 'API key for Gemini'
-                        }
-                    }
-                },
-                {
                     opcode: 'startChat',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
@@ -338,34 +321,40 @@ class GeminiBlocks {
                 },
                 '---',
                 {
-                    opcode: 'countTokensToGenerate',
+                    opcode: 'countTokensAs',
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
-                        id: 'gai.countTokensToGenerate',
-                        default: 'count tokens to prompt [PROMPT]',
-                        description: 'count tokens to prompt for Gemini'
+                        id: 'gai.countTokensAs',
+                        default: 'count tokens [CONTENT] as [REQUEST_TYPE]',
+                        description: 'count tokens block text for Gemini'
                     }),
-                    func: 'countTokensToGenerate',
+                    func: 'countTokensAs',
                     arguments: {
-                        PROMPT: {
+                        CONTENT: {
                             type: ArgumentType.STRING,
                             defaultValue: ' '
+                        },
+                        REQUEST_TYPE: {
+                            type: ArgumentType.STRING,
+                            menu: 'countTokensRequestTypeMenu'
                         }
                     }
                 },
+                '---',
                 {
-                    opcode: 'countTokensToChat',
-                    blockType: BlockType.REPORTER,
+                    opcode: 'setApiKey',
+                    blockType: BlockType.COMMAND,
                     text: formatMessage({
-                        id: 'gai.countTokensToChat',
-                        default: 'count tokens to chat [MESSAGE]',
-                        description: 'count tokens to chat for Gemini'
+                        id: 'gai.setApiKey',
+                        default: 'set API key to [KEY]',
+                        description: 'set API key for Gemini'
                     }),
-                    func: 'countTokensToChat',
+                    func: 'setApiKey',
                     arguments: {
-                        MESSAGE: {
+                        KEY: {
                             type: ArgumentType.STRING,
-                            defaultValue: ' '
+                            defaultValue: ' ',
+                            description: 'API key for Gemini'
                         }
                     }
                 }
@@ -386,6 +375,10 @@ class GeminiBlocks {
                 generationConfigMenu: {
                     acceptReporters: false,
                     items: 'getGenerationConfigMenu'
+                },
+                countTokensRequestTypeMenu: {
+                    acceptReporters: false,
+                    items: 'getCountTokensRequestTypeMenu'
                 }
             }
         };
@@ -537,6 +530,28 @@ class GeminiBlocks {
                     description: 'generation config menu item for stop sequences in Gemini'
                 }),
                 value: 'stopSequences'
+            }
+        ];
+        return menu;
+    }
+
+    getCountTokensRequestTypeMenu () {
+        const menu = [
+            {
+                text: formatMessage({
+                    id: 'gai.countTokensRequestTypeMenu.generate',
+                    default: 'Generate',
+                    description: 'count tokens request type menu item for generate in Gemini'
+                }),
+                value: 'generate'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.countTokensRequestTypeMenu.chat',
+                    default: 'Chat',
+                    description: 'count tokens request type menu item for chat in Gemini'
+                }),
+                value: 'chat'
             }
         ];
         return menu;
@@ -939,44 +954,14 @@ class GeminiBlocks {
     }
 
     /**
-     * Count tokens to generate.
+     * Count tokens as request type.
      * @param {object} args - the block's arguments.
-     * @param {string} args.PROMPT - prompt
+     * @param {string} args.CONTENT - content
+     * @param {string} args.REQUEST_TYPE - request type {'generate' | 'chat'}
      * @param {object} util - utility object provided by the runtime.
      * @returns {number} - count of tokens
      */
-    async countTokensToGenerate (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
-            return 'API key is not set.';
-        }
-        const target = util.target;
-        const runtime = this.runtime;
-        const ai = this.getAI(target);
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
-        try {
-            ai.setRequesting(true);
-            const promptText = Cast.toString(args.PROMPT);
-            const prompt = await interpretContentPartsText(promptText, target, runtime);
-            const result = await ai.countTokens(prompt);
-            return result;
-        } catch (error) {
-            return error.message;
-        } finally {
-            if (ai) ai.setRequesting(false);
-        }
-    }
-
-    /**
-     * Count tokens to chat.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.MESSAGE - message
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {number} - count of tokens
-     */
-    async countTokensToChat (args, util) {
+    async countTokensAs (args, util) {
         if (!GeminiAdapter.getApiKey()) {
             return 'API key is not set.';
         }
@@ -988,17 +973,15 @@ class GeminiBlocks {
         }
         try {
             ai.setRequesting(true);
-            const messageText = Cast.toString(args.MESSAGE);
-            const history = await ai.getChatHistory();
-            const message = await interpretContentPartsText(messageText, target, this.runtime);
-            const messageContent = {role: 'user', parts: message};
-            const contents = [...history, messageContent];
-            const result = await ai.countTokens({contents});
-            return result;
+            const contentText = Cast.toString(args.CONTENT);
+            const content = await interpretContentPartsText(contentText, target, this.runtime);
+            const requestType = args.REQUEST_TYPE;
+            const totalTokens = await ai.countTokensAs(content, requestType);
+            return totalTokens;
         } catch (error) {
             return error.message;
         } finally {
-            if (ai) ai.setRequesting(false);
+            ai.setRequesting(false);
         }
     }
 }
