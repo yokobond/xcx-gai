@@ -148,13 +148,13 @@ export default class GeminiAdapter {
 
     /**
      * Get chat history.
-     * @returns {string[]} - chat history
+     * @returns {Content[]} - chat history
      */
     getChatHistory () {
         if (!this.chatSession) {
             return [];
         }
-        return this.chatSession.getChatHistory();
+        return this.chatSession.getHistory();
     }
 
     /**
@@ -302,7 +302,7 @@ export default class GeminiAdapter {
      */
     startChat (history) {
         const model = this.getModel('gemini-pro');
-        this.chatSession = model.startChat(history);
+        this.chatSession = model.startChat({history});
     }
 
     /**

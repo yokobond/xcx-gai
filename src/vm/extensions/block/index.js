@@ -181,6 +181,35 @@ class GeminiBlocks {
                         }
                     }
                 },
+                {
+                    opcode: 'chatHistory',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.chatHistory',
+                        default: 'chat history',
+                        description: 'chat history block text for Gemini'
+                    }),
+                    disableMonitor: true,
+                    func: 'chatHistory',
+                    arguments: {
+                    }
+                },
+                {
+                    opcode: 'startChat',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.startChat',
+                        default: 'start chat with history [HISTORY]',
+                        description: 'start chat for Gemini'
+                    }),
+                    func: 'startChat',
+                    arguments: {
+                        HISTORY: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ' '
+                        }
+                    }
+                },
                 '---',
                 {
                     opcode: 'responseText',
@@ -303,23 +332,6 @@ class GeminiBlocks {
                         }
                     }
                 },
-                {
-                    opcode: 'startChat',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.startChat',
-                        default: 'start chat with history [HISTORY]',
-                        description: 'start chat for Gemini'
-                    }),
-                    func: 'startChat',
-                    arguments: {
-                        HISTORY: {
-                            type: ArgumentType.STRING,
-                            defaultValue: ' '
-                        }
-                    }
-                },
-                '---',
                 {
                     opcode: 'countTokensAs',
                     blockType: BlockType.REPORTER,
@@ -725,24 +737,34 @@ class GeminiBlocks {
     }
 
     /**
+     * Chat history.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves chat history
+     */
+    async chatHistory (args, util) {
+        const target = util.target;
+        if (!GeminiAdapter.existsForTarget(target)) {
+            return '';
+        }
+        const ai = GeminiAdapter.getForTarget(target);
+        const history = await ai.getChatHistory();
+        if (!history) {
+            return '';
+        }
+        return JSON.stringify(history);
+    }
+
+    /**
      * Start chat with history.
      * @param {object} args - the block's arguments.
      * @param {string} args.HISTORY - contents of the history of chat
      * @param {object} util - utility object provided by the runtime.
-     * @returns {Promise<void>} - a Promise that resolves when the chat is started
+     * @returns {void}
      */
-    async startChat (args, util) {
+    startChat (args, util) {
         const target = util.target;
-        const runtime = this.runtime;
-        const textHistory = JSON.parse(`[${String(args.HISTORY)}]`);
-        const interpretedHistory = textHistory.map(async contentText => {
-            if (contentText.parts) {
-                const contentParts = await interpretContentPartsText(contentText.parts, target, runtime);
-                return {role: contentText.role, parts: contentParts};
-            }
-            return contentText;
-        });
-        const history = await Promise.all(interpretedHistory);
+        const history = JSON.parse(String(args.HISTORY));
         this.getAI(target).startChat(history);
     }
 
