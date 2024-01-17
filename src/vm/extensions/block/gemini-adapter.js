@@ -7,7 +7,16 @@ let GoogleGenerativeAI;
     ));
 })();
 
-export default class GeminiAdapter {
+export const EmbeddingTaskType = {
+    TASK_TYPE_UNSPECIFIED: 'TASK_TYPE_UNSPECIFIED',
+    RETRIEVAL_QUERY: 'RETRIEVAL_QUERY',
+    RETRIEVAL_DOCUMENT: 'RETRIEVAL_DOCUMENT',
+    SEMANTIC_SIMILARITY: 'SEMANTIC_SIMILARITY',
+    CLASSIFICATION: 'CLASSIFICATION',
+    CLUSTERING: 'CLUSTERING'
+};
+
+export class GeminiAdapter {
 
     static get CUSTOM_STATE_AI () {
         return 'Gemini.ai';
@@ -315,5 +324,32 @@ export default class GeminiAdapter {
             this.startChat([]);
         }
         return this.chatSession.sendMessage(message);
+    }
+
+    /**
+     * Request embedding of content.
+     * @param {Array.<string> | string} content - content to AI
+     * @param {string} taskType - type of task {EmbeddingTaskType}
+     * @returns {Promise<Array<number>>} - a Promise that resolves when the embedding is received
+     */
+    async requestEmbedding (content, taskType) {
+        if (!content || !content.length) {
+            return [];
+        }
+        if (!this.embeddingCache) {
+            this.embeddingCache = {};
+        }
+        if (!this.embeddingCache[taskType]) {
+            this.embeddingCache[taskType] = {};
+        }
+        const cache = this.embeddingCache[taskType];
+        const key = JSON.stringify(content);
+        if (cache[key]) {
+            return cache[key];
+        }
+        const model = this.getModel('embedding-001');
+        const result = await model.embedContent(content, taskType);
+        cache[key] = result.embedding.values;
+        return result.embedding.values;
     }
 }

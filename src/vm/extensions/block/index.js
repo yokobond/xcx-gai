@@ -6,8 +6,9 @@ import translations from './translations.json';
 import blockIcon from './block-icon.png';
 
 import {DEBUG, checkDebugMode} from './dev-util.js';
-import GeminiAdapter from './gemini-adapter.js';
+import {GeminiAdapter, EmbeddingTaskType} from './gemini-adapter.js';
 import {interpretContentPartsText} from './gemini-directive.js';
+import {euclideanDistance, cosineDistance, manhattanDistance, chebyshevDistance, hammingDistance} from './math-util.js';
 
 
 const HarmCategory = {
@@ -354,6 +355,51 @@ class GeminiBlocks {
                 },
                 '---',
                 {
+                    opcode: 'embeddingFor',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.embeddingFor',
+                        default: 'embedding of [CONTENT] for [TASK_TYPE]',
+                        description: 'embed block text for Gemini'
+                    }),
+                    func: 'embeddingFor',
+                    arguments: {
+                        CONTENT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ' '
+                        },
+                        TASK_TYPE: {
+                            type: ArgumentType.STRING,
+                            menu: 'embeddingTaskTypeMenu'
+                        }
+                    }
+                },
+                {
+                    opcode: 'embeddingDistanceOf',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.embeddingDistanceOf',
+                        default: '[METRIC] distance of [VECTOR_A] and [VECTOR_B]',
+                        description: 'dot product block text for Gemini'
+                    }),
+                    func: 'embeddingDistanceOf',
+                    arguments: {
+                        METRIC: {
+                            type: ArgumentType.STRING,
+                            menu: 'distanceMetricMenu'
+                        },
+                        VECTOR_A: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '1,1,1'
+                        },
+                        VECTOR_B: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '1,2,3'
+                        }
+                    }
+                },
+                '---',
+                {
                     opcode: 'setApiKey',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
@@ -391,6 +437,14 @@ class GeminiBlocks {
                 countTokensRequestTypeMenu: {
                     acceptReporters: false,
                     items: 'getCountTokensRequestTypeMenu'
+                },
+                distanceMetricMenu: {
+                    acceptReporters: false,
+                    items: 'getEmbeddingDistanceMetricMenu'
+                },
+                embeddingTaskTypeMenu: {
+                    acceptReporters: false,
+                    items: 'getEmbeddingTaskTypeMenu'
                 }
             }
         };
@@ -564,6 +618,98 @@ class GeminiBlocks {
                     description: 'count tokens request type menu item for chat in Gemini'
                 }),
                 value: 'chat'
+            }
+        ];
+        return menu;
+    }
+
+    getEmbeddingDistanceMetricMenu () {
+        const menu = [
+            {
+                text: formatMessage({
+                    id: 'gai.distanceMetricMenu.cosine',
+                    default: 'Cosine',
+                    description: 'distance metric menu item for cosine in Gemini'
+                }),
+                value: 'cosine'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.distanceMetricMenu.euclidean',
+                    default: 'Euclidean',
+                    description: 'distance metric menu item for euclidean in Gemini'
+                }),
+                value: 'euclidean'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.distanceMetricMenu.manhattan',
+                    default: 'Manhattan',
+                    description: 'distance metric menu item for manhattan in Gemini'
+                }),
+                value: 'manhattan'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.distanceMetricMenu.chebyshev',
+                    default: 'Chebyshev',
+                    description: 'distance metric menu item for chebyshev in Gemini'
+                }),
+                value: 'chebyshev'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.distanceMetricMenu.hamming',
+                    default: 'Hamming',
+                    description: 'distance metric menu item for hamming in Gemini'
+                }),
+                value: 'hamming'
+            }
+        ];
+        return menu;
+    }
+
+    getEmbeddingTaskTypeMenu () {
+        const menu = [
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.retrievalQuery',
+                    default: 'Retrieval Query',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.RETRIEVAL_QUERY
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.retrievalDocument',
+                    default: 'Retrieval Document',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.RETRIEVAL_DOCUMENT
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.semanticSimilarity',
+                    default: 'Semantic Similarity',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.SEMANTIC_SIMILARITY
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.classification',
+                    default: 'Classification',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.CLASSIFICATION
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.clustering',
+                    default: 'Clustering',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.CLUSTERING
             }
         ];
         return menu;
@@ -957,6 +1103,77 @@ class GeminiBlocks {
             log.error(error);
             return error.message;
         }
+    }
+
+    /**
+     * Get embedding of content.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.CONTENT - content
+     * @param {string} args.TASK_TYPE - task type
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - embedding numbers array
+     */
+    async embeddingFor (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return 'API key is not set.';
+        }
+        const target = util.target;
+        const runtime = util.runtime;
+        const ai = this.getAI(target);
+        try {
+            ai.setRequesting(true);
+            const contentText = Cast.toString(args.CONTENT).trim();
+            const content = await interpretContentPartsText(contentText, target, runtime);
+            const taskType = args.TASK_TYPE;
+            const embedding = await ai.requestEmbedding(content, taskType);
+            const jsonText = JSON.stringify(embedding);
+            const result = jsonText.substring(1, jsonText.length - 1);
+            return result;
+        } catch (error) {
+            return error.message;
+        }
+    }
+
+    /**
+     * Dot product of two vectors.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.METRIC - metric {'euclidean' | 'cosine' | 'manhattan' | 'chebyshev' | 'hamming'}
+     * @param {string} args.VECTOR_A - vector A
+     * @param {string} args.VECTOR_B - vector B
+     * @returns {number} - dot product
+     */
+    embeddingDistanceOf (args) {
+        const metric = args.METRIC;
+        const vectorA = String(args.VECTOR_A).split(',')
+            .map(s => parseFloat(s));
+        const vectorB = String(args.VECTOR_B).split(',')
+            .map(s => parseFloat(s));
+        if (vectorA.length !== vectorB.length) return '';
+        if (vectorA.every(x => x === 0) || vectorB.every(x => x === 0)) return '';
+        let result;
+        switch (metric) {
+        case 'euclidean':
+            result = euclideanDistance(vectorA, vectorB);
+            break;
+        case 'cosine':
+            result = cosineDistance(vectorA, vectorB);
+            break;
+        case 'manhattan':
+            result = manhattanDistance(vectorA, vectorB);
+            break;
+        case 'chebyshev':
+            result = chebyshevDistance(vectorA, vectorB);
+            break;
+        case 'hamming':
+            result = hammingDistance(vectorA, vectorB);
+            break;
+        default:
+            throw new Error(`unknown metric: ${metric}`);
+        }
+        if (result === null) {
+            return '';
+        }
+        return result;
     }
 
     /**
