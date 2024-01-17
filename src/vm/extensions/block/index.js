@@ -6,26 +6,10 @@ import translations from './translations.json';
 import blockIcon from './block-icon.png';
 
 import {DEBUG, checkDebugMode} from './dev-util.js';
-import {GeminiAdapter, EmbeddingTaskType} from './gemini-adapter.js';
+import {GeminiAdapter, HarmCategory, HarmBlockThreshold, EmbeddingTaskType} from './gemini-adapter.js';
 import {interpretContentPartsText} from './gemini-directive.js';
 import {euclideanDistance, cosineDistance, manhattanDistance, chebyshevDistance, hammingDistance} from './math-util.js';
 
-
-const HarmCategory = {
-    HARM_CATEGORY_UNSPECIFIED: 'HARM_CATEGORY_UNSPECIFIED',
-    HARM_CATEGORY_HATE_SPEECH: 'HARM_CATEGORY_HATE_SPEECH',
-    HARM_CATEGORY_SEXUALLY_EXPLICIT: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-    HARM_CATEGORY_HARASSMENT: 'HARM_CATEGORY_HARASSMENT',
-    HARM_CATEGORY_DANGEROUS_CONTENT: 'HARM_CATEGORY_DANGEROUS_CONTENT'
-};
-
-const HarmBlockThreshold = {
-    HARM_BLOCK_THRESHOLD_UNSPECIFIED: 'HARM_BLOCK_THRESHOLD_UNSPECIFIED',
-    BLOCK_LOW_AND_ABOVE: 'BLOCK_LOW_AND_ABOVE',
-    BLOCK_MEDIUM_AND_ABOVE: 'BLOCK_MEDIUM_AND_ABOVE',
-    BLOCK_ONLY_HIGH: 'BLOCK_ONLY_HIGH',
-    BLOCK_NONE: 'BLOCK_NONE'
-};
 
 /**
  * Formatter which is used for translation.
@@ -930,6 +914,10 @@ class GeminiBlocks {
         const response = ai.getLastResponse(target);
         if (!response) {
             return '';
+        }
+        if (response.promptFeedback.blockReason) {
+            const blockReasons = response.promptFeedback.safetyRatings.filter(r => r.probablility !== 'NEGLIGIBLE');
+            return `Blocked by ${response.promptFeedback.blockReason} (${JSON.stringify(blockReasons)})`;
         }
         const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
         const candidate = response.candidates[candidateIndex - 1];
