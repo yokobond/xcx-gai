@@ -51,7 +51,7 @@ export const parseContentPartDirective = function (directive) {
 
 export const makeImagePartFromCostume = async function (costume) {
     const imageDataURL = await costumeToDataURL(costume);
-    const imagePart = {inlineData: {data: (imageDataURL.split(',')[1]), mimeType: 'image/png'}};
+    const imagePart = {type: 'dataURL', data: imageDataURL};
     return imagePart;
 };
 
@@ -65,7 +65,7 @@ export const makeImagePartFromCostume = async function (costume) {
 export const interpretContentPartDirectives = function (contentPartDirectives, requester, runtime) {
     const contentParts = contentPartDirectives.map(async directive => {
         if (!directive.startsWith('[')) {
-            return directive;
+            return {type: 'text', data: directive};
         }
         const {directiveType, spriteName, resourceName} = parseContentPartDirective(directive);
         let contentPartHolder = null;
@@ -106,7 +106,7 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
             const stage = runtime.getTargetForStage();
             return new Promise(resolve => {
                 stage.renderer.requestSnapshot(imageDataURL => {
-                    const imagePart = {inlineData: {data: (imageDataURL.split(',')[1]), mimeType: 'image/png'}};
+                    const imagePart = {type: 'dataURL', data: imageDataURL};
                     if (DEBUG) {
                         addImageAsCostume(
                             requester,

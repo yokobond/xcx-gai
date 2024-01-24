@@ -7,7 +7,7 @@ import blockIcon from './block-icon.png';
 
 import {DEBUG, checkDebugMode} from './dev-util.js';
 import {GeminiAdapter, HarmCategory, HarmBlockThreshold, EmbeddingTaskType} from './gemini-adapter.js';
-import {interpretContentPartsText} from './gemini-directive.js';
+import {interpretContentPartsText} from './content-directive.js';
 import {euclideanDistance, cosineDistance, manhattanDistance, chebyshevDistance, hammingDistance} from './math-util.js';
 
 

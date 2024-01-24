@@ -306,16 +306,27 @@ export class GeminiAdapter {
      */
     requestGenerate (prompt) {
         let type = '';
-        if (typeof prompt === 'string') {
-            // prompt is a string
-            type = 'gemini-pro';
-        } else if (prompt.every(p => typeof p === 'string')) {
+        if (prompt.every(p => p.type === 'text')) {
             // prompt is a list of strings
             type = 'gemini-pro';
         } else {
             // prompt is multimodal
             type = 'gemini-pro-vision';
         }
+        prompt = prompt.map(p => {
+            if (p.type === 'text') {
+                return {text: p.data};
+            } else if (p.type === 'dataURL') {
+                return {
+                    inlineData:
+                    {
+                        data: (p.data.split(',')[1]),
+                        mimeType: p.data.substring(p.data.indexOf(':') + 1, p.data.indexOf(';'))
+                    }
+                };
+            }
+            return p;
+        });
         const model = this.getModel(type);
         return model.generateContent(prompt);
     }
