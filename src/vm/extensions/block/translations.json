@@ -2,7 +2,7 @@
   "en": {
     "gai.name": "GAI",
     "gai.generate": "generate [PROMPT]",
-    "gai.generateDefault": "The position of [costume:Sprite1:costume1] in [snapshot]?",
+    "gai.generateDefault": "What is drawn in [costume:Sprite1:costume1] and [snapshot] for each?",
     "gai.chat": "chat [MESSAGE]",
     "gai.chatDefault": "Hello Gemini!",
     "gai.chatHistory": "chat history",
@@ -53,7 +53,7 @@
   "ja": {
     "gai.name": "GAI",
     "gai.generate": "生成[PROMPT]",
-    "gai.generateDefault": "[costume:スプライト1:コスチューム1]は[snapshot]のどこにいますか?",
+    "gai.generateDefault": "[costume:スプライト1:コスチューム1]と[snapshot]は、それぞれ何が描かれていますか?",
     "gai.chat": "対話[MESSAGE]",
     "gai.chatDefault": "こんにちはジェミニ！",
     "gai.chatHistory": "対話履歴",
@@ -104,7 +104,7 @@
   "ja-Hira": {
     "gai.name": "GAI",
     "gai.generate": "せいせい[PROMPT]",
-    "gai.generateDefault": "[costume:スプライト1:コスチューム1]は[snapshot]のどこにいますか?",
+    "gai.generateDefault": "[costume:スプライト1:コスチューム1]と[snapshot]は、それぞれなにがえがかれていますか?",
     "gai.chat": "たいわ[MESSAGE]",
     "gai.chatDefault": "こんにちはジェミニ！",
     "gai.chatHistory": "たいわ の きろく",
