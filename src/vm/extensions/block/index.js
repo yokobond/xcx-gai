@@ -836,9 +836,7 @@ class GeminiBlocks {
         } catch (error) {
             return error.message;
         } finally {
-            if (ai) {
-                ai.setRequesting(false);
-            }
+            ai.setRequesting(false);
         }
     }
 
@@ -1108,6 +1106,10 @@ class GeminiBlocks {
         const target = util.target;
         const runtime = util.runtime;
         const ai = this.getAI(target);
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
         try {
             ai.setRequesting(true);
             const contentText = Cast.toString(args.CONTENT).trim();
@@ -1119,6 +1121,8 @@ class GeminiBlocks {
             return result;
         } catch (error) {
             return error.message;
+        } finally {
+            ai.setRequesting(false);
         }
     }
 
