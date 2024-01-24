@@ -44,7 +44,7 @@ export const cosineDistance = function (vectorA, vectorB) {
     if (dotProd === null) return null;
     const normA = Math.hypot(...vectorA);
     const normB = Math.hypot(...vectorB);
-    return dotProd / (normA * normB);
+    return (1 - (dotProd / (normA * normB)));
 };
 
 /**
@@ -53,7 +53,6 @@ export const cosineDistance = function (vectorA, vectorB) {
  * @param {number[]} vectorB - vector B
  * @returns {number} - manhattan distance
  * @see {@link https://en.wikipedia.org/wiki/Taxicab_geometry}
- * @see {@link https://xlinux.nist.gov/dads/HTML/manhattanDistance.html}
  */
 export const manhattanDistance = function (vectorA, vectorB) {
     return zipWith((a, b) => Math.abs(a - b), vectorA, vectorB).reduce((a, b) => a + b, 0);
