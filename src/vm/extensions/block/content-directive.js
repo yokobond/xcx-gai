@@ -16,7 +16,7 @@ const convertToHalfWidth = function (str) {
  * @returns {string[]} - content part directives
  */
 export const parseContentPartsText = function (contentPartsText) {
-    const regex = /(.*?)(\[costume[^[\]]*\]|\[snapshot\])|(.+)/gi;
+    const regex = /(.*?)(\[costume[^[\]]*\]|\[snapshot\]|\[var[^[\]]*\]|\[list[^[\]]*\])|(.+)/gi;
     const contentPartDirectives = [];
     let match;
     while ((match = regex.exec(contentPartsText)) !== null) {
@@ -30,29 +30,25 @@ export const parseContentPartsText = function (contentPartsText) {
 /**
  * Read a content part directive.
  * @param {string} directive - content part directive
- * @returns {object} - directive type, sprite name, resource name
+ * @returns {object} - parsed content part directive
  */
 export const parseContentPartDirective = function (directive) {
     let directiveType = '';
     let spriteName = '';
     let resourceName = '';
-    if (directive.toLowerCase() === '[snapshot]') {
-        directiveType = 'snapshot';
-    } else if (directive.includes(':')) {
+    let resourceArgs = [];
+    if (directive.includes(':')) {
         const parts = directive.slice(1, -1).split(':');
         if (parts[0]) directiveType = parts[0];
         if (parts[1]) spriteName = parts[1];
         if (parts[2]) resourceName = parts[2];
+        if (parts.length > 3) {
+            resourceArgs = parts.slice(3);
+        }
     } else {
-        spriteName = directive.slice(1, -1);
+        directiveType = directive.slice(1, -1);
     }
-    return {directiveType, spriteName, resourceName};
-};
-
-export const makeImagePartFromCostume = async function (costume) {
-    const imageDataURL = await costumeToDataURL(costume);
-    const imagePart = {type: 'dataURL', data: imageDataURL};
-    return imagePart;
+    return {directiveType, spriteName, resourceName, resourceArgs};
 };
 
 /**
@@ -63,11 +59,11 @@ export const makeImagePartFromCostume = async function (costume) {
  * @returns {Promise<object[]>} - a Promise that resolves content parts
  */
 export const interpretContentPartDirectives = function (contentPartDirectives, requester, runtime) {
-    const contentParts = contentPartDirectives.map(async directive => {
+    const contentPartPromises = contentPartDirectives.map(async directive => {
         if (!directive.startsWith('[')) {
             return {type: 'text', data: directive};
         }
-        const {directiveType, spriteName, resourceName} = parseContentPartDirective(directive);
+        const {directiveType, spriteName, resourceName, resourceArgs} = parseContentPartDirective(directive);
         let contentPartHolder = null;
         if (spriteName === '') {
             contentPartHolder = requester;
@@ -78,7 +74,7 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
         }
         if (!contentPartHolder) {
             // sprite not found
-            return directive;
+            return {type: 'text', data: directive};
         }
         if (directiveType === 'costume') {
             let costume = contentPartHolder.getCostumes().find(c => c.name === resourceName);
@@ -100,13 +96,12 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
             if (!costume) {
                 costume = contentPartHolder.getCostumes()[contentPartHolder.currentCostume];
             }
-            const imagePart = await makeImagePartFromCostume(costume);
-            return imagePart;
+            const imageDataURL = await costumeToDataURL(costume);
+            return {type: 'dataURL', data: imageDataURL};
         } else if (directiveType === 'snapshot') {
             const stage = runtime.getTargetForStage();
             return new Promise(resolve => {
                 stage.renderer.requestSnapshot(imageDataURL => {
-                    const imagePart = {type: 'dataURL', data: imageDataURL};
                     if (DEBUG) {
                         addImageAsCostume(
                             requester,
@@ -118,13 +113,51 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
                             console.error(e);
                         });
                     }
-                    resolve(imagePart);
+                    resolve({type: 'dataURL', data: imageDataURL});
                 });
             });
+        } else if (directiveType === 'var') {
+            let variable = contentPartHolder.lookupVariableByNameAndType(resourceName);
+            if (!variable) {
+                const defaultVarName = contentPartHolder.getAllVariableNamesInScopeByType()[0];
+                variable = contentPartHolder.lookupVariableByNameAndType(defaultVarName);
+            }
+            const varValue = variable ? variable.value.toString() : '';
+            if (varValue.startsWith('data:')) {
+                return {type: 'dataURL', data: varValue};
+            }
+            return {type: 'text', data: varValue};
+        } else if (directiveType === 'list') {
+            let listIndex = parseInt(resourceArgs[0], 10);
+            if (listIndex === 0 || isNaN(listIndex)) {
+                return null;
+            }
+            const list = contentPartHolder.lookupVariableByNameAndType(resourceName, 'list');
+            if (!list || list.length === 0) {
+                return null;
+            }
+            if (listIndex > list.length) {
+                return null;
+            }
+            if (listIndex > 0) {
+                listIndex--;
+            } else {
+                listIndex = list.length + listIndex;
+                if (listIndex < 0) {
+                    return null;
+                }
+            }
+            const listValue = list[listIndex].value.toString();
+            if (listValue.startsWith('data:')) {
+                return {type: 'dataURL', data: listValue};
+            }
+            return {type: 'text', data: listValue};
         }
-        throw new Error(`Unknown directive: ${directive}`);
+        // unknown directive type
+        return {type: 'text', data: directive};
     });
-    return Promise.all(contentParts);
+    return Promise.all(contentPartPromises)
+        .then(parts => parts.filter(p => p !== null));
 };
 
 /**
