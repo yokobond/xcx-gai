@@ -262,58 +262,12 @@ export class GeminiAdapter {
     }
 
     /**
-     * Send generator type prompt to AI and get stream.
-     * @param {Array.<string | object>} prompt - prompt to AI
-     * @returns {object} result - a Promise that resolves when the prompt is sent
-     * @returns {AsyncGenerator<EnhancedGenerateContentResponse>} result.stream - stream of responses
-     * @returns {Promise<EnhancedGenerateContentResponse>}
-     *          result.response - a Promise that resolves when the all responses are received
+     * Convert content parts to Gemini AI format.
+     * @param {Array.<string | object>} contentParts - content to convert
+     * @returns {Array.<string | object>} - content to Gemini AI
      */
-    requestGeneratorStream (prompt) {
-        let type = '';
-        if (typeof prompt === 'string') {
-            // prompt is a string
-            type = 'gemini-pro';
-        } else if (prompt.every(p => typeof p === 'string')) {
-            // prompt is a list of strings
-            type = 'gemini-pro';
-        } else {
-            // prompt is multimodal
-            type = 'gemini-pro-vision';
-        }
-        const model = this.getModel(type);
-        return model.generateContentStream(prompt);
-    }
-
-    /**
-     * Send chat type prompt to AI and get stream.
-     * @param {Array.<string | object>} prompt - prompt to AI
-     * @returns {AsyncGenerator<EnhancedGenerateContentResponse>} - stream of responses
-     * @returns {Promise<EnhancedGenerateContentResponse>} - a Promise that resolves when the all responses are received
-     * @async
-     */
-    requestChatStream (prompt) {
-        if (!this.chatSession) {
-            this.startChat([]);
-        }
-        return this.chatSession.sendMessageStream(prompt);
-    }
-
-    /**
-     * Send generator type prompt to AI.
-     * @param {Array.<string | object>} prompt - prompt to AI
-     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the prompt is sent
-     */
-    requestGenerate (prompt) {
-        let type = '';
-        if (prompt.every(p => p.type === 'text')) {
-            // prompt is a list of strings
-            type = 'gemini-pro';
-        } else {
-            // prompt is multimodal
-            type = 'gemini-pro-vision';
-        }
-        prompt = prompt.map(p => {
+    convertContentParts (contentParts) {
+        return contentParts.map(p => {
             if (p.type === 'text') {
                 return {text: p.data};
             } else if (p.type === 'dataURL') {
@@ -327,8 +281,29 @@ export class GeminiAdapter {
             }
             return p;
         });
+    }
+
+    /**
+     * Send generator type prompt to AI.
+     * @param {Array.<string | object>} contentParts - prompt to AI
+     * @param {boolean} isStreaming - whether to get stream
+     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the prompt is sent
+     */
+    requestGenerate (contentParts, isStreaming) {
+        let type = '';
+        if (contentParts.every(p => p.type === 'text')) {
+            // prompt is a list of strings
+            type = 'gemini-pro';
+        } else {
+            // prompt is multimodal
+            type = 'gemini-pro-vision';
+        }
         const model = this.getModel(type);
-        return model.generateContent(prompt);
+        const geminiContentParts = this.convertContentParts(contentParts);
+        if (isStreaming) {
+            return model.generateContentStream(geminiContentParts);
+        }
+        return model.generateContent(geminiContentParts);
     }
 
     /**
@@ -343,26 +318,38 @@ export class GeminiAdapter {
 
     /**
      * Send chat message to AI.
-     * @param {string} message - message to AI
+     * @param {string} contentParts - message to AI
+     * @param {boolean} isStreaming - whether to get stream
      * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the message is sent
      */
-    requestChat (message) {
+    requestChat (contentParts, isStreaming) {
         if (!this.chatSession) {
             this.startChat([]);
         }
-        return this.chatSession.sendMessage(message);
+        const geminiContentParts = this.convertContentParts(contentParts);
+        if (isStreaming) {
+            return this.chatSession.sendMessageStream(geminiContentParts);
+        }
+        return this.chatSession.sendMessage(geminiContentParts);
     }
 
     /**
      * Request embedding of content.
-     * @param {Array.<string> | string} content - content to AI
+     * @param {Array.<string> | string} contentParts - content to AI
      * @param {string} taskType - type of task {EmbeddingTaskType}
      * @returns {Promise<Array<number>>} - a Promise that resolves when the embedding is received
      */
-    async requestEmbedding (content, taskType) {
-        if (!content || !content.length) {
+    async requestEmbedding (contentParts, taskType) {
+        if (!contentParts || !contentParts.length) {
             return [];
         }
+        const toEmbed = contentParts.reduce((acc, p) => {
+            if (p.type === 'text') {
+                return acc + p.data;
+            }
+            // ignore non-text content
+            return acc;
+        }, '');
         if (!this.embeddingCache) {
             this.embeddingCache = {};
         }
@@ -370,12 +357,12 @@ export class GeminiAdapter {
             this.embeddingCache[taskType] = {};
         }
         const cache = this.embeddingCache[taskType];
-        const key = JSON.stringify(content);
+        const key = toEmbed;
         if (cache[key]) {
             return cache[key];
         }
         const model = this.getModel('embedding-001');
-        const result = await model.embedContent(content, taskType);
+        const result = await model.embedContent(toEmbed, taskType);
         cache[key] = result.embedding.values;
         return result.embedding.values;
     }

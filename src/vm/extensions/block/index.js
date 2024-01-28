@@ -768,9 +768,9 @@ class GeminiBlocks {
             const prompt = await interpretContentPartsText(promptText, target, runtime);
             let streamingResult;
             if (requestType === 'generate') {
-                streamingResult = await ai.requestGeneratorStream(prompt);
+                streamingResult = await ai.requestGenerate(prompt, true);
             } else if (requestType === 'chat') {
-                streamingResult = await ai.requestChatStream(prompt);
+                streamingResult = await ai.requestChat(prompt, true);
             } else {
                 throw new Error(`unknown request type: ${requestType}`);
             }
@@ -823,9 +823,9 @@ class GeminiBlocks {
             const prompt = await interpretContentPartsText(promptText, target, runtime);
             let result;
             if (requestType === 'generate') {
-                result = await ai.requestGenerate(prompt);
+                result = await ai.requestGenerate(prompt, false);
             } else if (requestType === 'chat') {
-                result = await ai.requestChat(prompt);
+                result = await ai.requestChat(prompt, false);
             } else {
                 throw new Error(`unknown request type: ${requestType}`);
             }
