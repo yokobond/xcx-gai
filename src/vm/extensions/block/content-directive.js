@@ -16,7 +16,7 @@ const convertToHalfWidth = function (str) {
  * @returns {string[]} - content part directives
  */
 export const parseContentPartsText = function (contentPartsText) {
-    const regex = /(.*?)(\[costume[^[\]]*\]|\[snapshot\]|\[var[^[\]]*\]|\[list[^[\]]*\])|(.+)/gi;
+    const regex = /(.*?)(\[costume[^[\]]*\]|\[snapshot\]|\[var[^[\]]*\]|\[list[^[\]]*\]|\[backdrop[^[\]]*\])|(.+)/gi;
     const contentPartDirectives = [];
     let match;
     while ((match = regex.exec(contentPartsText)) !== null) {
@@ -34,21 +34,19 @@ export const parseContentPartsText = function (contentPartsText) {
  */
 export const parseContentPartDirective = function (directive) {
     let directiveType = '';
-    let spriteName = '';
     let resourceName = '';
     let resourceArgs = [];
     if (directive.includes(':')) {
         const parts = directive.slice(1, -1).split(':');
         if (parts[0]) directiveType = parts[0];
-        if (parts[1]) spriteName = parts[1];
-        if (parts[2]) resourceName = parts[2];
-        if (parts.length > 3) {
-            resourceArgs = parts.slice(3);
+        if (parts[1]) resourceName = parts[1];
+        if (parts.length > 2) {
+            resourceArgs = parts.slice(2);
         }
     } else {
         directiveType = directive.slice(1, -1);
     }
-    return {directiveType, spriteName, resourceName, resourceArgs};
+    return {directiveType, resourceName, resourceArgs};
 };
 
 /**
@@ -63,14 +61,10 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
         if (!directive.startsWith('[')) {
             return {type: 'text', data: directive};
         }
-        const {directiveType, spriteName, resourceName, resourceArgs} = parseContentPartDirective(directive);
-        let contentPartHolder = null;
-        if (spriteName === '') {
-            contentPartHolder = requester;
-        } else if (spriteName.toLowerCase() === 'stage' || spriteName === 'ステージ') {
+        const {directiveType, resourceName, resourceArgs} = parseContentPartDirective(directive);
+        let contentPartHolder = requester;
+        if (directiveType === 'backdrop') {
             contentPartHolder = runtime.getTargetForStage();
-        } else {
-            contentPartHolder = runtime.getSpriteTargetByName(spriteName);
         }
         if (!contentPartHolder) {
             // sprite not found

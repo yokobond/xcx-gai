@@ -195,6 +195,19 @@ class GeminiBlocks {
                         }
                     }
                 },
+                {
+                    opcode: 'snapshotDataURL',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.toDataURL',
+                        default: 'snapshot data',
+                        description: 'data URL block text for Gemini'
+                    }),
+                    func: 'snapshotDataURL',
+                    arguments: {
+                    }
+                },
                 '---',
                 {
                     opcode: 'responseText',
@@ -894,6 +907,16 @@ class GeminiBlocks {
         const target = util.target;
         const history = JSON.parse(String(args.HISTORY));
         this.getAI(target).startChat(history);
+    }
+
+    snapshotDataURL (args, util) {
+        const runtime = util.runtime;
+        const stage = runtime.getTargetForStage();
+        return new Promise(resolve => {
+            stage.renderer.requestSnapshot(imageDataURL => {
+                resolve(imageDataURL);
+            });
+        });
     }
 
     /**
