@@ -6,8 +6,34 @@ import {DEBUG} from './dev-util.js';
  * @param {string} str - string to convert
  * @returns {string} - converted string
  */
-const convertToHalfWidth = function (str) {
-    return str.replace(/[Ａ-Ｚａ-ｚ０-９！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+const convertToHalfWidthInt = function (str) {
+    return str.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        .replace(/[-－﹣−‐⁃‑‒–—﹘―⎯⏤ーｰ─━]/g, '-');
+};
+
+/**
+ * Convert array index from one-base to zero-base.
+ * If index is negative, it is converted from the end of the array.
+ * @param {number} index - one-base array index
+ * @param {number} length - array length
+ * @returns {number | undefined} - converted array index
+ */
+const convertToZeroBaseIndex = function (index, length) {
+    if (length === 0) {
+        return;
+    }
+    if (index > length) {
+        return;
+    }
+    if (index < 0) {
+        index = length + index;
+        if (index < 0) {
+            return;
+        }
+    } else {
+        index--;
+    }
+    return index;
 };
 
 /**
@@ -71,24 +97,19 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
             return {type: 'text', data: directive};
         }
         if (directiveType === 'costume') {
-            let costume = contentPartHolder.getCostumes().find(c => c.name === resourceName);
+            const costumeArray = contentPartHolder.getCostumes();
+            let costume = costumeArray.find(c => c.name === resourceName);
             if (!costume) {
-                let costumeNumber = convertToHalfWidth(resourceName);
-                if (costumeNumber.startsWith('#') && costumeNumber.length > 1) {
-                    costumeNumber = parseInt(costumeNumber.slice(1), 10);
-                    if (!isNaN(costumeNumber)) {
-                        costume = contentPartHolder.getCostumes()[
-                            Math.max(
-                                0,
-                                Math.min(
-                                    costumeNumber - 1,
-                                    contentPartHolder.getCostumes().length - 1))
-                        ];
+                const costumeNumber = parseInt(convertToHalfWidthInt(resourceName), 10);
+                if (!isNaN(costumeNumber) && costumeNumber !== 0) {
+                    const costumeIndex = convertToZeroBaseIndex(costumeNumber, costumeArray.length);
+                    if (typeof costumeIndex !== 'undefined') {
+                        costume = costumeArray[costumeIndex];
                     }
                 }
             }
             if (!costume) {
-                costume = contentPartHolder.getCostumes()[contentPartHolder.currentCostume];
+                costume = costumeArray[contentPartHolder.currentCostume];
             }
             const imageDataURL = await costumeToDataURL(costume);
             return {type: 'dataURL', data: imageDataURL};
@@ -130,16 +151,9 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
             if (!list || list.length === 0) {
                 return null;
             }
-            if (listIndex > list.length) {
+            listIndex = convertToZeroBaseIndex(listIndex, list.length);
+            if (typeof listIndex === 'undefined') {
                 return null;
-            }
-            if (listIndex > 0) {
-                listIndex--;
-            } else {
-                listIndex = list.length + listIndex;
-                if (listIndex < 0) {
-                    return null;
-                }
             }
             const listValue = list[listIndex].value.toString();
             if (listValue.startsWith('data:')) {
