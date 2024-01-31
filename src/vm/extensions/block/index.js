@@ -140,10 +140,55 @@ class GeminiBlocks {
                             type: ArgumentType.STRING,
                             defaultValue: formatMessage({
                                 id: 'gai.generateDefault',
-                                default: 'The position of [costume:Sprite1:costume1] in [snapshot]?',
+                                default: 'The position of [costume:costume1] in [snapshot]?',
                                 description: 'default generate prompt for Gemini'
                             })
                         }
+                    }
+                },
+                {
+                    opcode: 'costumeDirective',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.costumeDirective',
+                        default: 'costume data [COSTUME]'
+                    }),
+                    func: 'costumeDirective',
+                    arguments: {
+                        COSTUME: {
+                            type: ArgumentType.STRING,
+                            menu: 'costumeMenu'
+                        }
+                    }
+                },
+                {
+                    opcode: 'backdropDirective',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.backdropDirective',
+                        default: 'backdrop data [BACKDROP]'
+                    }),
+                    func: 'backdropDirective',
+                    arguments: {
+                        BACKDROP: {
+                            type: ArgumentType.STRING,
+                            menu: 'backdropMenu'
+                        }
+                    }
+                },
+                {
+                    opcode: 'snapshotDirective',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.snapshotDirective',
+                        default: 'snapshot data',
+                        description: 'snapshotDirective block text for Gemini'
+                    }),
+                    func: 'snapshotDirective',
+                    arguments: {
                     }
                 },
                 {
@@ -193,19 +238,6 @@ class GeminiBlocks {
                             type: ArgumentType.STRING,
                             defaultValue: ' '
                         }
-                    }
-                },
-                {
-                    opcode: 'snapshotDataURL',
-                    blockType: BlockType.REPORTER,
-                    disableMonitor: true,
-                    text: formatMessage({
-                        id: 'gai.toDataURL',
-                        default: 'snapshot data',
-                        description: 'data URL block text for Gemini'
-                    }),
-                    func: 'snapshotDataURL',
-                    arguments: {
                     }
                 },
                 '---',
@@ -415,6 +447,14 @@ class GeminiBlocks {
                 }
             ],
             menus: {
+                costumeMenu: {
+                    acceptReporters: true,
+                    items: 'getCostumeMenu'
+                },
+                backdropMenu: {
+                    acceptReporters: true,
+                    items: 'getBackdropMenu'
+                },
                 harmCategorySettingMenu: {
                     acceptReporters: false,
                     items: 'getHarmCategorySettingMenu'
@@ -445,6 +485,35 @@ class GeminiBlocks {
                 }
             }
         };
+    }
+
+    getCostumeMenu () {
+        const menu = [];
+        const target = this.runtime.getEditingTarget();
+        if (!target) {
+            return menu;
+        }
+        const costumes = target.sprite.costumes;
+        for (let i = 0; i < costumes.length; i++) {
+            menu.push({
+                text: costumes[i].name,
+                value: costumes[i].name
+            });
+        }
+        return menu;
+    }
+
+    getBackdropMenu () {
+        const menu = [];
+        const target = this.runtime.getTargetForStage();
+        const backdrops = target.sprite.costumes;
+        for (let i = 0; i < backdrops.length; i++) {
+            menu.push({
+                text: backdrops[i].name,
+                value: backdrops[i].name
+            });
+        }
+        return menu;
     }
 
     getHarmCategoryMenu () {
@@ -865,6 +934,19 @@ class GeminiBlocks {
         return this.requestContent({promptText, requestType: 'generate'}, util);
     }
 
+
+    costumeDirective (args) {
+        return `[costume:${args.COSTUME}]`;
+    }
+
+    backdropDirective (args) {
+        return `[backdrop:${args.BACKDROP}]`;
+    }
+
+    snapshotDirective () {
+        return '[snapshot]';
+    }
+
     /**
      * Chat to AI. Start chat if not started.
      * @param {object} args - the block's arguments.
@@ -907,16 +989,6 @@ class GeminiBlocks {
         const target = util.target;
         const history = JSON.parse(String(args.HISTORY));
         this.getAI(target).startChat(history);
-    }
-
-    snapshotDataURL (args, util) {
-        const runtime = util.runtime;
-        const stage = runtime.getTargetForStage();
-        return new Promise(resolve => {
-            stage.renderer.requestSnapshot(imageDataURL => {
-                resolve(imageDataURL);
-            });
-        });
     }
 
     /**
