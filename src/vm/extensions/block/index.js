@@ -975,7 +975,7 @@ class GeminiBlocks {
         if (!history) {
             return '';
         }
-        return JSON.stringify(history);
+        return JSON.stringify(history).slice(1, -1);
     }
 
     /**
