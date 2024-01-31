@@ -429,6 +429,31 @@ class GeminiBlocks {
                 },
                 '---',
                 {
+                    opcode: 'askApiKey',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.askApiKey',
+                        default: 'ask API key',
+                        description: 'ask API key for Gemini'
+                    }),
+                    func: 'askApiKey',
+                    arguments: {
+                    }
+                },
+                {
+                    opcode: 'apiKey',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.apiKey',
+                        default: 'API key',
+                        description: 'API key for Gemini'
+                    }),
+                    func: 'apiKey',
+                    arguments: {
+                    }
+                },
+                {
                     opcode: 'setApiKey',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
@@ -1280,6 +1305,14 @@ class GeminiBlocks {
     }
 
     /**
+     * Get API key.
+     * @returns {string} - API key
+     */
+    apiKey () {
+        return GeminiAdapter.getApiKey() ? GeminiAdapter.getApiKey() : '';
+    }
+
+    /**
      * Count tokens as request type.
      * @param {object} args - the block's arguments.
      * @param {string} args.CONTENT - content
@@ -1309,6 +1342,117 @@ class GeminiBlocks {
         } finally {
             ai.setRequesting(false);
         }
+    }
+
+    /**
+     * Open dialog to input API key by user.
+     * @returns {Promise<string>?} - a Promise that resolves API key
+     */
+    openApiKeyDialog () {
+        if (this.apiKeyDialogOpened) {
+            // prevent to open multiple dialogs
+            return null;
+        }
+        this.apiKeyDialogOpened = true;
+        const inputDialog = document.createElement('dialog');
+        inputDialog.style.padding = '0px';
+        const dialogFace = document.createElement('div');
+        dialogFace.style.padding = '16px';
+        inputDialog.appendChild(dialogFace);
+        const label = document.createTextNode(formatMessage({
+            id: 'gai.apiKeyDialog.message',
+            default: 'set API key',
+            description: 'label of API key input dialog for gemini'
+        }));
+        dialogFace.appendChild(label);
+        // Dialog form
+        const apiKeyForm = document.createElement('form');
+        apiKeyForm.setAttribute('method', 'dialog');
+        apiKeyForm.style.margin = '8px';
+        apiKeyForm.addEventListener('submit', e => {
+            e.preventDefault();
+        });
+        dialogFace.appendChild(apiKeyForm);
+        // API select
+        const apiKeyInput = document.createElement('input');
+        apiKeyInput.setAttribute('type', 'text');
+        apiKeyInput.setAttribute('id', 'apiKeyInput');
+        apiKeyInput.setAttribute('size', '50');
+        apiKeyInput.setAttribute('value', '');
+        apiKeyForm.appendChild(apiKeyInput);
+        // Cancel button
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = formatMessage({
+            id: 'gai.apiKeyDialog.cancel',
+            default: 'cancel',
+            description: 'cancel button on groupID input dialog for gemini'
+        });
+        cancelButton.style.margin = '8px';
+        dialogFace.appendChild(cancelButton);
+        // OK button
+        const confirmButton = document.createElement('button');
+        confirmButton.textContent = formatMessage({
+            id: 'gai.apiKeyDialog.set',
+            default: 'set',
+            description: 'set button on API key input dialog for gemini'
+        });
+        confirmButton.style.margin = '8px';
+        dialogFace.appendChild(confirmButton);
+        return new Promise(
+            resolve => {
+                // Add onClick action
+                const confirmed = () => {
+                    const inputValue = apiKeyInput.value.trim();
+                    if (inputValue === '') {
+                        return; // do not exit dialog
+                    }
+                    resolve(inputValue);
+                };
+                confirmButton.onclick = confirmed;
+                const canceled = () => {
+                    resolve('');
+                };
+                cancelButton.onclick = canceled;
+                inputDialog.addEventListener('keydown', e => {
+                    if (e.code === 'Enter') {
+                        confirmed();
+                    }
+                    if (e.code === 'Escape') {
+                        canceled();
+                    }
+                });
+                document.body.appendChild(inputDialog);
+                inputDialog.showModal();
+            })
+            .finally(() => {
+                document.body.removeChild(inputDialog);
+                this.apiKeyDialogOpened = false;
+            });
+    }
+
+    /**
+     * Ask user to input API key.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+    askApiKey (args, util) {
+        if (this.apiKeyDialogOpened) {
+            util.yield();
+            return;
+        }
+        const target = util.target;
+        return this.openApiKeyDialog()
+            .then(apiKey => {
+                if (!apiKey || apiKey === '') {
+                    return '';
+                }
+                GeminiAdapter.setApiKey(apiKey);
+                if (GeminiAdapter.existsForTarget(target)) {
+                    GeminiAdapter.removeForTarget(target);
+                }
+                return apiKey;
+            });
     }
 }
 
