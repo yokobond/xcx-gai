@@ -217,34 +217,6 @@ export class GeminiAdapter {
     }
 
     /**
-     * Set streaming object from AI.
-     * @param {object} streaming - streaming object
-     * @returns {void}
-     */
-    setStreaming (streaming) {
-        this.streaming = streaming;
-    }
-
-    /**
-     * Check if streaming object exists.
-     * @returns {boolean} - whether streaming object exists
-     */
-    isStreaming () {
-        return !!this.streaming;
-    }
-
-    /**
-     * Get streaming object from AI.
-     * @returns {object} - streaming object
-     * @returns {AsyncGenerator<EnhancedGenerateContentResponse>} result.stream - stream of responses
-     * @returns {Promise<EnhancedGenerateContentResponse>}
-     *         result.response - a Promise that resolves when the all responses are received
-     */
-    getStreaming () {
-        return this.streaming;
-    }
-
-    /**
      * Set last partial response from AI.
      * @param {EnhancedGenerateContentResponse} response - last partial response
      * @returns {void}
