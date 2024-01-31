@@ -1009,7 +1009,7 @@ class GeminiBlocks {
             return '';
         }
         if (response.promptFeedback.blockReason) {
-            const blockReasons = response.promptFeedback.safetyRatings.filter(r => r.probablility !== 'NEGLIGIBLE');
+            const blockReasons = response.promptFeedback.safetyRatings.filter(r => r.probability !== 'NEGLIGIBLE');
             return `Blocked by ${response.promptFeedback.blockReason} (${JSON.stringify(blockReasons)})`;
         }
         const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
