@@ -959,19 +959,6 @@ class GeminiBlocks {
         return this.requestContent({promptText, requestType: 'generate'}, util);
     }
 
-
-    costumeDirective (args) {
-        return `[costume:${args.COSTUME}]`;
-    }
-
-    backdropDirective (args) {
-        return `[backdrop:${args.BACKDROP}]`;
-    }
-
-    snapshotDirective () {
-        return '[snapshot]';
-    }
-
     /**
      * Chat to AI. Start chat if not started.
      * @param {object} args - the block's arguments.
@@ -982,6 +969,34 @@ class GeminiBlocks {
     chat (args, util) {
         const promptText = Cast.toString(args.MESSAGE);
         return this.requestContent({promptText, requestType: 'chat'}, util);
+    }
+
+    /**
+     * Return costume data directive.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.COSTUME - costume name
+     * @returns {string} - costume data directive
+     */
+    costumeDirective (args) {
+        return `[costume:${args.COSTUME}]`;
+    }
+
+    /**
+     * Return backdrop data directive.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.BACKDROP - backdrop name
+     * @returns {string} - backdrop data directive
+     */
+    backdropDirective (args) {
+        return `[backdrop:${args.BACKDROP}]`;
+    }
+
+    /**
+     * Return snapshot data directive.
+     * @returns {string} - snapshot data directive
+     */
+    snapshotDirective () {
+        return '[snapshot]';
     }
 
     /**
