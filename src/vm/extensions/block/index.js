@@ -254,7 +254,7 @@ class GeminiBlocks {
                     arguments: {
                         CANDIDATE_INDEX: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: 1
+                            menu: 'responseCandidateIndexMenu'
                         }
                     }
                 },
@@ -271,7 +271,7 @@ class GeminiBlocks {
                     arguments: {
                         CANDIDATE_INDEX: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: 1
+                            menu: 'responseCandidateIndexMenu'
                         },
                         HARM_CATEGORY: {
                             type: ArgumentType.STRING,
@@ -480,6 +480,10 @@ class GeminiBlocks {
                     acceptReporters: true,
                     items: 'getBackdropMenu'
                 },
+                responseCandidateIndexMenu: {
+                    acceptReporters: true,
+                    items: 'getResponseCandidateIndexMenu'
+                },
                 harmCategorySettingMenu: {
                     acceptReporters: false,
                     items: 'getHarmCategorySettingMenu'
@@ -536,6 +540,30 @@ class GeminiBlocks {
             menu.push({
                 text: backdrops[i].name,
                 value: backdrops[i].name
+            });
+        }
+        return menu;
+    }
+
+    getResponseCandidateIndexMenu () {
+        const menu = [{text: '1', value: '1'}];
+        const target = this.runtime.getEditingTarget();
+        if (!target) {
+            return menu;
+        }
+        const ai = this.getAI(target);
+        const modelParams = ai.getModelParams();
+        if (!modelParams) {
+            return menu;
+        }
+        if (!modelParams.generationConfig) {
+            return menu;
+        }
+        const candidateCount = modelParams.generationConfig.candidateCount;
+        for (let i = 1; i < candidateCount; i++) {
+            menu.push({
+                text: String(i + 1),
+                value: String(i + 1)
             });
         }
         return menu;
