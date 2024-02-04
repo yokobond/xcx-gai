@@ -42,7 +42,8 @@ const convertToZeroBaseIndex = function (index, length) {
  * @returns {string[]} - content part directives
  */
 export const parseContentPartsText = function (contentPartsText) {
-    const regex = /(.*?)(\[costume[^[\]]*\]|\[snapshot\]|\[var[^[\]]*\]|\[list[^[\]]*\]|\[backdrop[^[\]]*\])|(.+)/gi;
+    const regex =
+    /(.*?)(\[costume[^[\]]*\]|\[snapshot\]|\[var[^[\]]*\]|\[list[^[\]]*\]|\[backdrop[^[\]]*\]|\[data[^[\]]*\])|(.+)/gi;
     const contentPartDirectives = [];
     let match;
     while ((match = regex.exec(contentPartsText)) !== null) {
@@ -160,6 +161,8 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
                 return {type: 'dataURL', data: listValue};
             }
             return {type: 'text', data: listValue};
+        } else if (directiveType === 'data') {
+            return {type: 'dataURL', data: `${directiveType}:${resourceName}`};
         }
         // unknown directive type
         return {type: 'text', data: directive};
