@@ -1150,36 +1150,31 @@ class GeminiBlocks {
      * @returns {void}
      */
     setSafetyRating (args, util) {
-        try {
-            const target = util.target;
-            const ai = this.getAI(target);
-            const modelParams = ai.getModelParams();
-            const harmCategory = args.HARM_CATEGORY;
-            const harmBlockThreshold = args.BLOCK_THRESHOLD;
-            const setParams = (category, threshold) => {
-                const safetyRating = {
-                    category: category,
-                    threshold: threshold
-                };
-                const index = modelParams.safetySettings.findIndex(r => r.category === category);
-                if (index >= 0) {
-                    modelParams.safetySettings[index] = safetyRating;
-                } else {
-                    modelParams.safetySettings.push(safetyRating);
-                }
+        const target = util.target;
+        const ai = this.getAI(target);
+        const modelParams = ai.getModelParams();
+        const harmCategory = args.HARM_CATEGORY;
+        const harmBlockThreshold = args.BLOCK_THRESHOLD;
+        const setParams = (category, threshold) => {
+            const safetyRating = {
+                category: category,
+                threshold: threshold
             };
-            if (harmCategory === 'ALL') {
-                Object.keys(HarmCategory)
-                    .forEach(category => {
-                        if (category === 'HARM_CATEGORY_UNSPECIFIED') return;
-                        setParams(category, harmBlockThreshold);
-                    });
+            const index = modelParams.safetySettings.findIndex(r => r.category === category);
+            if (index >= 0) {
+                modelParams.safetySettings[index] = safetyRating;
             } else {
-                setParams(harmCategory, harmBlockThreshold);
+                modelParams.safetySettings.push(safetyRating);
             }
-        } catch (error) {
-            log.error(error);
-            return error.message;
+        };
+        if (harmCategory === 'ALL') {
+            Object.keys(HarmCategory)
+                .forEach(category => {
+                    if (category === 'HARM_CATEGORY_UNSPECIFIED') return;
+                    setParams(category, harmBlockThreshold);
+                });
+        } else {
+            setParams(harmCategory, harmBlockThreshold);
         }
     }
 
@@ -1192,44 +1187,39 @@ class GeminiBlocks {
      * @returns {void}
      */
     setGenerationConfig (args, util) {
-        try {
-            const target = util.target;
-            const ai = this.getAI(target);
-            const modelParams = ai.getModelParams();
-            const configKey = args.CONFIG;
-            let configValue = args.VALUE;
-            switch (configKey) {
-            case 'maxOutputTokens':
-                configValue = Math.max(1, parseInt(configValue, 10));
-                break;
-            case 'candidateCount':
-                configValue = Math.max(1, parseInt(configValue, 10));
-                break;
-            case 'stopSequences':
-                configValue = String(configValue).split(',')
-                    .map(s => s.trim());
-                break;
-            case 'temperature':
-                configValue = Math.max(0.0, Math.min(1.0, configValue));
-                break;
-            case 'topP':
-                configValue = Math.max(0.0, Math.min(1.0, configValue));
-                break;
-            case 'topK':
-                configValue = Math.max(1, parseInt(configValue, 10));
-                break;
-            default:
-                throw new Error(`unknown config key: ${configKey}`);
-            }
-            if (configValue === '') {
-                delete modelParams.generationConfig[configKey];
-                return;
-            }
-            modelParams.generationConfig[configKey] = configValue;
-        } catch (error) {
-            log.error(error);
-            return error.message;
+        const target = util.target;
+        const ai = this.getAI(target);
+        const modelParams = ai.getModelParams();
+        const configKey = args.CONFIG;
+        let configValue = args.VALUE;
+        switch (configKey) {
+        case 'maxOutputTokens':
+            configValue = Math.max(1, parseInt(Cast.toString(configValue), 10));
+            break;
+        case 'candidateCount':
+            configValue = Math.max(1, parseInt(Cast.toString(configValue), 10));
+            break;
+        case 'stopSequences':
+            configValue = Cast.toString(configValue).split(',')
+                .map(s => s.trim());
+            break;
+        case 'temperature':
+            configValue = Math.max(0.0, Math.min(1.0, Cast.toNumber(configValue)));
+            break;
+        case 'topP':
+            configValue = Math.max(0.0, Math.min(1.0, Cast.toNumber(configValue)));
+            break;
+        case 'topK':
+            configValue = Math.max(1, parseInt(Cast.toNumber(configValue), 10));
+            break;
+        default:
+            return `unknown config key: ${configKey}`;
         }
+        if (configValue === '') {
+            delete modelParams.generationConfig[configKey];
+            return `delete ${configKey}`;
+        }
+        modelParams.generationConfig[configKey] = configValue;
     }
 
     /**
@@ -1240,20 +1230,15 @@ class GeminiBlocks {
      * @returns {string} - config value
      */
     generationConfig (args, util) {
-        try {
-            const target = util.target;
-            const ai = this.getAI(target);
-            const modelParams = ai.getModelParams();
-            const configKey = args.CONFIG;
-            const configValue = modelParams.generationConfig[configKey];
-            if (typeof configValue === 'undefined') {
-                return '';
-            }
-            return configValue;
-        } catch (error) {
-            log.error(error);
-            return error.message;
+        const target = util.target;
+        const ai = this.getAI(target);
+        const modelParams = ai.getModelParams();
+        const configKey = args.CONFIG;
+        const configValue = modelParams.generationConfig[configKey];
+        if (typeof configValue === 'undefined') {
+            return '';
         }
+        return configValue;
     }
 
     /**
