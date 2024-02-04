@@ -8,7 +8,7 @@ import blockIcon from './block-icon.png';
 import {DEBUG, checkDebugMode} from './dev-util.js';
 import {GeminiAdapter, HarmCategory, HarmBlockThreshold, EmbeddingTaskType} from './gemini-adapter.js';
 import {interpretContentPartsText} from './content-directive.js';
-import {euclideanDistance, cosineDistance, manhattanDistance, chebyshevDistance, hammingDistance} from './math-util.js';
+import {dotProduct, euclideanDistance} from './math-util.js';
 
 
 /**
@@ -408,8 +408,8 @@ class GeminiBlocks {
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
                         id: 'gai.embeddingDistanceOf',
-                        default: '[METRIC] distance of [VECTOR_A] and [VECTOR_B]',
-                        description: 'dot product block text for Gemini'
+                        default: '[METRIC] of [VECTOR_A] and [VECTOR_B]',
+                        description: 'vector distance block text for Gemini'
                     }),
                     func: 'embeddingDistanceOf',
                     arguments: {
@@ -431,6 +431,7 @@ class GeminiBlocks {
                 {
                     opcode: 'askApiKey',
                     blockType: BlockType.COMMAND,
+                    blockAllThreads: true,
                     text: formatMessage({
                         id: 'gai.askApiKey',
                         default: 'ask API key',
@@ -746,43 +747,19 @@ class GeminiBlocks {
         const menu = [
             {
                 text: formatMessage({
-                    id: 'gai.distanceMetricMenu.cosine',
-                    default: 'Cosine',
-                    description: 'distance metric menu item for cosine in Gemini'
+                    id: 'gai.distanceMetricMenu.dotProduct',
+                    default: 'Dot Product',
+                    description: 'distance metric menu item for dot product in Gemini'
                 }),
-                value: 'cosine'
+                value: 'dotProduct'
             },
             {
                 text: formatMessage({
                     id: 'gai.distanceMetricMenu.euclidean',
-                    default: 'Euclidean',
+                    default: 'Euclidean Distance',
                     description: 'distance metric menu item for euclidean in Gemini'
                 }),
                 value: 'euclidean'
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.distanceMetricMenu.manhattan',
-                    default: 'Manhattan',
-                    description: 'distance metric menu item for manhattan in Gemini'
-                }),
-                value: 'manhattan'
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.distanceMetricMenu.chebyshev',
-                    default: 'Chebyshev',
-                    description: 'distance metric menu item for chebyshev in Gemini'
-                }),
-                value: 'chebyshev'
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.distanceMetricMenu.hamming',
-                    default: 'Hamming',
-                    description: 'distance metric menu item for hamming in Gemini'
-                }),
-                value: 'hamming'
             }
         ];
         return menu;
@@ -1301,20 +1278,11 @@ class GeminiBlocks {
         if (vectorA.every(x => x === 0) || vectorB.every(x => x === 0)) return '';
         let result;
         switch (metric) {
+        case 'dotProduct':
+            result = dotProduct(vectorA, vectorB);
+            break;
         case 'euclidean':
             result = euclideanDistance(vectorA, vectorB);
-            break;
-        case 'cosine':
-            result = cosineDistance(vectorA, vectorB);
-            break;
-        case 'manhattan':
-            result = manhattanDistance(vectorA, vectorB);
-            break;
-        case 'chebyshev':
-            result = chebyshevDistance(vectorA, vectorB);
-            break;
-        case 'hamming':
-            result = hammingDistance(vectorA, vectorB);
             break;
         default:
             throw new Error(`unknown metric: ${metric}`);
