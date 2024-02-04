@@ -96,7 +96,7 @@ export const interpretContentPartDirectives = function (contentPartDirectives, r
             // sprite not found
             return {type: 'text', data: directive};
         }
-        if (directiveType === 'costume') {
+        if (directiveType === 'costume' || directiveType === 'backdrop') {
             const costumeArray = contentPartHolder.getCostumes();
             let costume = costumeArray.find(c => c.name === resourceName);
             if (!costume) {
