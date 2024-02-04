@@ -7,6 +7,7 @@ import blockIcon from './block-icon.png';
 
 import {DEBUG, checkDebugMode} from './dev-util.js';
 import {GeminiAdapter, HarmCategory, HarmBlockThreshold, EmbeddingTaskType} from './gemini-adapter.js';
+import {getCostumeByNameOrNumber, costumeToDataURL, addImageAsCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
 import {dotProduct, euclideanDistance} from './math-util.js';
 
@@ -147,14 +148,14 @@ class GeminiBlocks {
                     }
                 },
                 {
-                    opcode: 'costumeDirective',
+                    opcode: 'costumeData',
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
-                        id: 'gai.costumeDirective',
+                        id: 'gai.costumeData',
                         default: 'costume data [COSTUME]'
                     }),
-                    func: 'costumeDirective',
+                    func: 'costumeData',
                     arguments: {
                         COSTUME: {
                             type: ArgumentType.STRING,
@@ -163,14 +164,14 @@ class GeminiBlocks {
                     }
                 },
                 {
-                    opcode: 'backdropDirective',
+                    opcode: 'backdropData',
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
-                        id: 'gai.backdropDirective',
+                        id: 'gai.backdropData',
                         default: 'backdrop data [BACKDROP]'
                     }),
-                    func: 'backdropDirective',
+                    func: 'backdropData',
                     arguments: {
                         BACKDROP: {
                             type: ArgumentType.STRING,
@@ -179,15 +180,15 @@ class GeminiBlocks {
                     }
                 },
                 {
-                    opcode: 'snapshotDirective',
+                    opcode: 'snapshotData',
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
-                        id: 'gai.snapshotDirective',
+                        id: 'gai.snapshotData',
                         default: 'snapshot data',
-                        description: 'snapshotDirective block text for Gemini'
+                        description: 'snapshotData block text for Gemini'
                     }),
-                    func: 'snapshotDirective',
+                    func: 'snapshotData',
                     arguments: {
                     }
                 },
@@ -859,11 +860,10 @@ class GeminiBlocks {
      * @param {object} prompt - prompt object
      * @param {Target} target - the target to get the AI
      * @param {string} requestType - request type {'generate' | 'chat'}
-     * @param {Runtime} runtime - the runtime of Scratch
      * @returns {Promise<string>} - a Promise that resolves response text
      * @private
      */
-    async requestContentStream (prompt, target, requestType, runtime) {
+    async requestContentStream (prompt, target, requestType) {
         const ai = this.getAI(target);
         let streamingResult;
         if (requestType === 'generate') {
@@ -877,7 +877,7 @@ class GeminiBlocks {
         for await (const partialResponse of partialResponseStream) {
             if (DEBUG) log.log(`partial response for ${requestType}:${partialResponse.text()}`);
             ai.setLastPartialResponse(partialResponse);
-            runtime.startHats('gai_whenPartialResponseReceived', null, target);
+            this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
         }
         const totalResponse = await totalResponseReceived;
         if (DEBUG) log.log(`response for ${requestType}:${totalResponse.text()}`);
@@ -916,19 +916,18 @@ class GeminiBlocks {
             return;
         }
         ai.setRequesting(true);
-        const runtime = util.runtime;
-        return interpretContentPartsText(promptText, target, runtime)
-            .then(prompt => {
-                if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
-                    return this.requestContentStream(prompt, target, requestType, runtime);
-                }
-                return this.requestContent(prompt, target, requestType);
-            })
+        const prompt = interpretContentPartsText(promptText);
+        if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
+            return this.requestContentStream(prompt, target, requestType)
+                .catch(error => error.message)
+                .finally(() => {
+                    ai.setRequesting(false);
+                });
+        }
+        return this.requestContent(prompt, target, requestType)
             .catch(error => error.message)
             .finally(() => {
-                if (ai) {
-                    ai.setRequesting(false);
-                }
+                ai.setRequesting(false);
             });
     }
 
@@ -967,13 +966,21 @@ class GeminiBlocks {
     }
 
     /**
-     * Return costume data directive.
+     * Return costume data URL.
      * @param {object} args - the block's arguments.
      * @param {string} args.COSTUME - costume name
-     * @returns {string} - costume data directive
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - data URL of the costume
      */
-    costumeDirective (args) {
-        return `[costume:${args.COSTUME}]`;
+    costumeData (args, util) {
+        const costumeName = Cast.toString(args.COSTUME);
+        const target = util.target;
+        const costume = getCostumeByNameOrNumber(target, costumeName);
+        if (!costume) {
+            return '';
+        }
+        return costumeToDataURL(costume)
+            .then(dataURL => (`[${dataURL}]`));
     }
 
     /**
@@ -982,16 +989,42 @@ class GeminiBlocks {
      * @param {string} args.BACKDROP - backdrop name
      * @returns {string} - backdrop data directive
      */
-    backdropDirective (args) {
-        return `[backdrop:${args.BACKDROP}]`;
+    backdropData (args) {
+        const backdropName = Cast.toString(args.BACKDROP);
+        const stage = this.runtime.getTargetForStage();
+        const backdrop = getCostumeByNameOrNumber(stage, backdropName);
+        if (!backdrop) {
+            return '';
+        }
+        return costumeToDataURL(backdrop)
+            .then(dataURL => (`[${dataURL}]`));
     }
 
     /**
      * Return snapshot data directive.
-     * @returns {string} - snapshot data directive
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves snapshot data URL
      */
-    snapshotDirective () {
-        return '[snapshot]';
+    snapshotData (args, util) {
+        const runtime = this.runtime;
+        const requester = util.target;
+        return new Promise(resolve => {
+            this.runtime.renderer.requestSnapshot(imageDataURL => {
+                if (DEBUG) {
+                    addImageAsCostume(
+                        requester,
+                        imageDataURL,
+                        runtime,
+                        'snapshot',
+                        runtime.vm
+                    ).catch(e => {
+                        console.error(e);
+                    });
+                }
+                resolve(`[${imageDataURL}]`);
+            });
+        });
     }
 
     /**
@@ -1229,7 +1262,7 @@ class GeminiBlocks {
      * @param {string} args.CONTENT - content
      * @param {string} args.TASK_TYPE - task type
      * @param {object} util - utility object provided by the runtime.
-     * @returns {string} - embedding numbers array
+     * @returns {Promise<string>} - a Promise that resolves embedding
      */
     embeddingFor (args, util) {
         if (!GeminiAdapter.getApiKey()) {
@@ -1242,22 +1275,23 @@ class GeminiBlocks {
             util.yield();
             return;
         }
-        return (async () => {
-            try {
-                ai.setRequesting(true);
-                const contentText = Cast.toString(args.CONTENT).trim();
-                const content = await interpretContentPartsText(contentText, target, runtime);
-                const taskType = args.TASK_TYPE;
-                const embedding = await ai.requestEmbedding(content, taskType);
+        ai.setRequesting(true);
+        const contentText = Cast.toString(args.CONTENT).trim();
+        const content = interpretContentPartsText(contentText, target, runtime);
+        const taskType = args.TASK_TYPE;
+        return ai.requestEmbedding(content, taskType)
+            .then(embedding => {
                 const jsonText = JSON.stringify(embedding);
                 const result = jsonText.substring(1, jsonText.length - 1);
                 return result;
-            } catch (error) {
+            })
+            .catch(error => {
+                log.error(error);
                 return error.message;
-            } finally {
+            })
+            .finally(() => {
                 ai.setRequesting(false);
-            }
-        })();
+            });
     }
 
     /**
@@ -1320,7 +1354,7 @@ class GeminiBlocks {
      * @param {string} args.CONTENT - content
      * @param {string} args.REQUEST_TYPE - request type {'generate' | 'chat'}
      * @param {object} util - utility object provided by the runtime.
-     * @returns {number} - count of tokens
+     * @returns {Promise<number>} - a Promise that resolves token count
      */
     countTokensAs (args, util) {
         if (!GeminiAdapter.getApiKey()) {
@@ -1332,20 +1366,18 @@ class GeminiBlocks {
             util.yield();
             return;
         }
-        return (async () => {
-            try {
-                ai.setRequesting(true);
-                const contentText = Cast.toString(args.CONTENT);
-                const content = await interpretContentPartsText(contentText, target, this.runtime);
-                const requestType = args.REQUEST_TYPE;
-                const totalTokens = await ai.countTokensAs(content, requestType);
-                return totalTokens;
-            } catch (error) {
+        ai.setRequesting(true);
+        const contentText = Cast.toString(args.CONTENT);
+        const content = interpretContentPartsText(contentText, target, this.runtime);
+        const requestType = args.REQUEST_TYPE;
+        return ai.countTokensAs(content, requestType)
+            .catch(error => {
+                log.error(error);
                 return error.message;
-            } finally {
+            })
+            .finally(() => {
                 ai.setRequesting(false);
-            }
-        })();
+            });
     }
 
     /**
