@@ -1261,9 +1261,9 @@ class GeminiBlocks {
     }
 
     /**
-     * Dot product of two vectors.
+     * Calculate similarity of two vectors.
      * @param {object} args - the block's arguments.
-     * @param {string} args.METRIC - metric {'euclidean' | 'cosine' | 'manhattan' | 'chebyshev' | 'hamming'}
+     * @param {string} args.METRIC - metric {'dotProduct' | 'euclidean'}
      * @param {string} args.VECTOR_A - vector A
      * @param {string} args.VECTOR_B - vector B
      * @returns {number} - dot product
@@ -1274,9 +1274,9 @@ class GeminiBlocks {
             .map(s => parseFloat(s));
         const vectorB = String(args.VECTOR_B).split(',')
             .map(s => parseFloat(s));
-        if (vectorA.length !== vectorB.length) return '';
-        if (vectorA.every(x => x === 0) || vectorB.every(x => x === 0)) return '';
-        let result;
+        if (vectorA.length !== vectorB.length) return 'error: not same length';
+        if (vectorA.every(x => x === 0) || vectorB.every(x => x === 0)) return 'error: zero vector';
+        let result = '';
         switch (metric) {
         case 'dotProduct':
             result = dotProduct(vectorA, vectorB);
@@ -1285,10 +1285,7 @@ class GeminiBlocks {
             result = euclideanDistance(vectorA, vectorB);
             break;
         default:
-            throw new Error(`unknown metric: ${metric}`);
-        }
-        if (result === null) {
-            return '';
+            return 'error: unknown metric';
         }
         return result;
     }
