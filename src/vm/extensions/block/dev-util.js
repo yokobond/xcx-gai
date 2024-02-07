@@ -8,7 +8,7 @@ export let DEBUG;
  * Check if debug mode is enabled.
  * @returns {boolean} - true if debug mode is enabled.
  */
-export const checkDebugMode = () => {
+export const checkDebugMode = function () {
     if (typeof DEBUG !== 'undefined') {
         return DEBUG;
     }

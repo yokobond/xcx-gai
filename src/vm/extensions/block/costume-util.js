@@ -41,9 +41,13 @@ const convertToZeroBaseIndex = function (index, length) {
 /**
  * Convert costume to dataURL.
  * @param {!object} costume - costume
+ * @param {string?} format - format of the dataURL default is 'png'
  * @returns {Promise<string>} - a Promise that resolves when the image is converted
  */
-export const costumeToDataURL = costume => {
+export const costumeToDataURL = function (costume, format = 'png') {
+    if (costume.asset.dataFormat === format) {
+        return Promise.resolve(costume.asset.encodeDataURI());
+    }
     const blob = new Blob([costume.asset.data], {type: costume.asset.assetType.contentType});
     const imageElement = new Image();
     imageElement.src = URL.createObjectURL(blob);
@@ -56,7 +60,7 @@ export const costumeToDataURL = costume => {
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
-            const imageData = canvas.toDataURL('image/png');
+            const imageData = canvas.toDataURL(`image/${format}`);
             resolve(imageData);
         };
     });
@@ -71,7 +75,7 @@ export const costumeToDataURL = costume => {
  * @param {string} costumeName - name or number of the costume
  * @returns {object | undefined} - costume
  */
-export const getCostumeByNameOrNumber = (target, costumeName) => {
+export const getCostumeByNameOrNumber = function (target, costumeName) {
     const costumeArray = target.getCostumes();
     let costume = costumeArray.find(c => c.name === costumeName);
     if (!costume) {
@@ -95,7 +99,7 @@ export const getCostumeByNameOrNumber = (target, costumeName) => {
  * @param {VirtualMachine} vm - virtual machine
  * @returns {Promise} - a Promise that resolves when the image is added
 */
-export const addImageAsCostume = (target, dataURL, runtime, imageName = 'costume', vm) => {
+export const addImageAsCostume = function (target, dataURL, runtime, imageName = 'costume', vm) {
     const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
     let assetType;
     let dataFormat;
