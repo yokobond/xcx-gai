@@ -1367,9 +1367,10 @@ class GeminiBlocks {
 
     /**
      * Open dialog to input API key by user.
-     * @returns {Promise<string>?} - a Promise that resolves API key
+     * @param {string} [defaultApiKey=''] - default API key
+     * @returns {Promise<string>?} - a Promise that resolves API key or null if canceled
      */
-    openApiKeyDialog () {
+    openApiKeyDialog (defaultApiKey = '') {
         if (this.apiKeyDialogOpened) {
             // prevent to open multiple dialogs
             return null;
@@ -1399,7 +1400,7 @@ class GeminiBlocks {
         apiKeyInput.setAttribute('type', 'text');
         apiKeyInput.setAttribute('id', 'apiKeyInput');
         apiKeyInput.setAttribute('size', '50');
-        apiKeyInput.setAttribute('value', '');
+        apiKeyInput.setAttribute('value', defaultApiKey);
         apiKeyForm.appendChild(apiKeyInput);
         // Cancel button
         const cancelButton = document.createElement('button');
@@ -1424,14 +1425,11 @@ class GeminiBlocks {
                 // Add onClick action
                 const confirmed = () => {
                     const inputValue = apiKeyInput.value.trim();
-                    if (inputValue === '') {
-                        return; // do not exit dialog
-                    }
                     resolve(inputValue);
                 };
                 confirmButton.onclick = confirmed;
                 const canceled = () => {
-                    resolve('');
+                    resolve(null);
                 };
                 cancelButton.onclick = canceled;
                 inputDialog.addEventListener('keydown', e => {
@@ -1463,14 +1461,18 @@ class GeminiBlocks {
             return;
         }
         const target = util.target;
-        return this.openApiKeyDialog()
+        const prevApiKey = GeminiAdapter.getApiKey();
+        return this.openApiKeyDialog(prevApiKey)
             .then(apiKey => {
-                if (!apiKey || apiKey === '') {
-                    return '';
+                if (apiKey === null) {
+                    // canceled
+                    return 'canceled by user';
                 }
-                GeminiAdapter.setApiKey(apiKey);
-                if (GeminiAdapter.existsForTarget(target)) {
-                    GeminiAdapter.removeForTarget(target);
+                if (apiKey !== prevApiKey) {
+                    GeminiAdapter.setApiKey(apiKey);
+                    if (GeminiAdapter.existsForTarget(target)) {
+                        GeminiAdapter.removeForTarget(target);
+                    }
                 }
                 return apiKey;
             });
