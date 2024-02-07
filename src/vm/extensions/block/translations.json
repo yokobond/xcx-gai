@@ -2,7 +2,7 @@
   "en": {
     "gai.name": "GAI",
     "gai.generate": "generate [PROMPT]",
-    "gai.generateDefault": "What is drawn in [costume:costume1] and [snapshot] for each?",
+    "gai.generateDefault": "What is AI?",
     "gai.costumeData": "costume data [COSTUME]",
     "gai.backdropData": "backdrop data [BACKDROP]",
     "gai.snapshotData": "snapshot data [SNAPSHOT]",
@@ -55,7 +55,7 @@
   "ja": {
     "gai.name": "GAI",
     "gai.generate": "生成[PROMPT]",
-    "gai.generateDefault": "[costume:コスチューム1]と[snapshot]は、それぞれ何が描かれていますか?",
+    "gai.generateDefault": "AIとは?",
     "gai.costumeData": "コスチューム[COSTUME]のデータ",
     "gai.backdropData": "バックドロップ[BACKDROP]のデータ",
     "gai.snapshotData": "スナップショットのデータ",
@@ -108,7 +108,7 @@
   "ja-Hira": {
     "gai.name": "GAI",
     "gai.generate": "せいせい[PROMPT]",
-    "gai.generateDefault": "[costume:コスチューム1]と[snapshot]は、それぞれなにがえがかれていますか?",
+    "gai.generateDefault": "AIとは?",
     "gai.costumeData": "コスチューム[COSTUME]のデータ",
     "gai.backdropData": "バックドロップ[BACKDROP]のデータ",
     "gai.snapshotData": "スナップショットのデータ",

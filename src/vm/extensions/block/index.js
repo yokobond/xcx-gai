@@ -141,7 +141,7 @@ class GeminiBlocks {
                             type: ArgumentType.STRING,
                             defaultValue: formatMessage({
                                 id: 'gai.generateDefault',
-                                default: 'The position of [costume:costume1] in [snapshot]?',
+                                default: 'What is AI?',
                                 description: 'default generate prompt for Gemini'
                             })
                         }
