@@ -980,7 +980,7 @@ class GeminiBlocks {
             return '';
         }
         return costumeToDataURL(costume)
-            .then(dataURL => (`[${dataURL}]`));
+            .then(dataURL => (` ${dataURL} `));
     }
 
     /**
@@ -997,7 +997,7 @@ class GeminiBlocks {
             return '';
         }
         return costumeToDataURL(backdrop)
-            .then(dataURL => (`[${dataURL}]`));
+            .then(dataURL => (` ${dataURL} `));
     }
 
     /**
@@ -1022,7 +1022,7 @@ class GeminiBlocks {
                         console.error(e);
                     });
                 }
-                resolve(`[${imageDataURL}]`);
+                resolve(` ${imageDataURL} `);
             });
         });
     }

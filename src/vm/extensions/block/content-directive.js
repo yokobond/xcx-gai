@@ -4,10 +4,10 @@
  * @returns {string[]} - content part directives
  */
 export const parseContentPartsText = function (contentPartsText) {
-    const regex = /(.*?)(\[data:[^[\]]*\])|(.+)/gi;
+    const parser = /(.*?)[\s\u3000"'`[{(,.]*(data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+)[\s\u3000"'`\]}),.]*|(.*)/gi;
     const contentPartDirectives = [];
-    let match;
-    while ((match = regex.exec(contentPartsText)) !== null) {
+    const matches = contentPartsText.matchAll(parser);
+    for (const match of matches) {
         if (match[1]) contentPartDirectives.push(match[1]);
         if (match[2]) contentPartDirectives.push(match[2]);
         if (match[3]) contentPartDirectives.push(match[3]);
@@ -24,8 +24,8 @@ export const parseContentPartsText = function (contentPartsText) {
  */
 export const interpretContentPartDirectives = function (contentPartDirectives) {
     return contentPartDirectives.map(directive => {
-        if (directive.startsWith('[data:')) {
-            return {type: 'dataURL', data: directive.slice(1, -1)};
+        if (directive.trim().match(/data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+/)) {
+            return {type: 'dataURL', data: directive};
         }
         return {type: 'text', data: directive};
     });
