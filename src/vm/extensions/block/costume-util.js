@@ -16,6 +16,7 @@ const convertToHalfWidthInt = function (str) {
 /**
  * Convert array index from one-base to zero-base.
  * If index is negative, it is converted from the end of the array.
+ * Returns most close index if index is out of range.
  * @param {number} index - one-base array index
  * @param {number} length - array length
  * @returns {number | undefined} - converted array index
@@ -25,12 +26,12 @@ const convertToZeroBaseIndex = function (index, length) {
         return;
     }
     if (index > length) {
-        return;
+        return length - 1;
     }
     if (index < 0) {
         index = length + index;
         if (index < 0) {
-            return;
+            return 0;
         }
     } else {
         index--;
