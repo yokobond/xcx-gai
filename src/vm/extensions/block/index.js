@@ -1057,8 +1057,13 @@ class GeminiBlocks {
      */
     startChat (args, util) {
         const target = util.target;
-        const history = JSON.parse(String(args.HISTORY));
-        this.getAI(target).startChat(history);
+        const historyText = String(args.HISTORY).trim();
+        try {
+            const history = JSON.parse(`[${historyText}]`);
+            this.getAI(target).startChat(history);
+        } catch (e) {
+            this.getAI(target).startChat([]);
+        }
     }
 
     /**
