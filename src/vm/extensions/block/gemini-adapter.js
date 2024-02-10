@@ -173,11 +173,11 @@ export class GeminiAdapter {
 
     /**
      * Get chat history.
-     * @returns {Content[]} - chat history
+     * @returns {Promise<Content[]>} - a Promise that resolves when the history is received
      */
     getChatHistory () {
         if (!this.chatSession) {
-            return [];
+            return Promise.resolve([]);
         }
         return this.chatSession.getHistory();
     }
@@ -285,7 +285,7 @@ export class GeminiAdapter {
      */
     startChat (history) {
         const model = this.getModel('gemini-pro');
-        this.chatSession = model.startChat({history});
+        this.chatSession = model.startChat({history, ...this.getModelParams()});
     }
 
     /**
