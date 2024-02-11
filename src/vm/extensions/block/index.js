@@ -1092,6 +1092,9 @@ class GeminiBlocks {
         if (!candidate) {
             return `no candidate #${candidateIndex}`;
         }
+        if (!candidate.content) {
+            return candidate.finishReason;
+        }
         return candidate.content.parts[0].text;
     }
 
