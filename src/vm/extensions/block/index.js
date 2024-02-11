@@ -1324,13 +1324,10 @@ class GeminiBlocks {
      * @param {object} util - utility object provided by the runtime.
      * @returns {void}
      */
-    setApiKey (args, util) {
-        const target = util.target;
+    setApiKey (args) {
         const apiKey = Cast.toString(args.KEY).trim();
         GeminiAdapter.setApiKey(apiKey);
-        if (GeminiAdapter.existsForTarget(target)) {
-            GeminiAdapter.removeForTarget(target);
-        }
+        GeminiAdapter.removeAllAdapter();
     }
 
     /**
@@ -1468,7 +1465,6 @@ class GeminiBlocks {
             util.yield();
             return;
         }
-        const target = util.target;
         const prevApiKey = GeminiAdapter.getApiKey();
         return this.openApiKeyDialog(prevApiKey)
             .then(apiKey => {
@@ -1478,9 +1474,7 @@ class GeminiBlocks {
                 }
                 if (apiKey !== prevApiKey) {
                     GeminiAdapter.setApiKey(apiKey);
-                    if (GeminiAdapter.existsForTarget(target)) {
-                        GeminiAdapter.removeForTarget(target);
-                    }
+                    GeminiAdapter.removeAllAdapter();
                 }
                 return apiKey;
             });

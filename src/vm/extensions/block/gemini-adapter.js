@@ -32,10 +32,17 @@ export const EmbeddingTaskType = {
     CLUSTERING: 'CLUSTERING'
 };
 
+const GEMINI_ADAPTERS = {};
+
 export class GeminiAdapter {
 
-    static get CUSTOM_STATE_AI () {
-        return 'Gemini.ai';
+    /**
+     * Get models.
+     * @returns {object} - models with target.id as key
+     * @static
+     */
+    static get ADAPTERS () {
+        return GEMINI_ADAPTERS;
     }
 
     /**
@@ -46,7 +53,7 @@ export class GeminiAdapter {
      * @public
      */
     static existsForTarget (target) {
-        return !!target.getCustomState(GeminiAdapter.CUSTOM_STATE_AI);
+        return !!GeminiAdapter.ADAPTERS[target.id];
     }
 
     /**
@@ -55,7 +62,7 @@ export class GeminiAdapter {
      * @returns {GeminiAdapter} - Gemini AI
      */
     static getForTarget (target) {
-        const ai = target.getCustomState(GeminiAdapter.CUSTOM_STATE_AI);
+        const ai = GeminiAdapter.ADAPTERS[target.id];
         if (ai) {
             return ai;
         }
@@ -68,7 +75,14 @@ export class GeminiAdapter {
      * @returns {void}
      */
     static removeForTarget (target) {
-        target.setCustomState(GeminiAdapter.CUSTOM_STATE_AI, null);
+        delete GeminiAdapter.ADAPTERS[target.id];
+    }
+
+    /**
+     * Remove all Gemini Adapter.
+     */
+    static removeAllAdapter () {
+        GeminiAdapter.ADAPTERS = {};
     }
 
     /**
@@ -91,7 +105,7 @@ export class GeminiAdapter {
 
     constructor (target) {
         this.target = target;
-        target.setCustomState(GeminiAdapter.CUSTOM_STATE_AI, this);
+        GeminiAdapter.ADAPTERS[target.id] = this;
         this.sdk = null;
         this.models = {};
         this.modelParams = {
