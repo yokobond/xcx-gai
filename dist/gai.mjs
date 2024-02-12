@@ -64,37 +64,6 @@ var entry = {
   translationMap: translations$1
 };
 
-function _arrayLikeToArray(arr, len) {
-  if (len == null || len > arr.length) len = arr.length;
-  for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
-  return arr2;
-}
-
-function _arrayWithoutHoles(arr) {
-  if (Array.isArray(arr)) return _arrayLikeToArray(arr);
-}
-
-function _iterableToArray(iter) {
-  if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
-}
-
-function _unsupportedIterableToArray(o, minLen) {
-  if (!o) return;
-  if (typeof o === "string") return _arrayLikeToArray(o, minLen);
-  var n = Object.prototype.toString.call(o).slice(8, -1);
-  if (n === "Object" && o.constructor) n = o.constructor.name;
-  if (n === "Map" || n === "Set") return Array.from(o);
-  if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
-}
-
-function _nonIterableSpread() {
-  throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-}
-
-function _toConsumableArray(arr) {
-  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
-}
-
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
   try {
     var info = gen[key](arg);
@@ -903,9 +872,9 @@ var Color$1 = /*#__PURE__*/function () {
   }]);
   return Color;
 }();
-var color = Color$1;
+var color$3 = Color$1;
 
-var Color = color;
+var Color = color$3;
 
 /**
  * @fileoverview
@@ -942,6 +911,11 @@ var Cast = /*#__PURE__*/function () {
         }
         return value;
       }
+      // Replace full-width numbers with half-width ones.
+      value = value.replace(/[０-９＋．ｅ]/g, function (s) {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+      });
+      value = value.replace(/[-－﹣−‐⁃‑‒–—﹘―⎯⏤ーｰ─━]/g, '-');
       var n = Number(value);
       if (Number.isNaN(n)) {
         // Scratch treats NaN as 0, when needed as a number.
@@ -985,7 +959,7 @@ var Cast = /*#__PURE__*/function () {
   }, {
     key: "toString",
     value: function toString(value) {
-      return String(value);
+      return String(value).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
     }
 
     /**
@@ -1056,8 +1030,8 @@ var Cast = /*#__PURE__*/function () {
       if (isNaN(n1) || isNaN(n2)) {
         // At least one argument can't be converted to a number.
         // Scratch compares strings as case insensitive.
-        var s1 = String(v1).toLowerCase();
-        var s2 = String(v2).toLowerCase();
+        var s1 = Cast.toString(v1).toLowerCase();
+        var s2 = Cast.toString(v2).toLowerCase();
         if (s1 < s2) {
           return -1;
         } else if (s1 > s2) {
@@ -1150,50 +1124,608 @@ var Cast = /*#__PURE__*/function () {
 var cast = Cast;
 var Cast$1 = /*@__PURE__*/getDefaultExportFromCjs(cast);
 
+var web = {exports: {}};
+
+var minilog$2 = {exports: {}};
+
+function M() {
+  this._events = {};
+}
+M.prototype = {
+  on: function on(ev, cb) {
+    this._events || (this._events = {});
+    var e = this._events;
+    (e[ev] || (e[ev] = [])).push(cb);
+    return this;
+  },
+  removeListener: function removeListener(ev, cb) {
+    var e = this._events[ev] || [],
+      i;
+    for (i = e.length - 1; i >= 0 && e[i]; i--) {
+      if (e[i] === cb || e[i].cb === cb) {
+        e.splice(i, 1);
+      }
+    }
+  },
+  removeAllListeners: function removeAllListeners(ev) {
+    if (!ev) {
+      this._events = {};
+    } else {
+      this._events[ev] && (this._events[ev] = []);
+    }
+  },
+  listeners: function listeners(ev) {
+    return this._events ? this._events[ev] || [] : [];
+  },
+  emit: function emit(ev) {
+    this._events || (this._events = {});
+    var args = Array.prototype.slice.call(arguments, 1),
+      i,
+      e = this._events[ev] || [];
+    for (i = e.length - 1; i >= 0 && e[i]; i--) {
+      e[i].apply(this, args);
+    }
+    return this;
+  },
+  when: function when(ev, cb) {
+    return this.once(ev, cb, true);
+  },
+  once: function once(ev, cb, when) {
+    if (!cb) return this;
+    function c() {
+      if (!when) this.removeListener(ev, c);
+      if (cb.apply(this, arguments) && when) this.removeListener(ev, c);
+    }
+    c.cb = cb;
+    this.on(ev, c);
+    return this;
+  }
+};
+M.mixin = function (dest) {
+  var o = M.prototype,
+    k;
+  for (k in o) {
+    o.hasOwnProperty(k) && (dest.prototype[k] = o[k]);
+  }
+};
+var microee$1 = M;
+
+var microee = microee$1;
+
+// Implements a subset of Node's stream.Transform - in a cross-platform manner.
+function Transform$4() {}
+microee.mixin(Transform$4);
+
+// The write() signature is different from Node's
+// --> makes it much easier to work with objects in logs.
+// One of the lessons from v1 was that it's better to target
+// a good browser rather than the lowest common denominator
+// internally.
+// If you want to use external streams, pipe() to ./stringify.js first.
+Transform$4.prototype.write = function (name, level, args) {
+  this.emit('item', name, level, args);
+};
+Transform$4.prototype.end = function () {
+  this.emit('end');
+  this.removeAllListeners();
+};
+Transform$4.prototype.pipe = function (dest) {
+  var s = this;
+  // prevent double piping
+  s.emit('unpipe', dest);
+  // tell the dest that it's being piped to
+  dest.emit('pipe', s);
+  function onItem() {
+    dest.write.apply(dest, Array.prototype.slice.call(arguments));
+  }
+  function onEnd() {
+    !dest._isStdio && dest.end();
+  }
+  s.on('item', onItem);
+  s.on('end', onEnd);
+  s.when('unpipe', function (from) {
+    var match = from === dest || typeof from == 'undefined';
+    if (match) {
+      s.removeListener('item', onItem);
+      s.removeListener('end', onEnd);
+      dest.emit('unpipe');
+    }
+    return match;
+  });
+  return dest;
+};
+Transform$4.prototype.unpipe = function (from) {
+  this.emit('unpipe', from);
+  return this;
+};
+Transform$4.prototype.format = function (dest) {
+  throw new Error(['Warning: .format() is deprecated in Minilog v2! Use .pipe() instead. For example:', 'var Minilog = require(\'minilog\');', 'Minilog', '  .pipe(Minilog.backends.console.formatClean)', '  .pipe(Minilog.backends.console);'].join('\n'));
+};
+Transform$4.mixin = function (dest) {
+  var o = Transform$4.prototype,
+    k;
+  for (k in o) {
+    o.hasOwnProperty(k) && (dest.prototype[k] = o[k]);
+  }
+};
+var transform = Transform$4;
+
+// default filter
+var Transform$3 = transform;
+var levelMap = {
+  debug: 1,
+  info: 2,
+  warn: 3,
+  error: 4
+};
+function Filter() {
+  this.enabled = true;
+  this.defaultResult = true;
+  this.clear();
+}
+Transform$3.mixin(Filter);
+
+// allow all matching, with level >= given level
+Filter.prototype.allow = function (name, level) {
+  this._white.push({
+    n: name,
+    l: levelMap[level]
+  });
+  return this;
+};
+
+// deny all matching, with level <= given level
+Filter.prototype.deny = function (name, level) {
+  this._black.push({
+    n: name,
+    l: levelMap[level]
+  });
+  return this;
+};
+Filter.prototype.clear = function () {
+  this._white = [];
+  this._black = [];
+  return this;
+};
+function test(rule, name) {
+  // use .test for RegExps
+  return rule.n.test ? rule.n.test(name) : rule.n == name;
+}
+Filter.prototype.test = function (name, level) {
+  var i,
+    len = Math.max(this._white.length, this._black.length);
+  for (i = 0; i < len; i++) {
+    if (this._white[i] && test(this._white[i], name) && levelMap[level] >= this._white[i].l) {
+      return true;
+    }
+    if (this._black[i] && test(this._black[i], name) && levelMap[level] <= this._black[i].l) {
+      return false;
+    }
+  }
+  return this.defaultResult;
+};
+Filter.prototype.write = function (name, level, args) {
+  if (!this.enabled || this.test(name, level)) {
+    return this.emit('item', name, level, args);
+  }
+};
+var filter = Filter;
+
+(function (module, exports) {
+  var Transform = transform,
+    Filter = filter;
+  var log = new Transform(),
+    slice = Array.prototype.slice;
+  exports = module.exports = function create(name) {
+    var o = function o() {
+      log.write(name, undefined, slice.call(arguments));
+      return o;
+    };
+    o.debug = function () {
+      log.write(name, 'debug', slice.call(arguments));
+      return o;
+    };
+    o.info = function () {
+      log.write(name, 'info', slice.call(arguments));
+      return o;
+    };
+    o.warn = function () {
+      log.write(name, 'warn', slice.call(arguments));
+      return o;
+    };
+    o.error = function () {
+      log.write(name, 'error', slice.call(arguments));
+      return o;
+    };
+    o.log = o.debug; // for interface compliance with Node and browser consoles
+    o.suggest = exports.suggest;
+    o.format = log.format;
+    return o;
+  };
+
+  // filled in separately
+  exports.defaultBackend = exports.defaultFormatter = null;
+  exports.pipe = function (dest) {
+    return log.pipe(dest);
+  };
+  exports.end = exports.unpipe = exports.disable = function (from) {
+    return log.unpipe(from);
+  };
+  exports.Transform = Transform;
+  exports.Filter = Filter;
+  // this is the default filter that's applied when .enable() is called normally
+  // you can bypass it completely and set up your own pipes
+  exports.suggest = new Filter();
+  exports.enable = function () {
+    if (exports.defaultFormatter) {
+      return log.pipe(exports.suggest) // filter
+      .pipe(exports.defaultFormatter) // formatter
+      .pipe(exports.defaultBackend); // backend
+    }
+    return log.pipe(exports.suggest) // filter
+    .pipe(exports.defaultBackend); // formatter
+  };
+})(minilog$2, minilog$2.exports);
+var minilogExports = minilog$2.exports;
+
+var hex = {
+  black: '#000',
+  red: '#c23621',
+  green: '#25bc26',
+  yellow: '#bbbb00',
+  blue: '#492ee1',
+  magenta: '#d338d3',
+  cyan: '#33bbc8',
+  gray: '#808080',
+  purple: '#708'
+};
+function color$2(fg, isInverse) {
+  if (isInverse) {
+    return 'color: #fff; background: ' + hex[fg] + ';';
+  } else {
+    return 'color: ' + hex[fg] + ';';
+  }
+}
+var util = color$2;
+
+var Transform$2 = transform,
+  color$1 = util;
+var colors$1 = {
+    debug: ['cyan'],
+    info: ['purple'],
+    warn: ['yellow', true],
+    error: ['red', true]
+  },
+  logger$2 = new Transform$2();
+logger$2.write = function (name, level, args) {
+  var fn = console.log;
+  if (console[level] && console[level].apply) {
+    fn = console[level];
+    fn.apply(console, ['%c' + name + ' %c' + level, color$1('gray'), color$1.apply(color$1, colors$1[level])].concat(args));
+  }
+};
+
+// NOP, because piping the formatted logs can only cause trouble.
+logger$2.pipe = function () {};
+var color_1 = logger$2;
+
+var Transform$1 = transform,
+  color = util,
+  colors = {
+    debug: ['gray'],
+    info: ['purple'],
+    warn: ['yellow', true],
+    error: ['red', true]
+  },
+  logger$1 = new Transform$1();
+logger$1.write = function (name, level, args) {
+  var fn = console.log;
+  if (level != 'debug' && console[level]) {
+    fn = console[level];
+  }
+  var i = 0;
+  if (level != 'info') {
+    for (; i < args.length; i++) {
+      if (typeof args[i] != 'string') break;
+    }
+    fn.apply(console, ['%c' + name + ' ' + args.slice(0, i).join(' '), color.apply(color, colors[level])].concat(args.slice(i)));
+  } else {
+    fn.apply(console, ['%c' + name, color.apply(color, colors[level])].concat(args));
+  }
+};
+
+// NOP, because piping the formatted logs can only cause trouble.
+logger$1.pipe = function () {};
+var minilog$1 = logger$1;
+
+var Transform = transform;
+var newlines = /\n+$/,
+  logger = new Transform();
+logger.write = function (name, level, args) {
+  var i = args.length - 1;
+  if (typeof console === 'undefined' || !console.log) {
+    return;
+  }
+  if (console.log.apply) {
+    return console.log.apply(console, [name, level].concat(args));
+  } else if (JSON && JSON.stringify) {
+    // console.log.apply is undefined in IE8 and IE9
+    // for IE8/9: make console.log at least a bit less awful
+    if (args[i] && typeof args[i] == 'string') {
+      args[i] = args[i].replace(newlines, '');
+    }
+    try {
+      for (i = 0; i < args.length; i++) {
+        args[i] = JSON.stringify(args[i]);
+      }
+    } catch (e) {}
+    console.log(args.join(' '));
+  }
+};
+logger.formatters = ['color', 'minilog'];
+logger.color = color_1;
+logger.minilog = minilog$1;
+var console_1 = logger;
+
+var array;
+var hasRequiredArray;
+function requireArray() {
+  if (hasRequiredArray) return array;
+  hasRequiredArray = 1;
+  var Transform = transform,
+    cache = [];
+  var logger = new Transform();
+  logger.write = function (name, level, args) {
+    cache.push([name, level, args]);
+  };
+
+  // utility functions
+  logger.get = function () {
+    return cache;
+  };
+  logger.empty = function () {
+    cache = [];
+  };
+  array = logger;
+  return array;
+}
+
+var localstorage;
+var hasRequiredLocalstorage;
+function requireLocalstorage() {
+  if (hasRequiredLocalstorage) return localstorage;
+  hasRequiredLocalstorage = 1;
+  var Transform = transform,
+    cache = false;
+  var logger = new Transform();
+  logger.write = function (name, level, args) {
+    if (typeof window == 'undefined' || typeof JSON == 'undefined' || !JSON.stringify || !JSON.parse) return;
+    try {
+      if (!cache) {
+        cache = window.localStorage.minilog ? JSON.parse(window.localStorage.minilog) : [];
+      }
+      cache.push([new Date().toString(), name, level, args]);
+      window.localStorage.minilog = JSON.stringify(cache);
+    } catch (e) {}
+  };
+  localstorage = logger;
+  return localstorage;
+}
+
+var jquery_simple;
+var hasRequiredJquery_simple;
+function requireJquery_simple() {
+  if (hasRequiredJquery_simple) return jquery_simple;
+  hasRequiredJquery_simple = 1;
+  var Transform = transform;
+  var cid = new Date().valueOf().toString(36);
+  function AjaxLogger(options) {
+    this.url = options.url || '';
+    this.cache = [];
+    this.timer = null;
+    this.interval = options.interval || 30 * 1000;
+    this.enabled = true;
+    this.jQuery = window.jQuery;
+    this.extras = {};
+  }
+  Transform.mixin(AjaxLogger);
+  AjaxLogger.prototype.write = function (name, level, args) {
+    if (!this.timer) {
+      this.init();
+    }
+    this.cache.push([name, level].concat(args));
+  };
+  AjaxLogger.prototype.init = function () {
+    if (!this.enabled || !this.jQuery) return;
+    var self = this;
+    this.timer = setTimeout(function () {
+      var i,
+        logs = [],
+        ajaxData,
+        url = self.url;
+      if (self.cache.length == 0) return self.init();
+      // Test each log line and only log the ones that are valid (e.g. don't have circular references).
+      // Slight performance hit but benefit is we log all valid lines.
+      for (i = 0; i < self.cache.length; i++) {
+        try {
+          JSON.stringify(self.cache[i]);
+          logs.push(self.cache[i]);
+        } catch (e) {}
+      }
+      if (self.jQuery.isEmptyObject(self.extras)) {
+        ajaxData = JSON.stringify({
+          logs: logs
+        });
+        url = self.url + '?client_id=' + cid;
+      } else {
+        ajaxData = JSON.stringify(self.jQuery.extend({
+          logs: logs
+        }, self.extras));
+      }
+      self.jQuery.ajax(url, {
+        type: 'POST',
+        cache: false,
+        processData: false,
+        data: ajaxData,
+        contentType: 'application/json',
+        timeout: 10000
+      }).success(function (data, status, jqxhr) {
+        if (data.interval) {
+          self.interval = Math.max(1000, data.interval);
+        }
+      }).error(function () {
+        self.interval = 30000;
+      }).always(function () {
+        self.init();
+      });
+      self.cache = [];
+    }, this.interval);
+  };
+  AjaxLogger.prototype.end = function () {};
+
+  // wait until jQuery is defined. Useful if you don't control the load order.
+  AjaxLogger.jQueryWait = function (onDone) {
+    if (typeof window !== 'undefined' && (window.jQuery || window.$)) {
+      return onDone(window.jQuery || window.$);
+    } else if (typeof window !== 'undefined') {
+      setTimeout(function () {
+        AjaxLogger.jQueryWait(onDone);
+      }, 200);
+    }
+  };
+  jquery_simple = AjaxLogger;
+  return jquery_simple;
+}
+
+(function (module, exports) {
+  var Minilog = minilogExports;
+  var oldEnable = Minilog.enable,
+    oldDisable = Minilog.disable,
+    isChrome = typeof navigator != 'undefined' && /chrome/i.test(navigator.userAgent),
+    console = console_1;
+
+  // Use a more capable logging backend if on Chrome
+  Minilog.defaultBackend = isChrome ? console.minilog : console;
+
+  // apply enable inputs from localStorage and from the URL
+  if (typeof window != 'undefined') {
+    try {
+      Minilog.enable(JSON.parse(window.localStorage['minilogSettings']));
+    } catch (e) {}
+    if (window.location && window.location.search) {
+      var match = RegExp('[?&]minilog=([^&]*)').exec(window.location.search);
+      match && Minilog.enable(decodeURIComponent(match[1]));
+    }
+  }
+
+  // Make enable also add to localStorage
+  Minilog.enable = function () {
+    oldEnable.call(Minilog, true);
+    try {
+      window.localStorage['minilogSettings'] = JSON.stringify(true);
+    } catch (e) {}
+    return this;
+  };
+  Minilog.disable = function () {
+    oldDisable.call(Minilog);
+    try {
+      delete window.localStorage.minilogSettings;
+    } catch (e) {}
+    return this;
+  };
+  exports = module.exports = Minilog;
+  exports.backends = {
+    array: requireArray(),
+    browser: Minilog.defaultBackend,
+    localStorage: requireLocalstorage(),
+    jQuery: requireJquery_simple()
+  };
+})(web, web.exports);
+var webExports = web.exports;
+
+var minilog = webExports;
+minilog.enable();
+var log = minilog('vm');
+var log$1 = /*@__PURE__*/getDefaultExportFromCjs(log);
+
 var en = {
 	"gai.name": "GAI",
-	"gai.prompt": "prompt [PROMPT]",
-	"gai.promptDefault": "The position of [costume:Sprite1:costume1] in [snapshot]?",
-	"gai.chat": "chat [MESSAGE]",
+	"gai.generate": "generate [PROMPT]",
+	"gai.generateDefault": "What is AI?",
+	"gai.costumeData": "costume data [COSTUME]",
+	"gai.backdropData": "backdrop data [BACKDROP]",
+	"gai.snapshotData": "snapshot data [SNAPSHOT]",
+	"gai.chat": "chat [PROMPT]",
 	"gai.chatDefault": "Hello Gemini!",
+	"gai.chatHistory": "chat history",
+	"gai.startChat": "start chat with history [HISTORY]",
+	"gai.embeddingFor": "embedding of [CONTENT] for [TASK_TYPE]",
+	"gai.embeddingTaskTypeMenu.retrievalQuery": "Retrieval query",
+	"gai.embeddingTaskTypeMenu.retrievalDocument": "Retrieval document",
+	"gai.embeddingTaskTypeMenu.semanticSimilarity": "Semantic similarity",
+	"gai.embeddingTaskTypeMenu.classification": "Classification",
+	"gai.embeddingTaskTypeMenu.clustering": "Clustering",
+	"gai.embeddingDistanceOf": "[METRIC] of [VECTOR_A] and [VECTOR_B]",
+	"gai.distanceMetricMenu.dotProduct": "Dot product",
+	"gai.distanceMetricMenu.euclidean": "Euclidean distance",
 	"gai.responseText": "response draft #[CANDIDATE_INDEX] text",
 	"gai.responseSafetyRating": "response #[CANDIDATE_INDEX] safety rating [HARM_CATEGORY]",
 	"gai.setSafetyRating": "set [HARM_CATEGORY] to [BLOCK_THRESHOLD]",
+	"gai.whenPartialResponseReceived": "when partial response received",
+	"gai.partialResponseText": "partial response text",
 	"gai.setGenerationConfig": "set generation [CONFIG] to [VALUE]",
-	"gai.generationConfigMenu.maxOutputTokens": "max output tokens",
-	"gai.generationConfigMenu.candidateCount": "candidate count",
-	"gai.generationConfigMenu.stopSequences": "stop sequences",
-	"gai.generationConfigMenu.temperature": "temperature",
+	"gai.generationConfigMenu.maxOutputTokens": "Max output tokens",
+	"gai.generationConfigMenu.candidateCount": "Candidate count",
+	"gai.generationConfigMenu.stopSequences": "Stop sequences",
+	"gai.generationConfigMenu.temperature": "Temperature",
 	"gai.generationConfigMenu.topP": "Top P",
 	"gai.generationConfigMenu.topK": "Top K",
 	"gai.generationConfig": "generation [CONFIG]",
-	"gai.setApiKey": "set API key to [KEY]",
-	"gai.startChat": "start chat with history [HISTORY]",
-	"gai.countPromptTokens": "count tokens as prompt [PROMPT]",
-	"gai.countChatTokens": "count tokens as chat [MESSAGE]",
-	"gai.harmCategoryMenu.hateSpeech": "Hate Speech",
-	"gai.harmCategoryMenu.sexuallyExplicit": "Sexually Explicit",
+	"gai.countTokensAs": "count tokens [CONTENT] as [REQUEST_TYPE]",
+	"gai.countTokensRequestTypeMenu.generate": "generate",
+	"gai.countTokensRequestTypeMenu.chat": "chat",
+	"gai.harmCategoryMenu.hateSpeech": "Hate speech",
+	"gai.harmCategoryMenu.sexuallyExplicit": "Sexually explicit",
 	"gai.harmCategoryMenu.harassment": "Harassment",
-	"gai.harmCategoryMenu.dangerousContent": "Dangerous Content",
-	"gai.harmCategorySettingMenu.all": "All Harm Categories",
+	"gai.harmCategoryMenu.dangerousContent": "Dangerous content",
+	"gai.harmCategorySettingMenu.all": "All harm categories",
 	"gai.harmBlockThresholdMenu.unspecified": "Unspecified",
 	"gai.harmBlockThresholdMenu.blockMost": "Block most",
 	"gai.harmBlockThresholdMenu.blockSome": "Block some",
 	"gai.harmBlockThresholdMenu.blockFew": "Block few",
-	"gai.harmBlockThresholdMenu.blockNone": "Block None",
+	"gai.harmBlockThresholdMenu.blockNone": "Block none",
+	"gai.askApiKey": "ask API key",
+	"gai.setApiKey": "set API key to [KEY]",
+	"gai.apiKey": "API key",
 	"gai.apiKeyDialog.message": "set API key",
 	"gai.apiKeyDialog.cancel": "cancel",
 	"gai.apiKeyDialog.set": "set"
 };
 var ja = {
 	"gai.name": "GAI",
-	"gai.prompt": "AIに[PROMPT]とたずねる",
-	"gai.promptDefault": "[costume:スプライト1:コスチューム1]は[snapshot]のどこにいますか?",
-	"gai.chat": "AIに[MESSAGE]と話す",
+	"gai.generate": "生成[PROMPT]",
+	"gai.generateDefault": "AIとは?",
+	"gai.costumeData": "コスチューム[COSTUME]のデータ",
+	"gai.backdropData": "バックドロップ[BACKDROP]のデータ",
+	"gai.snapshotData": "スナップショットのデータ",
+	"gai.chat": "対話[PROMPT]",
 	"gai.chatDefault": "こんにちはジェミニ！",
+	"gai.chatHistory": "対話履歴",
+	"gai.startChat": "[HISTORY]に続けて対話を始める",
+	"gai.embeddingFor": "[CONTENT]の[TASK_TYPE]の埋め込み表現",
+	"gai.embeddingTaskTypeMenu.retrievalQuery": "検索の質問として",
+	"gai.embeddingTaskTypeMenu.retrievalDocument": "検索される文書として",
+	"gai.embeddingTaskTypeMenu.semanticSimilarity": "似た意味を探すため",
+	"gai.embeddingTaskTypeMenu.classification": "分類のため",
+	"gai.embeddingTaskTypeMenu.clustering": "クラスタリングのため",
+	"gai.embeddingDistanceOf": "[VECTOR_A]と[VECTOR_B]の[METRIC]",
+	"gai.distanceMetricMenu.dotProduct": "内積",
+	"gai.distanceMetricMenu.euclidean": "ユークリッド距離",
 	"gai.responseText": "回答候補[CANDIDATE_INDEX]",
 	"gai.responseSafetyRating": "回答候補[CANDIDATE_INDEX]の安全度[HARM_CATEGORY]",
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
+	"gai.whenPartialResponseReceived": "回答の一部を受け取ったとき",
+	"gai.partialResponseText": "回答の一部",
 	"gai.setGenerationConfig": "生成の[CONFIG]を[VALUE]にする",
 	"gai.generationConfigMenu.maxOutputTokens": "最大トークン数",
 	"gai.generationConfigMenu.candidateCount": "回答候補の数",
@@ -1202,10 +1734,9 @@ var ja = {
 	"gai.generationConfigMenu.topP": "Top P",
 	"gai.generationConfigMenu.topK": "Top K",
 	"gai.generationConfig": "生成の[CONFIG]",
-	"gai.setApiKey": "APIキーを[KEY]にする",
-	"gai.startChat": "[HISTORY]に続けて対話を始める",
-	"gai.countPromptTokens": "プロンプト[PROMPT]のトークン数",
-	"gai.countChatTokens": "対話[MESSAGE]のトークン数",
+	"gai.countTokensAs": "[REQUEST_TYPE][CONTENT]のトークン数",
+	"gai.countTokensRequestTypeMenu.generate": "生成",
+	"gai.countTokensRequestTypeMenu.chat": "対話",
 	"gai.harmCategoryMenu.hateSpeech": "ヘイトスピーチ",
 	"gai.harmCategoryMenu.sexuallyExplicit": "露骨な性的表現",
 	"gai.harmCategoryMenu.harassment": "ハラスメント",
@@ -1216,6 +1747,9 @@ var ja = {
 	"gai.harmBlockThresholdMenu.blockSome": "一部をブロックする",
 	"gai.harmBlockThresholdMenu.blockFew": "少しをブロックする",
 	"gai.harmBlockThresholdMenu.blockNone": "ブロックをしない",
+	"gai.askApiKey": "APIキーを聞く",
+	"gai.setApiKey": "APIキーを[KEY]にする",
+	"gai.apiKey": "APIキー",
 	"gai.apiKeyDialog.message": "APIキーを設定してください",
 	"gai.apiKeyDialog.cancel": "キャンセル",
 	"gai.apiKeyDialog.set": "設定"
@@ -1225,13 +1759,29 @@ var translations = {
 	ja: ja,
 	"ja-Hira": {
 	"gai.name": "GAI",
-	"gai.prompt": "AIに[PROMPT]と たずねる",
-	"gai.promptDefault": "[costume:スプライト1:コスチューム1]は[snapshot]のどこにいますか?",
-	"gai.chat": "AI に[MESSAGE]と はなす",
+	"gai.generate": "せいせい[PROMPT]",
+	"gai.generateDefault": "AIとは?",
+	"gai.costumeData": "コスチューム[COSTUME]のデータ",
+	"gai.backdropData": "バックドロップ[BACKDROP]のデータ",
+	"gai.snapshotData": "スナップショットのデータ",
+	"gai.chat": "たいわ[PROMPT]",
 	"gai.chatDefault": "こんにちはジェミニ！",
+	"gai.chatHistory": "たいわ の きろく",
+	"gai.startChat": "[HISTORY]に つづけて たいわ を はじめる",
+	"gai.embeddingFor": "[CONTENT]の[TASK_TYPE]の うめこみひょうげん",
+	"gai.embeddingTaskTypeMenu.retrievalQuery": "けんさく の しつもん として",
+	"gai.embeddingTaskTypeMenu.retrievalDocument": "けんさく される ぶんしょ として",
+	"gai.embeddingTaskTypeMenu.semanticSimilarity": "にた いみ を さがす ため",
+	"gai.embeddingTaskTypeMenu.classification": "ぶんるい の ため",
+	"gai.embeddingTaskTypeMenu.clustering": "クラスタリング の ため",
+	"gai.embeddingDistanceOf": "[VECTOR_A]と[VECTOR_B]の[METRIC]",
+	"gai.distanceMetricMenu.dotProduct": "ないせき",
+	"gai.distanceMetricMenu.euclidean": "ユークリッド きょり",
 	"gai.responseText": "かいとうこうほ[CANDIDATE_INDEX]",
 	"gai.responseSafetyRating": "かいとうこうほ[CANDIDATE_INDEX]の あんぜんど[HARM_CATEGORY]",
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
+	"gai.whenPartialResponseReceived": "かいとう の いちぶ を うけとった とき",
+	"gai.partialResponseText": "かいとう の いちぶ",
 	"gai.setGenerationConfig": "せいせい の[CONFIG]を[VALUE]に する",
 	"gai.generationConfigMenu.maxOutputTokens": "さいだいトークンすう",
 	"gai.generationConfigMenu.candidateCount": "かいとうこうほ の かず",
@@ -1240,10 +1790,9 @@ var translations = {
 	"gai.generationConfigMenu.topP": "トップP",
 	"gai.generationConfigMenu.topK": "トップK",
 	"gai.generationConfig": "せいせい の[CONFIG]",
-	"gai.setApiKey": "APIキー を[KEY]に する",
-	"gai.startChat": "[HISTORY]に つづけて たいわ を はじめる",
-	"gai.countPromptTokens": "プロンプト[PROMPT]の トークンすう",
-	"gai.countChatTokens": "たいわ[MESSAGE]の トークンすう",
+	"gai.countTokensAs": "[REQUEST_TYPE][CONTENT]の トークンすう",
+	"gai.countTokensRequestTypeMenu.generate": "せいせい",
+	"gai.countTokensRequestTypeMenu.chat": "たいわ",
 	"gai.harmCategoryMenu.hateSpeech": "ヘイトスピーチ",
 	"gai.harmCategoryMenu.sexuallyExplicit": "ろこつな せいてき ひょうげん",
 	"gai.harmCategoryMenu.harassment": "ハラスメント",
@@ -1254,6 +1803,9 @@ var translations = {
 	"gai.harmBlockThresholdMenu.blockSome": "いちぶ を ブロックする",
 	"gai.harmBlockThresholdMenu.blockFew": "すこし を ブロックする",
 	"gai.harmBlockThresholdMenu.blockNone": "ブロック を しない",
+	"gai.askApiKey": "APIキー を きく",
+	"gai.setApiKey": "APIキー を[KEY]に する",
+	"gai.apiKey": "APIキー",
 	"gai.apiKeyDialog.message": "APIキー を せってい してください",
 	"gai.apiKeyDialog.cancel": "キャンセル",
 	"gai.apiKeyDialog.set": "せってい"
@@ -1289,6 +1841,54 @@ var checkDebugMode = function checkDebugMode() {
   return DEBUG;
 };
 
+function _defineProperty(obj, key, value) {
+  key = toPropertyKey(key);
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+  return obj;
+}
+
+function _arrayLikeToArray$1(arr, len) {
+  if (len == null || len > arr.length) len = arr.length;
+  for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+  return arr2;
+}
+
+function _arrayWithoutHoles(arr) {
+  if (Array.isArray(arr)) return _arrayLikeToArray$1(arr);
+}
+
+function _iterableToArray(iter) {
+  if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
+}
+
+function _unsupportedIterableToArray$1(o, minLen) {
+  if (!o) return;
+  if (typeof o === "string") return _arrayLikeToArray$1(o, minLen);
+  var n = Object.prototype.toString.call(o).slice(8, -1);
+  if (n === "Object" && o.constructor) n = o.constructor.name;
+  if (n === "Map" || n === "Set") return Array.from(o);
+  if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$1(o, minLen);
+}
+
+function _nonIterableSpread() {
+  throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+}
+
+function _toConsumableArray(arr) {
+  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray$1(arr) || _nonIterableSpread();
+}
+
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 // dynamic import
 var GoogleGenerativeAI;
 _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
@@ -1308,11 +1908,34 @@ _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
     }
   }, _callee);
 }))();
+var HarmCategory = {
+  HARM_CATEGORY_UNSPECIFIED: 'HARM_CATEGORY_UNSPECIFIED',
+  HARM_CATEGORY_HATE_SPEECH: 'HARM_CATEGORY_HATE_SPEECH',
+  HARM_CATEGORY_SEXUALLY_EXPLICIT: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+  HARM_CATEGORY_HARASSMENT: 'HARM_CATEGORY_HARASSMENT',
+  HARM_CATEGORY_DANGEROUS_CONTENT: 'HARM_CATEGORY_DANGEROUS_CONTENT'
+};
+var HarmBlockThreshold = {
+  HARM_BLOCK_THRESHOLD_UNSPECIFIED: 'HARM_BLOCK_THRESHOLD_UNSPECIFIED',
+  BLOCK_LOW_AND_ABOVE: 'BLOCK_LOW_AND_ABOVE',
+  BLOCK_MEDIUM_AND_ABOVE: 'BLOCK_MEDIUM_AND_ABOVE',
+  BLOCK_ONLY_HIGH: 'BLOCK_ONLY_HIGH',
+  BLOCK_NONE: 'BLOCK_NONE'
+};
+var EmbeddingTaskType = {
+  TASK_TYPE_UNSPECIFIED: 'TASK_TYPE_UNSPECIFIED',
+  RETRIEVAL_QUERY: 'RETRIEVAL_QUERY',
+  RETRIEVAL_DOCUMENT: 'RETRIEVAL_DOCUMENT',
+  SEMANTIC_SIMILARITY: 'SEMANTIC_SIMILARITY',
+  CLASSIFICATION: 'CLASSIFICATION',
+  CLUSTERING: 'CLUSTERING'
+};
+var GEMINI_ADAPTERS = {};
 var GeminiAdapter = /*#__PURE__*/function () {
   function GeminiAdapter(target) {
     _classCallCheck$1(this, GeminiAdapter);
     this.target = target;
-    target.setCustomState(GeminiAdapter.CUSTOM_STATE_AI, this);
+    GeminiAdapter.ADAPTERS[target.id] = this;
     this.sdk = null;
     this.models = {};
     this.modelParams = {
@@ -1320,8 +1943,9 @@ var GeminiAdapter = /*#__PURE__*/function () {
       safetySettings: []
     };
     this.chatSession = null;
-    this.lastResult = null;
-    this.blocked = false;
+    this.lastResponse = null;
+    this.lastPartialResponse = null;
+    this.requesting = false;
   }
 
   /**
@@ -1366,24 +1990,22 @@ var GeminiAdapter = /*#__PURE__*/function () {
 
     /**
      * Count tokens by model.
-     * @param {Array.<string | object>} prompt - prompt to AI
+     * @param {Array.<string | object>} content - content to AI
+     * @param {string} requestType - type of request {'generate' | 'chat'}
      * @returns {Promise<number>} - a Promise that resolves when the tokens are counted
      */
   }, {
-    key: "countTokens",
+    key: "countTokensAs",
     value: (function () {
-      var _countTokens = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(prompt) {
-        var model, _yield$model$countTok, totalTokens;
+      var _countTokensAs = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(content, requestType) {
+        var model, result, history, messageContent, contents;
         return _regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
-              if (prompt.contents) {
-                // prompt is a chat history
-                model = this.getModel('gemini-pro');
-              } else if (typeof prompt === 'string') {
+              if (typeof content === 'string') {
                 // prompt is a string
                 model = this.getModel('gemini-pro');
-              } else if (prompt.every(function (p) {
+              } else if (content.every(function (p) {
                 return typeof p === 'string';
               })) {
                 // prompt is a list of strings
@@ -1392,35 +2014,63 @@ var GeminiAdapter = /*#__PURE__*/function () {
                 // prompt is multimodal
                 model = this.getModel('gemini-pro-vision');
               }
-              _context2.next = 3;
-              return model.countTokens(prompt);
-            case 3:
-              _yield$model$countTok = _context2.sent;
-              totalTokens = _yield$model$countTok.totalTokens;
-              return _context2.abrupt("return", totalTokens);
-            case 6:
+              if (!(requestType === 'generate')) {
+                _context2.next = 7;
+                break;
+              }
+              _context2.next = 4;
+              return model.countTokens(content);
+            case 4:
+              result = _context2.sent;
+              _context2.next = 16;
+              break;
+            case 7:
+              if (!(requestType === 'chat')) {
+                _context2.next = 16;
+                break;
+              }
+              _context2.next = 10;
+              return this.getChatHistory();
+            case 10:
+              history = _context2.sent;
+              messageContent = {
+                role: 'user',
+                parts: [{
+                  text: content[0]
+                }] // chat message is always a string at API v1
+              };
+              contents = [].concat(_toConsumableArray(history), [messageContent]);
+              _context2.next = 15;
+              return model.countTokens({
+                contents: contents
+              });
+            case 15:
+              result = _context2.sent;
+            case 16:
+              return _context2.abrupt("return", result.totalTokens);
+            case 17:
             case "end":
               return _context2.stop();
           }
         }, _callee2, this);
       }));
-      function countTokens(_x) {
-        return _countTokens.apply(this, arguments);
+      function countTokensAs(_x, _x2) {
+        return _countTokensAs.apply(this, arguments);
       }
-      return countTokens;
+      return countTokensAs;
     }()
     /**
      * Get chat history.
-     * @returns {string[]} - chat history
+     * @returns {Promise<Content[]>} - a Promise that resolves when the history is received
      */
     )
   }, {
     key: "getChatHistory",
     value: function getChatHistory() {
       if (!this.chatSession) {
-        return [];
+        return Promise.resolve([]);
       }
-      return this.chatSession.getChatHistory();
+      return this.chatSession.getHistory();
     }
 
     /**
@@ -1428,158 +2078,218 @@ var GeminiAdapter = /*#__PURE__*/function () {
      * @returns {boolean} - whether target is requesting to AI
      */
   }, {
-    key: "isBlocked",
-    value: function isBlocked() {
-      return !!this.blocked;
+    key: "isRequesting",
+    value: function isRequesting() {
+      return this.requesting;
     }
 
     /**
-     * Set whether block state.
-     * @param {boolean} blockState - whether this is blocked
+     * Set whether target is requesting to AI.
+     * @param {boolean} requesting - whether target is requesting to AI
      * @returns {void}
      */
   }, {
-    key: "setBlock",
-    value: function setBlock(blockState) {
-      this.blocked = blockState;
+    key: "setRequesting",
+    value: function setRequesting(requesting) {
+      this.requesting = requesting;
     }
 
     /**
-     * Get last result from AI.
-     * @returns {GenerateContentResult} - last result
+     * Get last response from AI.
+     * @returns {GenerateContentResponse} - last response
      */
   }, {
-    key: "getLastResult",
-    value: function getLastResult() {
-      return this.lastResult;
+    key: "getLastResponse",
+    value: function getLastResponse() {
+      return this.lastResponse;
     }
 
     /**
-     * Generate content from AI.
-     * @param {string} type - type of model
-     * @param {string} prompt - prompt to AI
-     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the content is generated
+     * Set last response from AI.
+     * @param {GenerateContentResponse} response - last response
+     * @returns {void}
      */
   }, {
-    key: "generate",
-    value: (function () {
-      var _generate = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(type, prompt) {
-        var model, result;
-        return _regeneratorRuntime.wrap(function _callee3$(_context3) {
-          while (1) switch (_context3.prev = _context3.next) {
-            case 0:
-              model = this.getModel(type);
-              _context3.next = 3;
-              return model.generateContent(prompt);
-            case 3:
-              result = _context3.sent;
-              return _context3.abrupt("return", result);
-            case 5:
-            case "end":
-              return _context3.stop();
-          }
-        }, _callee3, this);
-      }));
-      function generate(_x2, _x3) {
-        return _generate.apply(this, arguments);
-      }
-      return generate;
-    }()
+    key: "setLastResponse",
+    value: function setLastResponse(response) {
+      this.lastResponse = response;
+    }
+
     /**
-     * Send prompt to AI.
-     * @param {Array.<string | object>} prompt - prompt to AI
+     * Set last partial response from AI.
+     * @param {EnhancedGenerateContentResponse} response - last partial response
+     * @returns {void}
+     */
+  }, {
+    key: "setLastPartialResponse",
+    value: function setLastPartialResponse(response) {
+      this.lastPartialResponse = response;
+    }
+
+    /**
+     * Get last partial response from AI.
+     * @returns {EnhancedGenerateContentResponse} - last partial response
+     */
+  }, {
+    key: "getLastPartialResponse",
+    value: function getLastPartialResponse() {
+      return this.lastPartialResponse;
+    }
+
+    /**
+     * Convert content parts to Gemini AI format.
+     * @param {Array.<string | object>} contentParts - content to convert
+     * @returns {Array.<string | object>} - content to Gemini AI
+     */
+  }, {
+    key: "convertContentParts",
+    value: function convertContentParts(contentParts) {
+      return contentParts.map(function (p) {
+        if (p.type === 'text') {
+          return {
+            text: p.data
+          };
+        } else if (p.type === 'dataURL') {
+          return {
+            inlineData: {
+              data: p.data.split(',')[1],
+              mimeType: p.data.substring(p.data.indexOf(':') + 1, p.data.indexOf(';'))
+            }
+          };
+        }
+        return p;
+      });
+    }
+
+    /**
+     * Send generator type prompt to AI.
+     * @param {Array.<string | object>} contentParts - prompt to AI
+     * @param {boolean} isStreaming - whether to get stream
      * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the prompt is sent
      */
-    )
   }, {
-    key: "requestPrompt",
-    value: (function () {
-      var _requestPrompt = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee4(prompt) {
-        var result, type;
-        return _regeneratorRuntime.wrap(function _callee4$(_context4) {
-          while (1) switch (_context4.prev = _context4.next) {
-            case 0:
-              result = null;
-              type = '';
-              if (typeof prompt === 'string') {
-                // prompt is a string
-                type = 'gemini-pro';
-              } else if (prompt.every(function (p) {
-                return typeof p === 'string';
-              })) {
-                // prompt is a list of strings
-                type = 'gemini-pro';
-              } else {
-                // prompt is multimodal
-                type = 'gemini-pro-vision';
-              }
-              _context4.next = 5;
-              return this.generate(type, prompt);
-            case 5:
-              result = _context4.sent;
-              this.lastResult = result;
-              return _context4.abrupt("return", result);
-            case 8:
-            case "end":
-              return _context4.stop();
-          }
-        }, _callee4, this);
-      }));
-      function requestPrompt(_x4) {
-        return _requestPrompt.apply(this, arguments);
+    key: "requestGenerate",
+    value: function requestGenerate(contentParts, isStreaming) {
+      var type = '';
+      if (contentParts.every(function (p) {
+        return p.type === 'text';
+      })) {
+        // prompt is a list of strings
+        type = 'gemini-pro';
+      } else {
+        // prompt is multimodal
+        type = 'gemini-pro-vision';
       }
-      return requestPrompt;
-    }()
+      var model = this.getModel(type);
+      var geminiContentParts = this.convertContentParts(contentParts);
+      if (isStreaming) {
+        return model.generateContentStream(geminiContentParts);
+      }
+      return model.generateContent(geminiContentParts);
+    }
+
     /**
      * Start chat.
      * @param {Array.<string>} history - history of chat
      * @returns {void}
      */
-    )
   }, {
     key: "startChat",
     value: function startChat(history) {
       var model = this.getModel('gemini-pro');
-      this.chatSession = model.startChat(history);
+      this.chatSession = model.startChat(_objectSpread({
+        history: history
+      }, this.getModelParams()));
     }
 
     /**
      * Send chat message to AI.
-     * @param {string} message - message to AI
+     * @param {string} contentParts - message to AI
+     * @param {boolean} isStreaming - whether to get stream
      * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the message is sent
      */
   }, {
     key: "requestChat",
-    value: (function () {
-      var _requestChat = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee5(message) {
-        var result;
-        return _regeneratorRuntime.wrap(function _callee5$(_context5) {
-          while (1) switch (_context5.prev = _context5.next) {
-            case 0:
-              if (!this.chatSession) {
-                this.startChat([]);
-              }
-              _context5.next = 3;
-              return this.chatSession.sendMessage(message);
-            case 3:
-              result = _context5.sent;
-              this.lastResult = result;
-              return _context5.abrupt("return", result);
-            case 6:
-            case "end":
-              return _context5.stop();
-          }
-        }, _callee5, this);
-      }));
-      function requestChat(_x5) {
-        return _requestChat.apply(this, arguments);
+    value: function requestChat(contentParts, isStreaming) {
+      if (!this.chatSession) {
+        this.startChat([]);
       }
-      return requestChat;
+      var geminiContentParts = this.convertContentParts(contentParts);
+      if (isStreaming) {
+        return this.chatSession.sendMessageStream(geminiContentParts);
+      }
+      return this.chatSession.sendMessage(geminiContentParts);
+    }
+
+    /**
+     * Request embedding of content.
+     * @param {Array.<string> | string} contentParts - content to AI
+     * @param {string} taskType - type of task {EmbeddingTaskType}
+     * @returns {Promise<Array<number>>} - a Promise that resolves when the embedding is received
+     */
+  }, {
+    key: "requestEmbedding",
+    value: (function () {
+      var _requestEmbedding = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(contentParts, taskType) {
+        var toEmbed, cache, key, model, result;
+        return _regeneratorRuntime.wrap(function _callee3$(_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
+            case 0:
+              if (!(!contentParts || !contentParts.length)) {
+                _context3.next = 2;
+                break;
+              }
+              return _context3.abrupt("return", []);
+            case 2:
+              toEmbed = contentParts.reduce(function (acc, p) {
+                if (p.type === 'text') {
+                  return acc + p.data;
+                }
+                // ignore non-text content
+                return acc;
+              }, '');
+              if (!this.embeddingCache) {
+                this.embeddingCache = {};
+              }
+              if (!this.embeddingCache[taskType]) {
+                this.embeddingCache[taskType] = {};
+              }
+              cache = this.embeddingCache[taskType];
+              key = toEmbed;
+              if (!cache[key]) {
+                _context3.next = 9;
+                break;
+              }
+              return _context3.abrupt("return", cache[key]);
+            case 9:
+              model = this.getModel('embedding-001');
+              _context3.next = 12;
+              return model.embedContent(toEmbed, taskType);
+            case 12:
+              result = _context3.sent;
+              cache[key] = result.embedding.values;
+              return _context3.abrupt("return", result.embedding.values);
+            case 15:
+            case "end":
+              return _context3.stop();
+          }
+        }, _callee3, this);
+      }));
+      function requestEmbedding(_x3, _x4) {
+        return _requestEmbedding.apply(this, arguments);
+      }
+      return requestEmbedding;
     }())
   }], [{
-    key: "CUSTOM_STATE_AI",
-    get: function get() {
-      return 'Gemini.ai';
+    key: "ADAPTERS",
+    get:
+    /**
+     * Get models.
+     * @returns {object} - models with target.id as key
+     * @static
+     */
+    function get() {
+      return GEMINI_ADAPTERS;
     }
 
     /**
@@ -1592,7 +2302,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "existsForTarget",
     value: function existsForTarget(target) {
-      return !!target.getCustomState(GeminiAdapter.CUSTOM_STATE_AI);
+      return !!GeminiAdapter.ADAPTERS[target.id];
     }
 
     /**
@@ -1603,7 +2313,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "getForTarget",
     value: function getForTarget(target) {
-      var ai = target.getCustomState(GeminiAdapter.CUSTOM_STATE_AI);
+      var ai = GeminiAdapter.ADAPTERS[target.id];
       if (ai) {
         return ai;
       }
@@ -1618,7 +2328,16 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "removeForTarget",
     value: function removeForTarget(target) {
-      target.setCustomState(GeminiAdapter.CUSTOM_STATE_AI, null);
+      delete GeminiAdapter.ADAPTERS[target.id];
+    }
+
+    /**
+     * Remove all Gemini Adapter.
+     */
+  }, {
+    key: "removeAllAdapter",
+    value: function removeAllAdapter() {
+      GeminiAdapter.ADAPTERS = {};
     }
 
     /**
@@ -1646,11 +2365,58 @@ var GeminiAdapter = /*#__PURE__*/function () {
 }();
 
 /**
+ * This module provides a set of utility functions for working with costumes.
+ * @module costume-util
+ */
+
+/**
+ * Convert full-width characters to half-width characters.
+ * @param {string} str - string to convert
+ * @returns {string} - converted string
+ */
+var convertToHalfWidthInt = function convertToHalfWidthInt(str) {
+  return str.replace(/[０-９]/g, function (s) {
+    return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+  }).replace(/[-－﹣−‐⁃‑‒–—﹘―⎯⏤ーｰ─━]/g, '-');
+};
+
+/**
+ * Convert array index from one-base to zero-base.
+ * If index is negative, it is converted from the end of the array.
+ * Returns most close index if index is out of range.
+ * @param {number} index - one-base array index
+ * @param {number} length - array length
+ * @returns {number | undefined} - converted array index
+ */
+var convertToZeroBaseIndex = function convertToZeroBaseIndex(index, length) {
+  if (length === 0) {
+    return;
+  }
+  if (index > length) {
+    return length - 1;
+  }
+  if (index < 0) {
+    index = length + index;
+    if (index < 0) {
+      return 0;
+    }
+  } else {
+    index--;
+  }
+  return index;
+};
+
+/**
  * Convert costume to dataURL.
- * @param {object} costume - costume
+ * @param {!object} costume - costume
+ * @param {string?} format - format of the dataURL default is 'png'
  * @returns {Promise<string>} - a Promise that resolves when the image is converted
  */
 var costumeToDataURL = function costumeToDataURL(costume) {
+  var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'png';
+  if (costume.asset.dataFormat === format) {
+    return Promise.resolve(costume.asset.encodeDataURI());
+  }
   var blob = new Blob([costume.asset.data], {
     type: costume.asset.assetType.contentType
   });
@@ -1665,10 +2431,35 @@ var costumeToDataURL = function costumeToDataURL(costume) {
       canvas.height = img.height;
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
-      var imageData = canvas.toDataURL('image/png');
+      var imageData = canvas.toDataURL("image/".concat(format));
       resolve(imageData);
     };
   });
+};
+
+/**
+ * Get costume by name or number.
+ * If costumeName was not found and it is a number, it is treated as a one-base index.
+ * Then that index was a negative number, it is treated as a zero-base index from the end of the costume list.
+ * @param {!Target} target - target to get costume
+ * @param {string} costumeName - name or number of the costume
+ * @returns {object | undefined} - costume
+ */
+var getCostumeByNameOrNumber = function getCostumeByNameOrNumber(target, costumeName) {
+  var costumeArray = target.getCostumes();
+  var costume = costumeArray.find(function (c) {
+    return c.name === costumeName;
+  });
+  if (!costume) {
+    var costumeNumber = parseInt(convertToHalfWidthInt(costumeName), 10);
+    if (!isNaN(costumeNumber) && costumeNumber !== 0) {
+      var costumeIndex = convertToZeroBaseIndex(costumeNumber, costumeArray.length);
+      if (typeof costumeIndex !== 'undefined') {
+        costume = costumeArray[costumeIndex];
+      }
+    }
+  }
+  return costume;
 };
 
 /**
@@ -1676,15 +2467,13 @@ var costumeToDataURL = function costumeToDataURL(costume) {
  * @param {Target} target - target to add costume
  * @param {string} dataURL - image data
  * @param {Runtime} runtime - runtime
- * @param {VirtualMachine} vm - virtual machine
  * @param {string} imageName - name of the costume
+ * @param {VirtualMachine} vm - virtual machine
  * @returns {Promise} - a Promise that resolves when the image is added
 */
-var addImageAsCostume = function addImageAsCostume(target, dataURL, runtime, vm) {
-  var imageName = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'costume';
-  if (!vm) {
-    return Promise.reject(new Error('Virtual Machine is needed to add costume'));
-  }
+var addImageAsCostume = function addImageAsCostume(target, dataURL, runtime) {
+  var imageName = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'costume';
+  var vm = arguments.length > 4 ? arguments[4] : undefined;
   var mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
   var assetType;
   var dataFormat;
@@ -1722,203 +2511,152 @@ var addImageAsCostume = function addImageAsCostume(target, dataURL, runtime, vm)
     assetId: asset.assetId
   };
   var currentCostumeIndex = target.currentCostume;
-  return vm.addCostume(newCostume.md5, newCostume, target.id).then(function () {
+  if (vm) {
+    return vm.addCostume(newCostume.md5, newCostume, target.id).then(function () {
+      target.setCostume(currentCostumeIndex);
+      runtime.emitProjectChanged();
+    });
+  }
+  return new Promise(function (resolve, reject) {
+    var image = new Image();
+    image.onload = function () {
+      resolve(image);
+      image.onload = null;
+      image.onerror = null;
+    };
+    image.onerror = function () {
+      reject(new Error('Costume load failed. Asset could not be read.'));
+      image.onload = null;
+      image.onerror = null;
+    };
+    image.src = asset.encodeDataURI();
+  }).then(function (imageElem) {
+    var canvas = document.createElement('canvas');
+    canvas.width = imageElem.width;
+    canvas.height = imageElem.height;
+    var context = canvas.getContext('2d');
+    context.drawImage(imageElem, 0, 0);
+    newCostume.skinId = runtime.renderer.createBitmapSkin(canvas, newCostume.bitmapResolution);
+    var renderSize = runtime.renderer.getSkinSize(newCostume.skinId);
+    // Actual size, since all bitmaps are resolution 2
+    newCostume.size = [renderSize[0] * 2, renderSize[1] * 2];
+    var rotationCenter = runtime.renderer.getSkinRotationCenter(newCostume.skinId);
+    // Actual rotation center, since all bitmaps are resolution 2
+    newCostume.rotationCenterX = rotationCenter[0] * 2;
+    newCostume.rotationCenterY = rotationCenter[1] * 2;
+    newCostume.bitmapResolution = 2;
+  }).then(function () {
+    target.addCostume(newCostume);
     target.setCostume(currentCostumeIndex);
     runtime.emitProjectChanged();
   });
 };
 
-/**
- * Convert full-width characters to half-width characters.
- * @param {string} str - string to convert
- * @returns {string} - converted string
- */
-var convertToHalfWidth = function convertToHalfWidth(str) {
-  return str.replace(/[Ａ-Ｚａ-ｚ０-９！-～]/g, function (s) {
-    return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-  });
-};
-
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
 /**
  * Parse content parts text.
  * @param {string} contentPartsText - content parts text
  * @returns {string[]} - content part directives
  */
 var parseContentPartsText = function parseContentPartsText(contentPartsText) {
-  var regex = /(.*?)(\[costume[^[\]]*\]|\[snapshot\])|(.+)/gi;
+  var parser = /(.*?)[\s\u3000"'`[{(,.]*(data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+)[\s\u3000"'`\]}),.]*|(.*)/gi;
   var contentPartDirectives = [];
-  var match;
-  while ((match = regex.exec(contentPartsText)) !== null) {
-    if (match[1]) contentPartDirectives.push(match[1]);
-    if (match[2]) contentPartDirectives.push(match[2]);
-    if (match[3]) contentPartDirectives.push(match[3]);
+  var matches = contentPartsText.matchAll(parser);
+  var _iterator = _createForOfIteratorHelper(matches),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var match = _step.value;
+      if (match[1]) contentPartDirectives.push(match[1]);
+      if (match[2]) contentPartDirectives.push(match[2]);
+      if (match[3]) contentPartDirectives.push(match[3]);
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
   }
   return contentPartDirectives;
 };
-
-/**
- * Read a content part directive.
- * @param {string} directive - content part directive
- * @returns {object} - directive type, sprite name, resource name
- */
-var parseContentPartDirective = function parseContentPartDirective(directive) {
-  var directiveType = '';
-  var spriteName = '';
-  var resourceName = '';
-  if (directive.toLowerCase() === '[snapshot]') {
-    directiveType = 'snapshot';
-  } else if (directive.includes(':')) {
-    var parts = directive.slice(1, -1).split(':');
-    if (parts[0]) directiveType = parts[0];
-    if (parts[1]) spriteName = parts[1];
-    if (parts[2]) resourceName = parts[2];
-  } else {
-    spriteName = directive.slice(1, -1);
-  }
-  return {
-    directiveType: directiveType,
-    spriteName: spriteName,
-    resourceName: resourceName
-  };
-};
-var makeImagePartFromCostume = /*#__PURE__*/function () {
-  var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee(costume) {
-    var imageDataURL, imagePart;
-    return _regeneratorRuntime.wrap(function _callee$(_context) {
-      while (1) switch (_context.prev = _context.next) {
-        case 0:
-          _context.next = 2;
-          return costumeToDataURL(costume);
-        case 2:
-          imageDataURL = _context.sent;
-          imagePart = {
-            inlineData: {
-              data: imageDataURL.split(',')[1],
-              mimeType: 'image/png'
-            }
-          };
-          return _context.abrupt("return", imagePart);
-        case 5:
-        case "end":
-          return _context.stop();
-      }
-    }, _callee);
-  }));
-  return function makeImagePartFromCostume(_x) {
-    return _ref.apply(this, arguments);
-  };
-}();
 
 /**
  * Interpret content part directives.
  * @param {string[]} contentPartDirectives - content part directives
  * @param {Target} requester - target which is requesting to AI
  * @param {Runtime} runtime - runtime
- * @returns {Promise<object[]>} - a Promise that resolves content parts
+ * @returns {object[]} - content parts
  */
-var interpretContentPartDirectives = function interpretContentPartDirectives(contentPartDirectives, requester, runtime) {
-  var contentParts = contentPartDirectives.map( /*#__PURE__*/function () {
-    var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(directive) {
-      var _parseContentPartDire, directiveType, spriteName, resourceName, contentPartHolder, costume, costumeNumber, imagePart, stage;
-      return _regeneratorRuntime.wrap(function _callee2$(_context2) {
-        while (1) switch (_context2.prev = _context2.next) {
-          case 0:
-            if (directive.startsWith('[')) {
-              _context2.next = 2;
-              break;
-            }
-            return _context2.abrupt("return", directive);
-          case 2:
-            _parseContentPartDire = parseContentPartDirective(directive), directiveType = _parseContentPartDire.directiveType, spriteName = _parseContentPartDire.spriteName, resourceName = _parseContentPartDire.resourceName;
-            contentPartHolder = null;
-            if (spriteName === '') {
-              contentPartHolder = requester;
-            } else if (spriteName.toLowerCase() === 'stage' || spriteName === 'ステージ') {
-              contentPartHolder = runtime.getTargetForStage();
-            } else {
-              contentPartHolder = runtime.getSpriteTargetByName(spriteName);
-            }
-            if (contentPartHolder) {
-              _context2.next = 7;
-              break;
-            }
-            return _context2.abrupt("return", directive);
-          case 7:
-            if (!(directiveType === 'costume')) {
-              _context2.next = 17;
-              break;
-            }
-            costume = contentPartHolder.getCostumes().find(function (c) {
-              return c.name === resourceName;
-            });
-            if (!costume) {
-              costumeNumber = convertToHalfWidth(resourceName);
-              if (costumeNumber.startsWith('#') && costumeNumber.length > 1) {
-                costumeNumber = parseInt(costumeNumber.slice(1), 10);
-                if (!isNaN(costumeNumber)) {
-                  costume = contentPartHolder.getCostumes()[Math.max(0, Math.min(costumeNumber - 1, contentPartHolder.getCostumes().length - 1))];
-                }
-              }
-            }
-            if (!costume) {
-              costume = contentPartHolder.getCostumes()[contentPartHolder.currentCostume];
-            }
-            _context2.next = 13;
-            return makeImagePartFromCostume(costume);
-          case 13:
-            imagePart = _context2.sent;
-            return _context2.abrupt("return", imagePart);
-          case 17:
-            if (!(directiveType === 'snapshot')) {
-              _context2.next = 20;
-              break;
-            }
-            stage = runtime.getTargetForStage();
-            return _context2.abrupt("return", new Promise(function (resolve) {
-              stage.renderer.requestSnapshot(function (imageDataURL) {
-                var imagePart = {
-                  inlineData: {
-                    data: imageDataURL.split(',')[1],
-                    mimeType: 'image/png'
-                  }
-                };
-                if (DEBUG) {
-                  addImageAsCostume(requester, imageDataURL, runtime, runtime.vm, 'snapshot').catch(function (e) {
-                    console.error(e);
-                  });
-                }
-                resolve(imagePart);
-              });
-            }));
-          case 20:
-            throw new Error("Unknown directive: ".concat(directive));
-          case 21:
-          case "end":
-            return _context2.stop();
-        }
-      }, _callee2);
-    }));
-    return function (_x2) {
-      return _ref2.apply(this, arguments);
+var interpretContentPartDirectives = function interpretContentPartDirectives(contentPartDirectives) {
+  return contentPartDirectives.map(function (directive) {
+    if (directive.trim().match(/data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+/)) {
+      return {
+        type: 'dataURL',
+        data: directive
+      };
+    }
+    return {
+      type: 'text',
+      data: directive
     };
-  }());
-  return Promise.all(contentParts);
+  });
 };
 
-var HarmCategory = {
-  HARM_CATEGORY_UNSPECIFIED: 'HARM_CATEGORY_UNSPECIFIED',
-  HARM_CATEGORY_HATE_SPEECH: 'HARM_CATEGORY_HATE_SPEECH',
-  HARM_CATEGORY_SEXUALLY_EXPLICIT: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-  HARM_CATEGORY_HARASSMENT: 'HARM_CATEGORY_HARASSMENT',
-  HARM_CATEGORY_DANGEROUS_CONTENT: 'HARM_CATEGORY_DANGEROUS_CONTENT'
+/**
+ * Interpret content parts text.
+ * @param {string} contentPartsText - content parts text
+ * @returns {object[]} - content parts
+ */
+var interpretContentPartsText = function interpretContentPartsText(contentPartsText) {
+  var contentPartDirectives = parseContentPartsText(contentPartsText);
+  var contentParts = interpretContentPartDirectives(contentPartDirectives);
+  return contentParts;
 };
-var HarmBlockThreshold = {
-  HARM_BLOCK_THRESHOLD_UNSPECIFIED: 'HARM_BLOCK_THRESHOLD_UNSPECIFIED',
-  BLOCK_LOW_AND_ABOVE: 'BLOCK_LOW_AND_ABOVE',
-  BLOCK_MEDIUM_AND_ABOVE: 'BLOCK_MEDIUM_AND_ABOVE',
-  BLOCK_ONLY_HIGH: 'BLOCK_ONLY_HIGH',
-  BLOCK_NONE: 'BLOCK_NONE'
+
+/**
+ * Applies a function to each element of an array and returns the results in a new array.
+ * @param {function} func - function to apply
+ * @param {Array} arg1 - array to map over
+ * @param {Array} arg2 - array to map over
+ * @returns {Array} - mapped array
+ */
+var zipWith = function zipWith(func, arg1, arg2) {
+  var arg2Length = arg2.length;
+  return (arg1.length <= arg2Length ? arg1 : arg1.slice(0, arg2Length)).map(function (x, i) {
+    return func(x, arg2[i]);
+  });
 };
+
+/**
+ * Computes the euclidean distance between two vectors.
+ * @param {number[]} vectorA - vector A
+ * @param {number[]} vectorB - vector B
+ * @returns {number} - euclidean distance
+ * @see {@link https://en.wikipedia.org/wiki/Euclidean_distance}
+ */
+var euclideanDistance = function euclideanDistance(vectorA, vectorB) {
+  return Math.hypot.apply(Math, _toConsumableArray(zipWith(function (a, b) {
+    return a - b;
+  }, vectorA, vectorB)));
+};
+
+/**
+ * Computes the dot product of two vectors.
+ * @param {number[]} vectorA - vector A
+ * @param {number[]} vectorB - vector B
+ * @returns {number} - dot product
+ */
+var dotProduct = function dotProduct(vectorA, vectorB) {
+  return zipWith(function (a, b) {
+    return a * b;
+  }, vectorA, vectorB).reduce(function (a, b) {
+    return a + b;
+  }, 0);
+};
+
+function _asyncIterator(r) { var n, t, o, e = 2; for ("undefined" != typeof Symbol && (t = Symbol.asyncIterator, o = Symbol.iterator); e--;) { if (t && null != (n = r[t])) return n.call(r); if (o && null != (n = r[o])) return new AsyncFromSyncIterator(n.call(r)); t = "@@asyncIterator", o = "@@iterator"; } throw new TypeError("Object is not async iterable"); }
+function AsyncFromSyncIterator(r) { function AsyncFromSyncIteratorContinuation(r) { if (Object(r) !== r) return Promise.reject(new TypeError(r + " is not an object.")); var n = r.done; return Promise.resolve(r.value).then(function (r) { return { value: r, done: n }; }); } return AsyncFromSyncIterator = function AsyncFromSyncIterator(r) { this.s = r, this.n = r.next; }, AsyncFromSyncIterator.prototype = { s: null, n: null, next: function next() { return AsyncFromSyncIteratorContinuation(this.n.apply(this.s, arguments)); }, return: function _return(r) { var n = this.s.return; return void 0 === n ? Promise.resolve({ value: r, done: !0 }) : AsyncFromSyncIteratorContinuation(n.apply(this.s, arguments)); }, throw: function _throw(r) { var n = this.s.return; return void 0 === n ? Promise.reject(r) : AsyncFromSyncIteratorContinuation(n.apply(this.s, arguments)); } }, new AsyncFromSyncIterator(r); }
 
 /**
  * Formatter which is used for translation.
@@ -1991,41 +2729,108 @@ var GeminiBlocks = /*#__PURE__*/function () {
         blockIconURI: img,
         showStatusButton: false,
         blocks: [{
-          opcode: 'prompt',
+          opcode: 'generate',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
-            id: 'gai.prompt',
-            default: 'prompt [PROMPT]',
-            description: 'prompt block text of GAI'
+            id: 'gai.generate',
+            default: 'generate [PROMPT]',
+            description: 'generate block text of GAI'
           }),
-          func: 'prompt',
+          func: 'generate',
           arguments: {
             PROMPT: {
               type: ArgumentType$1.STRING,
               defaultValue: formatMessage({
-                id: 'gai.promptDefault',
-                default: 'The position of [costume:Sprite1:costume1] in [snapshot]?',
-                description: 'default prompt for Gemini'
+                id: 'gai.generateDefault',
+                default: 'What is AI?',
+                description: 'default generate prompt for Gemini'
               })
             }
           }
+        }, {
+          opcode: 'costumeData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.costumeData',
+            default: 'costume data [COSTUME]'
+          }),
+          func: 'costumeData',
+          arguments: {
+            COSTUME: {
+              type: ArgumentType$1.STRING,
+              menu: 'costumeMenu'
+            }
+          }
+        }, {
+          opcode: 'backdropData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.backdropData',
+            default: 'backdrop data [BACKDROP]'
+          }),
+          func: 'backdropData',
+          arguments: {
+            BACKDROP: {
+              type: ArgumentType$1.STRING,
+              menu: 'backdropMenu'
+            }
+          }
+        }, {
+          opcode: 'snapshotData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.snapshotData',
+            default: 'snapshot data',
+            description: 'snapshotData block text for Gemini'
+          }),
+          func: 'snapshotData',
+          arguments: {}
         }, {
           opcode: 'chat',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
             id: 'gai.chat',
-            default: 'chat [MESSAGE]',
+            default: 'chat [PROMPT]',
             description: 'chat block text of GAI'
           }),
           func: 'chat',
           arguments: {
-            MESSAGE: {
+            PROMPT: {
               type: ArgumentType$1.STRING,
               defaultValue: formatMessage({
                 id: 'gai.chatDefault',
                 default: 'Hello Gemini!',
-                description: 'default chat message for GAI'
+                description: 'default chat prompt for GAI'
               })
+            }
+          }
+        }, {
+          opcode: 'chatHistory',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.chatHistory',
+            default: 'chat history',
+            description: 'chat history block text for Gemini'
+          }),
+          disableMonitor: true,
+          func: 'chatHistory',
+          arguments: {}
+        }, {
+          opcode: 'startChat',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.startChat',
+            default: 'start chat with history [HISTORY]',
+            description: 'start chat for Gemini'
+          }),
+          func: 'startChat',
+          arguments: {
+            HISTORY: {
+              type: ArgumentType$1.STRING,
+              defaultValue: ' '
             }
           }
         }, '---', {
@@ -2041,7 +2846,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {
             CANDIDATE_INDEX: {
               type: ArgumentType$1.NUMBER,
-              defaultValue: 1
+              menu: 'responseCandidateIndexMenu'
             }
           }
         }, {
@@ -2057,13 +2862,34 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {
             CANDIDATE_INDEX: {
               type: ArgumentType$1.NUMBER,
-              defaultValue: 1
+              menu: 'responseCandidateIndexMenu'
             },
             HARM_CATEGORY: {
               type: ArgumentType$1.STRING,
               menu: 'harmCategoryMenu'
             }
           }
+        }, {
+          opcode: 'whenPartialResponseReceived',
+          blockType: BlockType$1.EVENT,
+          text: formatMessage({
+            id: 'gai.whenPartialResponseReceived',
+            default: 'when partial response received',
+            description: 'when partial response received for Gemini'
+          }),
+          isEdgeActivated: false,
+          shouldRestartExistingThreads: true
+        }, {
+          opcode: 'partialResponseText',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.partialResponseText',
+            default: 'partial response text',
+            description: 'partial response text of Gemini'
+          }),
+          disableMonitor: true,
+          func: 'partialResponseText',
+          arguments: {}
         }, '---', {
           opcode: 'setSafetyRating',
           blockType: BlockType$1.COMMAND,
@@ -2120,6 +2946,89 @@ var GeminiBlocks = /*#__PURE__*/function () {
             }
           }
         }, {
+          opcode: 'countTokensAs',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.countTokensAs',
+            default: 'count tokens [CONTENT] as [REQUEST_TYPE]',
+            description: 'count tokens block text for Gemini'
+          }),
+          func: 'countTokensAs',
+          arguments: {
+            CONTENT: {
+              type: ArgumentType$1.STRING,
+              defaultValue: ' '
+            },
+            REQUEST_TYPE: {
+              type: ArgumentType$1.STRING,
+              menu: 'countTokensRequestTypeMenu'
+            }
+          }
+        }, '---', {
+          opcode: 'embeddingFor',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.embeddingFor',
+            default: 'embedding of [CONTENT] for [TASK_TYPE]',
+            description: 'embed block text for Gemini'
+          }),
+          func: 'embeddingFor',
+          arguments: {
+            CONTENT: {
+              type: ArgumentType$1.STRING,
+              defaultValue: ' '
+            },
+            TASK_TYPE: {
+              type: ArgumentType$1.STRING,
+              menu: 'embeddingTaskTypeMenu'
+            }
+          }
+        }, {
+          opcode: 'embeddingDistanceOf',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.embeddingDistanceOf',
+            default: '[METRIC] of [VECTOR_A] and [VECTOR_B]',
+            description: 'vector distance block text for Gemini'
+          }),
+          func: 'embeddingDistanceOf',
+          arguments: {
+            METRIC: {
+              type: ArgumentType$1.STRING,
+              menu: 'distanceMetricMenu'
+            },
+            VECTOR_A: {
+              type: ArgumentType$1.STRING,
+              defaultValue: '1,1,1'
+            },
+            VECTOR_B: {
+              type: ArgumentType$1.STRING,
+              defaultValue: '1,2,3'
+            }
+          }
+        }, '---', {
+          opcode: 'askApiKey',
+          blockType: BlockType$1.COMMAND,
+          blockAllThreads: true,
+          text: formatMessage({
+            id: 'gai.askApiKey',
+            default: 'ask API key',
+            description: 'ask API key for Gemini'
+          }),
+          func: 'askApiKey',
+          arguments: {}
+        }, {
+          opcode: 'apiKey',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.apiKey',
+            default: 'API key',
+            description: 'API key for Gemini'
+          }),
+          func: 'apiKey',
+          arguments: {}
+        }, {
           opcode: 'setApiKey',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
@@ -2135,53 +3044,20 @@ var GeminiBlocks = /*#__PURE__*/function () {
               description: 'API key for Gemini'
             }
           }
-        }, {
-          opcode: 'startChat',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.startChat',
-            default: 'start chat with history [HISTORY]',
-            description: 'start chat for Gemini'
-          }),
-          func: 'startChat',
-          arguments: {
-            HISTORY: {
-              type: ArgumentType$1.STRING,
-              defaultValue: ' '
-            }
-          }
-        }, '---', {
-          opcode: 'countPromptTokens',
-          blockType: BlockType$1.REPORTER,
-          text: formatMessage({
-            id: 'gai.countPromptTokens',
-            default: 'count tokens as prompt [PROMPT]',
-            description: 'count tokens as prompt for Gemini'
-          }),
-          func: 'countPromptTokens',
-          arguments: {
-            PROMPT: {
-              type: ArgumentType$1.STRING,
-              defaultValue: ' '
-            }
-          }
-        }, {
-          opcode: 'countChatTokens',
-          blockType: BlockType$1.REPORTER,
-          text: formatMessage({
-            id: 'gai.countChatTokens',
-            default: 'count tokens as chat [MESSAGE]',
-            description: 'count tokens as chat for Gemini'
-          }),
-          func: 'countChatTokens',
-          arguments: {
-            MESSAGE: {
-              type: ArgumentType$1.STRING,
-              defaultValue: ' '
-            }
-          }
         }],
         menus: {
+          costumeMenu: {
+            acceptReporters: true,
+            items: 'getCostumeMenu'
+          },
+          backdropMenu: {
+            acceptReporters: true,
+            items: 'getBackdropMenu'
+          },
+          responseCandidateIndexMenu: {
+            acceptReporters: true,
+            items: 'getResponseCandidateIndexMenu'
+          },
           harmCategorySettingMenu: {
             acceptReporters: false,
             items: 'getHarmCategorySettingMenu'
@@ -2197,9 +3073,80 @@ var GeminiBlocks = /*#__PURE__*/function () {
           generationConfigMenu: {
             acceptReporters: false,
             items: 'getGenerationConfigMenu'
+          },
+          countTokensRequestTypeMenu: {
+            acceptReporters: false,
+            items: 'getCountTokensRequestTypeMenu'
+          },
+          distanceMetricMenu: {
+            acceptReporters: false,
+            items: 'getEmbeddingDistanceMetricMenu'
+          },
+          embeddingTaskTypeMenu: {
+            acceptReporters: false,
+            items: 'getEmbeddingTaskTypeMenu'
           }
         }
       };
+    }
+  }, {
+    key: "getCostumeMenu",
+    value: function getCostumeMenu() {
+      var menu = [];
+      var target = this.runtime.getEditingTarget();
+      if (!target) {
+        return menu;
+      }
+      var costumes = target.sprite.costumes;
+      for (var i = 0; i < costumes.length; i++) {
+        menu.push({
+          text: costumes[i].name,
+          value: costumes[i].name
+        });
+      }
+      return menu;
+    }
+  }, {
+    key: "getBackdropMenu",
+    value: function getBackdropMenu() {
+      var menu = [];
+      var target = this.runtime.getTargetForStage();
+      var backdrops = target.sprite.costumes;
+      for (var i = 0; i < backdrops.length; i++) {
+        menu.push({
+          text: backdrops[i].name,
+          value: backdrops[i].name
+        });
+      }
+      return menu;
+    }
+  }, {
+    key: "getResponseCandidateIndexMenu",
+    value: function getResponseCandidateIndexMenu() {
+      var menu = [{
+        text: '1',
+        value: '1'
+      }];
+      var target = this.runtime.getEditingTarget();
+      if (!target) {
+        return menu;
+      }
+      var ai = this.getAI(target);
+      var modelParams = ai.getModelParams();
+      if (!modelParams) {
+        return menu;
+      }
+      if (!modelParams.generationConfig) {
+        return menu;
+      }
+      var candidateCount = modelParams.generationConfig.candidateCount;
+      for (var i = 1; i < candidateCount; i++) {
+        menu.push({
+          text: String(i + 1),
+          value: String(i + 1)
+        });
+      }
+      return menu;
     }
   }, {
     key: "getHarmCategoryMenu",
@@ -2338,92 +3285,86 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }];
       return menu;
     }
-
-    /**
-     * Open dialog to input API key by user.
-     * @returns {Promise<string>} - a Promise that resolves API key
-     */
   }, {
-    key: "openApiKeyDialog",
-    value: function openApiKeyDialog() {
-      var _this = this;
-      if (this.apiKeyDialogOpened) {
-        // prevent to open multiple dialogs
-        return Promise.resolve(null);
-      }
-      this.apiKeyDialogOpened = true;
-      var inputDialog = document.createElement('dialog');
-      inputDialog.style.padding = '0px';
-      var dialogFace = document.createElement('div');
-      dialogFace.style.padding = '16px';
-      inputDialog.appendChild(dialogFace);
-      var label = document.createTextNode(formatMessage({
-        id: 'gai.apiKeyDialog.message',
-        default: 'set API key',
-        description: 'label of API key input dialog for gemini'
-      }));
-      dialogFace.appendChild(label);
-      // Dialog form
-      var apiKeyForm = document.createElement('form');
-      apiKeyForm.setAttribute('method', 'dialog');
-      apiKeyForm.style.margin = '8px';
-      apiKeyForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-      });
-      dialogFace.appendChild(apiKeyForm);
-      // API select
-      var apiKeyInput = document.createElement('input');
-      apiKeyInput.setAttribute('type', 'text');
-      apiKeyInput.setAttribute('id', 'apiKeyInput');
-      apiKeyInput.setAttribute('size', '50');
-      apiKeyInput.setAttribute('value', '');
-      apiKeyForm.appendChild(apiKeyInput);
-      // Cancel button
-      var cancelButton = document.createElement('button');
-      cancelButton.textContent = formatMessage({
-        id: 'gai.apiKeyDialog.cancel',
-        default: 'cancel',
-        description: 'cancel button on groupID input dialog for gemini'
-      });
-      cancelButton.style.margin = '8px';
-      dialogFace.appendChild(cancelButton);
-      // OK button
-      var confirmButton = document.createElement('button');
-      confirmButton.textContent = formatMessage({
-        id: 'gai.apiKeyDialog.set',
-        default: 'set',
-        description: 'set button on API key input dialog for gemini'
-      });
-      confirmButton.style.margin = '8px';
-      dialogFace.appendChild(confirmButton);
-      return new Promise(function (resolve) {
-        // Add onClick action
-        var confirmed = function confirmed() {
-          var inputValue = apiKeyInput.value.trim();
-          if (inputValue === '') {
-            return; // do not exit dialog
-          }
-          resolve(inputValue);
-        };
-        confirmButton.onclick = confirmed;
-        var canceled = function canceled() {
-          resolve('');
-        };
-        cancelButton.onclick = canceled;
-        inputDialog.addEventListener('keydown', function (e) {
-          if (e.code === 'Enter') {
-            confirmed();
-          }
-          if (e.code === 'Escape') {
-            canceled();
-          }
-        });
-        document.body.appendChild(inputDialog);
-        inputDialog.showModal();
-      }).finally(function () {
-        document.body.removeChild(inputDialog);
-        _this.apiKeyDialogOpened = false;
-      });
+    key: "getCountTokensRequestTypeMenu",
+    value: function getCountTokensRequestTypeMenu() {
+      var menu = [{
+        text: formatMessage({
+          id: 'gai.countTokensRequestTypeMenu.generate',
+          default: 'Generate',
+          description: 'count tokens request type menu item for generate in Gemini'
+        }),
+        value: 'generate'
+      }, {
+        text: formatMessage({
+          id: 'gai.countTokensRequestTypeMenu.chat',
+          default: 'Chat',
+          description: 'count tokens request type menu item for chat in Gemini'
+        }),
+        value: 'chat'
+      }];
+      return menu;
+    }
+  }, {
+    key: "getEmbeddingDistanceMetricMenu",
+    value: function getEmbeddingDistanceMetricMenu() {
+      var menu = [{
+        text: formatMessage({
+          id: 'gai.distanceMetricMenu.dotProduct',
+          default: 'Dot Product',
+          description: 'distance metric menu item for dot product in Gemini'
+        }),
+        value: 'dotProduct'
+      }, {
+        text: formatMessage({
+          id: 'gai.distanceMetricMenu.euclidean',
+          default: 'Euclidean Distance',
+          description: 'distance metric menu item for euclidean in Gemini'
+        }),
+        value: 'euclidean'
+      }];
+      return menu;
+    }
+  }, {
+    key: "getEmbeddingTaskTypeMenu",
+    value: function getEmbeddingTaskTypeMenu() {
+      var menu = [{
+        text: formatMessage({
+          id: 'gai.embeddingTaskTypeMenu.retrievalQuery',
+          default: 'Retrieval Query',
+          description: 'embedding task type menu item in Gemini'
+        }),
+        value: EmbeddingTaskType.RETRIEVAL_QUERY
+      }, {
+        text: formatMessage({
+          id: 'gai.embeddingTaskTypeMenu.retrievalDocument',
+          default: 'Retrieval Document',
+          description: 'embedding task type menu item in Gemini'
+        }),
+        value: EmbeddingTaskType.RETRIEVAL_DOCUMENT
+      }, {
+        text: formatMessage({
+          id: 'gai.embeddingTaskTypeMenu.semanticSimilarity',
+          default: 'Semantic Similarity',
+          description: 'embedding task type menu item in Gemini'
+        }),
+        value: EmbeddingTaskType.SEMANTIC_SIMILARITY
+      }, {
+        text: formatMessage({
+          id: 'gai.embeddingTaskTypeMenu.classification',
+          default: 'Classification',
+          description: 'embedding task type menu item in Gemini'
+        }),
+        value: EmbeddingTaskType.CLASSIFICATION
+      }, {
+        text: formatMessage({
+          id: 'gai.embeddingTaskTypeMenu.clustering',
+          default: 'Clustering',
+          description: 'embedding task type menu item in Gemini'
+        }),
+        value: EmbeddingTaskType.CLUSTERING
+      }];
+      return menu;
     }
 
     /**
@@ -2437,238 +3378,379 @@ var GeminiBlocks = /*#__PURE__*/function () {
     }
 
     /**
-     * Confirm API key.
-     * @returns {Promise<void>} - a Promise that resolves when the API key is confirmed
-     * @throws {Error} - when API key is not set
+     * Get partial response text from last result.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - partial response text
      */
   }, {
-    key: "confirmAPIKey",
+    key: "partialResponseText",
+    value: function partialResponseText(args, util) {
+      var target = util.target;
+      if (!GeminiAdapter.existsForTarget(target)) {
+        return '';
+      }
+      var ai = GeminiAdapter.getForTarget(target);
+      var response = ai.getLastPartialResponse();
+      if (!response) {
+        return '';
+      }
+      return response.text();
+    }
+
+    /**
+     * Whether the block is using in the target.
+     * @param {string} blockOpcode - block opcode
+     * @param {Target} target - the target to check
+     * @returns {boolean} - whether the block is using in the target
+     */
+  }, {
+    key: "blockIsUsingInTarget",
+    value: function blockIsUsingInTarget(blockOpcode, target) {
+      var executableBlocks = target.blocks._blocks;
+      for (var block in executableBlocks) {
+        if (executableBlocks[block].opcode === blockOpcode) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Request content to AI and get streaming result.
+     * @param {object} prompt - prompt object
+     * @param {Target} target - the target to get the AI
+     * @param {string} requestType - request type {'generate' | 'chat'}
+     * @returns {Promise<string>} - a Promise that resolves response text
+     * @private
+     */
+  }, {
+    key: "requestContentStream",
     value: (function () {
-      var _confirmAPIKey = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
-        var apiKey;
+      var _requestContentStream = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee(prompt, target, requestType) {
+        var ai, streamingResult, _streamingResult, partialResponseStream, totalResponseReceived, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialResponse, totalResponse;
         return _regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
-              if (GeminiAdapter.getApiKey()) {
+              ai = this.getAI(target);
+              if (!(requestType === 'generate')) {
                 _context.next = 7;
                 break;
               }
-              _context.next = 3;
-              return this.openApiKeyDialog();
-            case 3:
-              apiKey = _context.sent;
-              if (!(!apiKey || apiKey === '')) {
-                _context.next = 6;
+              _context.next = 4;
+              return ai.requestGenerate(prompt, true);
+            case 4:
+              streamingResult = _context.sent;
+              _context.next = 14;
+              break;
+            case 7:
+              if (!(requestType === 'chat')) {
+                _context.next = 13;
                 break;
               }
-              throw new Error('API key is not set.');
-            case 6:
-              GeminiAdapter.setApiKey(apiKey);
-            case 7:
+              _context.next = 10;
+              return ai.requestChat(prompt, true);
+            case 10:
+              streamingResult = _context.sent;
+              _context.next = 14;
+              break;
+            case 13:
+              throw new Error("unknown request type: ".concat(requestType));
+            case 14:
+              _streamingResult = streamingResult, partialResponseStream = _streamingResult.stream, totalResponseReceived = _streamingResult.response;
+              _iteratorAbruptCompletion = false;
+              _didIteratorError = false;
+              _context.prev = 17;
+              _iterator = _asyncIterator(partialResponseStream);
+            case 19:
+              _context.next = 21;
+              return _iterator.next();
+            case 21:
+              if (!(_iteratorAbruptCompletion = !(_step = _context.sent).done)) {
+                _context.next = 29;
+                break;
+              }
+              partialResponse = _step.value;
+              if (DEBUG) log$1.log("partial response for ".concat(requestType, ":").concat(partialResponse.text()));
+              ai.setLastPartialResponse(partialResponse);
+              this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+            case 26:
+              _iteratorAbruptCompletion = false;
+              _context.next = 19;
+              break;
+            case 29:
+              _context.next = 35;
+              break;
+            case 31:
+              _context.prev = 31;
+              _context.t0 = _context["catch"](17);
+              _didIteratorError = true;
+              _iteratorError = _context.t0;
+            case 35:
+              _context.prev = 35;
+              _context.prev = 36;
+              if (!(_iteratorAbruptCompletion && _iterator.return != null)) {
+                _context.next = 40;
+                break;
+              }
+              _context.next = 40;
+              return _iterator.return();
+            case 40:
+              _context.prev = 40;
+              if (!_didIteratorError) {
+                _context.next = 43;
+                break;
+              }
+              throw _iteratorError;
+            case 43:
+              return _context.finish(40);
+            case 44:
+              return _context.finish(35);
+            case 45:
+              _context.next = 47;
+              return totalResponseReceived;
+            case 47:
+              totalResponse = _context.sent;
+              if (DEBUG) log$1.log("response for ".concat(requestType, ":").concat(totalResponse.text()));
+              ai.setLastResponse(totalResponse);
+              return _context.abrupt("return", totalResponse.text());
+            case 51:
             case "end":
               return _context.stop();
           }
-        }, _callee, this);
+        }, _callee, this, [[17, 31, 35, 45], [36,, 40, 44]]);
       }));
-      function confirmAPIKey() {
-        return _confirmAPIKey.apply(this, arguments);
+      function requestContentStream(_x, _x2, _x3) {
+        return _requestContentStream.apply(this, arguments);
       }
-      return confirmAPIKey;
+      return requestContentStream;
     }()
     /**
-     * Prompt to AI.
+     * Request content to AI.
+     * @param {string} prompt - prompt text to AI
+     * @param {Target} target - the target to get the AI
+     * @param {string} requestType - request type {'generate' | 'chat'}
+     * @returns {Promise<string>} - a Promise that resolves response text
+     * @private
+     */
+    )
+  }, {
+    key: "requestContent",
+    value: (function () {
+      var _requestContent = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(prompt, target, requestType) {
+        var ai, result, response;
+        return _regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              ai = this.getAI(target);
+              if (!(requestType === 'generate')) {
+                _context2.next = 7;
+                break;
+              }
+              _context2.next = 4;
+              return ai.requestGenerate(prompt, false);
+            case 4:
+              result = _context2.sent;
+              _context2.next = 14;
+              break;
+            case 7:
+              if (!(requestType === 'chat')) {
+                _context2.next = 13;
+                break;
+              }
+              _context2.next = 10;
+              return ai.requestChat(prompt, false);
+            case 10:
+              result = _context2.sent;
+              _context2.next = 14;
+              break;
+            case 13:
+              throw new Error("unknown request type: ".concat(requestType));
+            case 14:
+              response = result.response;
+              ai.setLastResponse(response);
+              if (DEBUG) log$1.log("response for ".concat(requestType, ":").concat(response.text()));
+              return _context2.abrupt("return", response.text());
+            case 18:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, this);
+      }));
+      function requestContent(_x4, _x5, _x6) {
+        return _requestContent.apply(this, arguments);
+      }
+      return requestContent;
+    }())
+  }, {
+    key: "requestToAI",
+    value: function requestToAI(promptText, target, requestType, util) {
+      var ai = this.getAI(target);
+      if (ai.isRequesting()) {
+        util.yield();
+        return;
+      }
+      ai.setRequesting(true);
+      var prompt = interpretContentPartsText(promptText);
+      if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
+        return this.requestContentStream(prompt, target, requestType).catch(function (error) {
+          return error.message;
+        }).finally(function () {
+          ai.setRequesting(false);
+        });
+      }
+      return this.requestContent(prompt, target, requestType).catch(function (error) {
+        return error.message;
+      }).finally(function () {
+        ai.setRequesting(false);
+      });
+    }
+
+    /**
+     * Request AI to generate content.
      * @param {object} args - the block's arguments.
      * @param {string} args.PROMPT - prompt to AI
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves response text
      */
-    )
   }, {
-    key: "prompt",
-    value: (function () {
-      var _prompt = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(args, util) {
-        var target, runtime, ai, promptText, promptDirectives, _prompt2, result, response, text;
-        return _regeneratorRuntime.wrap(function _callee2$(_context2) {
-          while (1) switch (_context2.prev = _context2.next) {
-            case 0:
-              target = util.target;
-              runtime = this.runtime;
-              _context2.prev = 2;
-              _context2.next = 5;
-              return this.confirmAPIKey();
-            case 5:
-              ai = this.getAI(target);
-              if (!ai.isBlocked()) {
-                _context2.next = 9;
-                break;
-              }
-              util.yield();
-              return _context2.abrupt("return");
-            case 9:
-              ai.setBlock(true);
-              promptText = Cast$1.toString(args.PROMPT);
-              promptDirectives = parseContentPartsText(promptText);
-              _context2.next = 14;
-              return interpretContentPartDirectives(promptDirectives, target, runtime);
-            case 14:
-              _prompt2 = _context2.sent;
-              _context2.next = 17;
-              return ai.requestPrompt(_prompt2);
-            case 17:
-              result = _context2.sent;
-              response = result.response;
-              text = response.text();
-              if (DEBUG) console.log(text);
-              return _context2.abrupt("return", text);
-            case 24:
-              _context2.prev = 24;
-              _context2.t0 = _context2["catch"](2);
-              return _context2.abrupt("return", _context2.t0.message);
-            case 27:
-              _context2.prev = 27;
-              if (ai) ai.setBlock(false);
-              return _context2.finish(27);
-            case 30:
-            case "end":
-              return _context2.stop();
-          }
-        }, _callee2, this, [[2, 24, 27, 30]]);
-      }));
-      function prompt(_x, _x2) {
-        return _prompt.apply(this, arguments);
+    key: "generate",
+    value: function generate(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return 'API key is not set.';
       }
-      return prompt;
-    }()
+      var promptText = Cast$1.toString(args.PROMPT);
+      var requestType = 'generate';
+      var target = util.target;
+      return this.requestToAI(promptText, target, requestType, util);
+    }
+
     /**
      * Chat to AI. Start chat if not started.
      * @param {object} args - the block's arguments.
-     * @param {string} args.MESSAGE - message to AI
+     * @param {string} args.PROMPT - message to AI
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves response text
      */
-    )
   }, {
     key: "chat",
-    value: (function () {
-      var _chat = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(args, util) {
-        var target, runtime, ai, messageText, contentDirectives, message, result, response, text;
-        return _regeneratorRuntime.wrap(function _callee3$(_context3) {
-          while (1) switch (_context3.prev = _context3.next) {
-            case 0:
-              target = util.target;
-              runtime = this.runtime;
-              _context3.prev = 2;
-              _context3.next = 5;
-              return this.confirmAPIKey();
-            case 5:
-              ai = this.getAI(target);
-              if (!ai.isBlocked()) {
-                _context3.next = 9;
-                break;
-              }
-              util.yield();
-              return _context3.abrupt("return");
-            case 9:
-              ai.setBlock(true);
-              messageText = Cast$1.toString(args.MESSAGE);
-              contentDirectives = parseContentPartsText(messageText);
-              _context3.next = 14;
-              return interpretContentPartDirectives(contentDirectives, target, runtime);
-            case 14:
-              message = _context3.sent;
-              _context3.next = 17;
-              return ai.requestChat(message);
-            case 17:
-              result = _context3.sent;
-              response = result.response;
-              text = response.text();
-              if (DEBUG) console.log(text);
-              return _context3.abrupt("return", text);
-            case 24:
-              _context3.prev = 24;
-              _context3.t0 = _context3["catch"](2);
-              return _context3.abrupt("return", _context3.t0.message);
-            case 27:
-              _context3.prev = 27;
-              if (ai) ai.setBlock(false);
-              return _context3.finish(27);
-            case 30:
-            case "end":
-              return _context3.stop();
-          }
-        }, _callee3, this, [[2, 24, 27, 30]]);
-      }));
-      function chat(_x3, _x4) {
-        return _chat.apply(this, arguments);
+    value: function chat(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return 'API key is not set.';
       }
-      return chat;
-    }()
+      var promptText = Cast$1.toString(args.PROMPT);
+      var requestType = 'chat';
+      var target = util.target;
+      return this.requestToAI(promptText, target, requestType, util);
+    }
+
+    /**
+     * Return costume data URL.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.COSTUME - costume name
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - data URL of the costume
+     */
+  }, {
+    key: "costumeData",
+    value: function costumeData(args, util) {
+      var costumeName = Cast$1.toString(args.COSTUME);
+      var target = util.target;
+      var costume = getCostumeByNameOrNumber(target, costumeName);
+      if (!costume) {
+        return '';
+      }
+      return costumeToDataURL(costume).then(function (dataURL) {
+        return " ".concat(dataURL, " ");
+      });
+    }
+
+    /**
+     * Return backdrop data directive.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.BACKDROP - backdrop name
+     * @returns {string} - backdrop data directive
+     */
+  }, {
+    key: "backdropData",
+    value: function backdropData(args) {
+      var backdropName = Cast$1.toString(args.BACKDROP);
+      var stage = this.runtime.getTargetForStage();
+      var backdrop = getCostumeByNameOrNumber(stage, backdropName);
+      if (!backdrop) {
+        return '';
+      }
+      return costumeToDataURL(backdrop).then(function (dataURL) {
+        return " ".concat(dataURL, " ");
+      });
+    }
+
+    /**
+     * Return snapshot data directive.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves snapshot data URL
+     */
+  }, {
+    key: "snapshotData",
+    value: function snapshotData(args, util) {
+      var _this = this;
+      var runtime = this.runtime;
+      var requester = util.target;
+      return new Promise(function (resolve) {
+        _this.runtime.renderer.requestSnapshot(function (imageDataURL) {
+          if (DEBUG) {
+            addImageAsCostume(requester, imageDataURL, runtime, 'snapshot', runtime.vm).catch(function (e) {
+              console.error(e);
+            });
+          }
+          resolve(" ".concat(imageDataURL, " "));
+        });
+      });
+    }
+
+    /**
+     * Chat history.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves chat history
+     */
+  }, {
+    key: "chatHistory",
+    value: function chatHistory(args, util) {
+      var target = util.target;
+      if (!GeminiAdapter.existsForTarget(target)) {
+        return '';
+      }
+      var ai = GeminiAdapter.getForTarget(target);
+      return ai.getChatHistory().then(function (history) {
+        if (!history) {
+          return '';
+        }
+        return JSON.stringify(history).slice(1, -1);
+      });
+    }
+
     /**
      * Start chat with history.
      * @param {object} args - the block's arguments.
      * @param {string} args.HISTORY - contents of the history of chat
      * @param {object} util - utility object provided by the runtime.
-     * @returns {Promise<void>} - a Promise that resolves when the chat is started
+     * @returns {void}
      */
-    )
   }, {
     key: "startChat",
-    value: (function () {
-      var _startChat = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee5(args, util) {
-        var target, runtime, textHistory, interpretedHistory, history;
-        return _regeneratorRuntime.wrap(function _callee5$(_context5) {
-          while (1) switch (_context5.prev = _context5.next) {
-            case 0:
-              target = util.target;
-              runtime = this.runtime;
-              textHistory = JSON.parse("[".concat(String(args.HISTORY), "]"));
-              interpretedHistory = textHistory.map( /*#__PURE__*/function () {
-                var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee4(contentText) {
-                  var contentDirectives, contentParts;
-                  return _regeneratorRuntime.wrap(function _callee4$(_context4) {
-                    while (1) switch (_context4.prev = _context4.next) {
-                      case 0:
-                        if (!contentText.parts) {
-                          _context4.next = 6;
-                          break;
-                        }
-                        contentDirectives = parseContentPartsText(contentText.parts);
-                        _context4.next = 4;
-                        return interpretContentPartDirectives(contentDirectives, target, runtime);
-                      case 4:
-                        contentParts = _context4.sent;
-                        return _context4.abrupt("return", {
-                          role: contentText.role,
-                          parts: contentParts
-                        });
-                      case 6:
-                        return _context4.abrupt("return", contentText);
-                      case 7:
-                      case "end":
-                        return _context4.stop();
-                    }
-                  }, _callee4);
-                }));
-                return function (_x7) {
-                  return _ref.apply(this, arguments);
-                };
-              }());
-              _context5.next = 6;
-              return Promise.all(interpretedHistory);
-            case 6:
-              history = _context5.sent;
-              this.getAI(target).startChat(history);
-            case 8:
-            case "end":
-              return _context5.stop();
-          }
-        }, _callee5, this);
-      }));
-      function startChat(_x5, _x6) {
-        return _startChat.apply(this, arguments);
+    value: function startChat(args, util) {
+      var target = util.target;
+      var historyText = String(args.HISTORY).trim();
+      try {
+        var history = JSON.parse("[".concat(historyText, "]"));
+        this.getAI(target).startChat(history);
+      } catch (e) {
+        this.getAI(target).startChat([]);
       }
-      return startChat;
-    }()
+    }
+
     /**
      * Get response text from last result.
      * @param {object} args - the block's arguments.
@@ -2676,7 +3758,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
      * @param {object} util - utility object provided by the runtime.
      * @returns {string} - response text
      */
-    )
   }, {
     key: "responseText",
     value: function responseText(args, util) {
@@ -2685,14 +3766,23 @@ var GeminiBlocks = /*#__PURE__*/function () {
         return '';
       }
       var ai = GeminiAdapter.getForTarget(target);
-      var result = ai.getLastResult(target);
-      if (!result) {
+      var response = ai.getLastResponse(target);
+      if (!response) {
         return '';
       }
+      if (response.promptFeedback.blockReason) {
+        var blockReasons = response.promptFeedback.safetyRatings.filter(function (r) {
+          return r.probability !== 'NEGLIGIBLE';
+        });
+        return "Blocked by ".concat(response.promptFeedback.blockReason, " (").concat(JSON.stringify(blockReasons), ")");
+      }
       var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-      var candidate = result.response.candidates[candidateIndex - 1];
+      var candidate = response.candidates[candidateIndex - 1];
       if (!candidate) {
         return "no candidate #".concat(candidateIndex);
+      }
+      if (!candidate.content) {
+        return candidate.finishReason;
       }
       return candidate.content.parts[0].text;
     }
@@ -2713,12 +3803,12 @@ var GeminiBlocks = /*#__PURE__*/function () {
         return '';
       }
       var ai = GeminiAdapter.getForTarget(target);
-      var result = ai.getLastResult();
-      if (!result) {
+      var response = ai.getLastResponse();
+      if (!response) {
         return '';
       }
       var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-      var candidate = result.response.candidates[candidateIndex - 1];
+      var candidate = response.candidates[candidateIndex - 1];
       if (!candidate) {
         return "no candidate #".concat(candidateIndex);
       }
@@ -2761,37 +3851,32 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "setSafetyRating",
     value: function setSafetyRating(args, util) {
-      try {
-        var target = util.target;
-        var ai = this.getAI(target);
-        var modelParams = ai.getModelParams();
-        var harmCategory = args.HARM_CATEGORY;
-        var harmBlockThreshold = args.BLOCK_THRESHOLD;
-        var setParams = function setParams(category, threshold) {
-          var safetyRating = {
-            category: category,
-            threshold: threshold
-          };
-          var index = modelParams.safetySettings.findIndex(function (r) {
-            return r.category === category;
-          });
-          if (index >= 0) {
-            modelParams.safetySettings[index] = safetyRating;
-          } else {
-            modelParams.safetySettings.push(safetyRating);
-          }
+      var target = util.target;
+      var ai = this.getAI(target);
+      var modelParams = ai.getModelParams();
+      var harmCategory = args.HARM_CATEGORY;
+      var harmBlockThreshold = args.BLOCK_THRESHOLD;
+      var setParams = function setParams(category, threshold) {
+        var safetyRating = {
+          category: category,
+          threshold: threshold
         };
-        if (harmCategory === 'ALL') {
-          Object.keys(HarmCategory).forEach(function (category) {
-            if (category === 'HARM_CATEGORY_UNSPECIFIED') return;
-            setParams(category, harmBlockThreshold);
-          });
+        var index = modelParams.safetySettings.findIndex(function (r) {
+          return r.category === category;
+        });
+        if (index >= 0) {
+          modelParams.safetySettings[index] = safetyRating;
         } else {
-          setParams(harmCategory, harmBlockThreshold);
+          modelParams.safetySettings.push(safetyRating);
         }
-      } catch (error) {
-        console.error(error);
-        return error.message;
+      };
+      if (harmCategory === 'ALL') {
+        Object.keys(HarmCategory).forEach(function (category) {
+          if (category === 'HARM_CATEGORY_UNSPECIFIED') return;
+          setParams(category, harmBlockThreshold);
+        });
+      } else {
+        setParams(harmCategory, harmBlockThreshold);
       }
     }
 
@@ -2806,45 +3891,40 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "setGenerationConfig",
     value: function setGenerationConfig(args, util) {
-      try {
-        var target = util.target;
-        var ai = this.getAI(target);
-        var modelParams = ai.getModelParams();
-        var configKey = args.CONFIG;
-        var configValue = args.VALUE;
-        switch (configKey) {
-          case 'maxOutputTokens':
-            configValue = Math.max(1, parseInt(configValue, 10));
-            break;
-          case 'candidateCount':
-            configValue = Math.max(1, parseInt(configValue, 10));
-            break;
-          case 'stopSequences':
-            configValue = String(configValue).split(',').map(function (s) {
-              return s.trim();
-            });
-            break;
-          case 'temperature':
-            configValue = Math.max(0.0, Math.min(1.0, configValue));
-            break;
-          case 'topP':
-            configValue = Math.max(0.0, Math.min(1.0, configValue));
-            break;
-          case 'topK':
-            configValue = Math.max(1, parseInt(configValue, 10));
-            break;
-          default:
-            throw new Error("unknown config key: ".concat(configKey));
-        }
-        if (configValue === '') {
-          delete modelParams.generationConfig[configKey];
-          return;
-        }
-        modelParams.generationConfig[configKey] = configValue;
-      } catch (error) {
-        console.error(error);
-        return error.message;
+      var target = util.target;
+      var ai = this.getAI(target);
+      var modelParams = ai.getModelParams();
+      var configKey = args.CONFIG;
+      var configValue = args.VALUE;
+      switch (configKey) {
+        case 'maxOutputTokens':
+          configValue = Math.max(1, parseInt(Cast$1.toString(configValue), 10));
+          break;
+        case 'candidateCount':
+          configValue = Math.max(1, parseInt(Cast$1.toString(configValue), 10));
+          break;
+        case 'stopSequences':
+          configValue = Cast$1.toString(configValue).split(',').map(function (s) {
+            return s.trim();
+          });
+          break;
+        case 'temperature':
+          configValue = Math.max(0.0, Math.min(1.0, Cast$1.toNumber(configValue)));
+          break;
+        case 'topP':
+          configValue = Math.max(0.0, Math.min(1.0, Cast$1.toNumber(configValue)));
+          break;
+        case 'topK':
+          configValue = Math.max(1, parseInt(Cast$1.toNumber(configValue), 10));
+          break;
+        default:
+          return "unknown config key: ".concat(configKey);
       }
+      if (configValue === '') {
+        delete modelParams.generationConfig[configKey];
+        return "delete ".concat(configKey);
+      }
+      modelParams.generationConfig[configKey] = configValue;
     }
 
     /**
@@ -2857,20 +3937,90 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "generationConfig",
     value: function generationConfig(args, util) {
-      try {
-        var target = util.target;
-        var ai = this.getAI(target);
-        var modelParams = ai.getModelParams();
-        var configKey = args.CONFIG;
-        var configValue = modelParams.generationConfig[configKey];
-        if (typeof configValue === 'undefined') {
-          return '';
-        }
-        return configValue;
-      } catch (error) {
-        console.error(error);
-        return error.message;
+      var target = util.target;
+      var ai = this.getAI(target);
+      var modelParams = ai.getModelParams();
+      var configKey = args.CONFIG;
+      var configValue = modelParams.generationConfig[configKey];
+      if (typeof configValue === 'undefined') {
+        return '';
       }
+      return configValue;
+    }
+
+    /**
+     * Get embedding of content.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.CONTENT - content
+     * @param {string} args.TASK_TYPE - task type
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves embedding
+     */
+  }, {
+    key: "embeddingFor",
+    value: function embeddingFor(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return 'API key is not set.';
+      }
+      var target = util.target;
+      util.runtime;
+      var ai = this.getAI(target);
+      if (ai.isRequesting()) {
+        util.yield();
+        return;
+      }
+      ai.setRequesting(true);
+      var contentText = Cast$1.toString(args.CONTENT).trim();
+      var content = interpretContentPartsText(contentText);
+      var taskType = args.TASK_TYPE;
+      return ai.requestEmbedding(content, taskType).then(function (embedding) {
+        var jsonText = JSON.stringify(embedding);
+        var result = jsonText.substring(1, jsonText.length - 1);
+        return result;
+      }).catch(function (error) {
+        log$1.error(error);
+        return error.message;
+      }).finally(function () {
+        ai.setRequesting(false);
+      });
+    }
+
+    /**
+     * Calculate similarity of two vectors.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.METRIC - metric {'dotProduct' | 'euclidean'}
+     * @param {string} args.VECTOR_A - vector A
+     * @param {string} args.VECTOR_B - vector B
+     * @returns {number} - dot product
+     */
+  }, {
+    key: "embeddingDistanceOf",
+    value: function embeddingDistanceOf(args) {
+      var metric = args.METRIC;
+      var vectorA = String(args.VECTOR_A).split(',').map(function (s) {
+        return parseFloat(s);
+      });
+      var vectorB = String(args.VECTOR_B).split(',').map(function (s) {
+        return parseFloat(s);
+      });
+      if (vectorA.length !== vectorB.length) return 'error: not same length';
+      if (vectorA.every(function (x) {
+        return x === 0;
+      }) || vectorB.every(function (x) {
+        return x === 0;
+      })) return 'error: zero vector';
+      var result = '';
+      switch (metric) {
+        case 'dotProduct':
+          result = dotProduct(vectorA, vectorB);
+          break;
+        case 'euclidean':
+          result = euclideanDistance(vectorA, vectorB);
+          break;
+        default:
+          return 'error: unknown metric';
+      }
+      return result;
     }
 
     /**
@@ -2882,143 +4032,166 @@ var GeminiBlocks = /*#__PURE__*/function () {
      */
   }, {
     key: "setApiKey",
-    value: function setApiKey(args, util) {
-      var target = util.target;
+    value: function setApiKey(args) {
       var apiKey = Cast$1.toString(args.KEY).trim();
       GeminiAdapter.setApiKey(apiKey);
-      if (GeminiAdapter.existsForTarget(target)) {
-        GeminiAdapter.removeForTarget(target);
-      }
+      GeminiAdapter.removeAllAdapter();
     }
 
     /**
-     * Count tokens of prompt.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.PROMPT - prompt
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {number} - count of tokens
+     * Get API key.
+     * @returns {string} - API key
      */
   }, {
-    key: "countPromptTokens",
-    value: (function () {
-      var _countPromptTokens = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee6(args, util) {
-        var target, runtime, ai, promptText, promptDirectives, prompt, result;
-        return _regeneratorRuntime.wrap(function _callee6$(_context6) {
-          while (1) switch (_context6.prev = _context6.next) {
-            case 0:
-              target = util.target;
-              runtime = this.runtime;
-              _context6.prev = 2;
-              _context6.next = 5;
-              return this.confirmAPIKey();
-            case 5:
-              ai = this.getAI(target);
-              if (!ai.isBlocked()) {
-                _context6.next = 9;
-                break;
-              }
-              util.yield();
-              return _context6.abrupt("return");
-            case 9:
-              ai.setBlock(true);
-              promptText = Cast$1.toString(args.PROMPT);
-              promptDirectives = parseContentPartsText(promptText);
-              _context6.next = 14;
-              return interpretContentPartDirectives(promptDirectives, target, runtime);
-            case 14:
-              prompt = _context6.sent;
-              _context6.next = 17;
-              return ai.countTokens(prompt);
-            case 17:
-              result = _context6.sent;
-              return _context6.abrupt("return", result);
-            case 21:
-              _context6.prev = 21;
-              _context6.t0 = _context6["catch"](2);
-              return _context6.abrupt("return", _context6.t0.message);
-            case 24:
-              _context6.prev = 24;
-              if (ai) ai.setBlock(false);
-              return _context6.finish(24);
-            case 27:
-            case "end":
-              return _context6.stop();
-          }
-        }, _callee6, this, [[2, 21, 24, 27]]);
-      }));
-      function countPromptTokens(_x8, _x9) {
-        return _countPromptTokens.apply(this, arguments);
-      }
-      return countPromptTokens;
-    }()
+    key: "apiKey",
+    value: function apiKey() {
+      return GeminiAdapter.getApiKey() ? GeminiAdapter.getApiKey() : '';
+    }
+
     /**
-     * Count tokens of chat.
+     * Count tokens as request type.
      * @param {object} args - the block's arguments.
-     * @param {string} args.MESSAGE - message
+     * @param {string} args.CONTENT - content
+     * @param {string} args.REQUEST_TYPE - request type {'generate' | 'chat'}
      * @param {object} util - utility object provided by the runtime.
-     * @returns {number} - count of tokens
+     * @returns {Promise<number>} - a Promise that resolves token count
      */
-    )
   }, {
-    key: "countChatTokens",
-    value: (function () {
-      var _countChatTokens = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee7(args, util) {
-        var target, ai, messageText, history, messageContent, contents, result;
-        return _regeneratorRuntime.wrap(function _callee7$(_context7) {
-          while (1) switch (_context7.prev = _context7.next) {
-            case 0:
-              target = util.target;
-              _context7.prev = 1;
-              _context7.next = 4;
-              return this.confirmAPIKey();
-            case 4:
-              ai = this.getAI(target);
-              if (!ai.isBlocked()) {
-                _context7.next = 8;
-                break;
-              }
-              util.yield();
-              return _context7.abrupt("return");
-            case 8:
-              ai.setBlock(true);
-              messageText = Cast$1.toString(args.MESSAGE);
-              _context7.next = 12;
-              return ai.getChatHistory();
-            case 12:
-              history = _context7.sent;
-              messageContent = {
-                role: 'user',
-                parts: [{
-                  text: messageText
-                }]
-              };
-              contents = [].concat(_toConsumableArray(history), [messageContent]);
-              _context7.next = 17;
-              return ai.countTokens({
-                contents: contents
-              });
-            case 17:
-              result = _context7.sent;
-              return _context7.abrupt("return", result);
-            case 21:
-              _context7.prev = 21;
-              _context7.t0 = _context7["catch"](1);
-              return _context7.abrupt("return", _context7.t0.message);
-            case 24:
-              _context7.prev = 24;
-              if (ai) ai.setBlock(false);
-              return _context7.finish(24);
-            case 27:
-            case "end":
-              return _context7.stop();
-          }
-        }, _callee7, this, [[1, 21, 24, 27]]);
-      }));
-      function countChatTokens(_x10, _x11) {
-        return _countChatTokens.apply(this, arguments);
+    key: "countTokensAs",
+    value: function countTokensAs(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return 'API key is not set.';
       }
-      return countChatTokens;
-    }())
+      var target = util.target;
+      var ai = this.getAI(target);
+      if (ai.isRequesting()) {
+        util.yield();
+        return;
+      }
+      ai.setRequesting(true);
+      var contentText = Cast$1.toString(args.CONTENT);
+      var content = interpretContentPartsText(contentText, target, this.runtime);
+      var requestType = args.REQUEST_TYPE;
+      return ai.countTokensAs(content, requestType).catch(function (error) {
+        log$1.error(error);
+        return error.message;
+      }).finally(function () {
+        ai.setRequesting(false);
+      });
+    }
+
+    /**
+     * Open dialog to input API key by user.
+     * @param {string} [defaultApiKey=''] - default API key
+     * @returns {Promise<string>?} - a Promise that resolves API key or null if canceled
+     */
+  }, {
+    key: "openApiKeyDialog",
+    value: function openApiKeyDialog() {
+      var _this2 = this;
+      var defaultApiKey = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+      if (this.apiKeyDialogOpened) {
+        // prevent to open multiple dialogs
+        return null;
+      }
+      this.apiKeyDialogOpened = true;
+      var inputDialog = document.createElement('dialog');
+      inputDialog.style.padding = '0px';
+      var dialogFace = document.createElement('div');
+      dialogFace.style.padding = '16px';
+      inputDialog.appendChild(dialogFace);
+      var label = document.createTextNode(formatMessage({
+        id: 'gai.apiKeyDialog.message',
+        default: 'set API key',
+        description: 'label of API key input dialog for gemini'
+      }));
+      dialogFace.appendChild(label);
+      // Dialog form
+      var apiKeyForm = document.createElement('form');
+      apiKeyForm.setAttribute('method', 'dialog');
+      apiKeyForm.style.margin = '8px';
+      apiKeyForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+      });
+      dialogFace.appendChild(apiKeyForm);
+      // API select
+      var apiKeyInput = document.createElement('input');
+      apiKeyInput.setAttribute('type', 'text');
+      apiKeyInput.setAttribute('id', 'apiKeyInput');
+      apiKeyInput.setAttribute('size', '50');
+      apiKeyInput.setAttribute('value', defaultApiKey);
+      apiKeyForm.appendChild(apiKeyInput);
+      // Cancel button
+      var cancelButton = document.createElement('button');
+      cancelButton.textContent = formatMessage({
+        id: 'gai.apiKeyDialog.cancel',
+        default: 'cancel',
+        description: 'cancel button on groupID input dialog for gemini'
+      });
+      cancelButton.style.margin = '8px';
+      dialogFace.appendChild(cancelButton);
+      // OK button
+      var confirmButton = document.createElement('button');
+      confirmButton.textContent = formatMessage({
+        id: 'gai.apiKeyDialog.set',
+        default: 'set',
+        description: 'set button on API key input dialog for gemini'
+      });
+      confirmButton.style.margin = '8px';
+      dialogFace.appendChild(confirmButton);
+      return new Promise(function (resolve) {
+        // Add onClick action
+        var confirmed = function confirmed() {
+          var inputValue = apiKeyInput.value.trim();
+          resolve(inputValue);
+        };
+        confirmButton.onclick = confirmed;
+        var canceled = function canceled() {
+          resolve(null);
+        };
+        cancelButton.onclick = canceled;
+        inputDialog.addEventListener('keydown', function (e) {
+          if (e.code === 'Enter') {
+            confirmed();
+          }
+          if (e.code === 'Escape') {
+            canceled();
+          }
+        });
+        document.body.appendChild(inputDialog);
+        inputDialog.showModal();
+      }).finally(function () {
+        document.body.removeChild(inputDialog);
+        _this2.apiKeyDialogOpened = false;
+      });
+    }
+
+    /**
+     * Ask user to input API key.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {void}
+     */
+  }, {
+    key: "askApiKey",
+    value: function askApiKey(args, util) {
+      if (this.apiKeyDialogOpened) {
+        util.yield();
+        return;
+      }
+      var prevApiKey = GeminiAdapter.getApiKey();
+      return this.openApiKeyDialog(prevApiKey).then(function (apiKey) {
+        if (apiKey === null) {
+          // canceled
+          return 'canceled by user';
+        }
+        if (apiKey !== prevApiKey) {
+          GeminiAdapter.setApiKey(apiKey);
+          GeminiAdapter.removeAllAdapter();
+        }
+        return apiKey;
+      });
+    }
   }], [{
     key: "formatMessage",
     set:
