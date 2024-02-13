@@ -1,0 +1,47 @@
+name: Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build and deploy"
+        default: "main"
+        required: true
+      publish-dir:
+        description: "Publish directory"
+        type: string
+        default: "."
+        required: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Inputs
+        run: echo "${{ toJSON(inputs) }}"
+      - name: checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      - name: publish dist
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          destination_dir: ${{ inputs.publish-dir }}/dist
+          keep_files: false
+      - name: publish projects
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          destination_dir: ${{ inputs.publish-dir }}/projects
+          keep_files: false
+      - name: publish docs
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          destination_dir: ${{ inputs.publish-dir }}/docs
+          keep_files: false
