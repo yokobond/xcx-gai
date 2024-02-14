@@ -1654,7 +1654,7 @@ var en = {
 	"gai.generateDefault": "What is AI?",
 	"gai.costumeData": "costume data [COSTUME]",
 	"gai.backdropData": "backdrop data [BACKDROP]",
-	"gai.snapshotData": "snapshot data [SNAPSHOT]",
+	"gai.snapshotData": "snapshot data",
 	"gai.chat": "chat [PROMPT]",
 	"gai.chatDefault": "Hello Gemini!",
 	"gai.chatHistory": "chat history",
@@ -1722,7 +1722,7 @@ var ja = {
 	"gai.distanceMetricMenu.dotProduct": "内積",
 	"gai.distanceMetricMenu.euclidean": "ユークリッド距離",
 	"gai.responseText": "回答候補[CANDIDATE_INDEX]",
-	"gai.responseSafetyRating": "回答候補[CANDIDATE_INDEX]の安全度[HARM_CATEGORY]",
+	"gai.responseSafetyRating": "回答候補[CANDIDATE_INDEX]の[HARM_CATEGORY]のレベル",
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
 	"gai.whenPartialResponseReceived": "回答の一部を受け取ったとき",
 	"gai.partialResponseText": "回答の一部",
@@ -1778,7 +1778,7 @@ var translations = {
 	"gai.distanceMetricMenu.dotProduct": "ないせき",
 	"gai.distanceMetricMenu.euclidean": "ユークリッド きょり",
 	"gai.responseText": "かいとうこうほ[CANDIDATE_INDEX]",
-	"gai.responseSafetyRating": "かいとうこうほ[CANDIDATE_INDEX]の あんぜんど[HARM_CATEGORY]",
+	"gai.responseSafetyRating": "かいとうこうほ[CANDIDATE_INDEX]の[HARM_CATEGORY]の レベル",
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
 	"gai.whenPartialResponseReceived": "かいとう の いちぶ を うけとった とき",
 	"gai.partialResponseText": "かいとう の いちぶ",
@@ -2337,7 +2337,9 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "removeAllAdapter",
     value: function removeAllAdapter() {
-      GeminiAdapter.ADAPTERS = {};
+      Object.keys(GeminiAdapter.ADAPTERS).forEach(function (key) {
+        delete GeminiAdapter.ADAPTERS[key];
+      });
     }
 
     /**
@@ -3746,8 +3748,9 @@ var GeminiBlocks = /*#__PURE__*/function () {
       try {
         var history = JSON.parse("[".concat(historyText, "]"));
         this.getAI(target).startChat(history);
-      } catch (e) {
-        this.getAI(target).startChat([]);
+      } catch (error) {
+        log$1.error("startChat: ".concat(error.message));
+        return error.message;
       }
     }
 
@@ -3770,21 +3773,33 @@ var GeminiBlocks = /*#__PURE__*/function () {
       if (!response) {
         return '';
       }
-      if (response.promptFeedback.blockReason) {
-        var blockReasons = response.promptFeedback.safetyRatings.filter(function (r) {
-          return r.probability !== 'NEGLIGIBLE';
-        });
-        return "Blocked by ".concat(response.promptFeedback.blockReason, " (").concat(JSON.stringify(blockReasons), ")");
+      try {
+        var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+        if (!response.candidates) {
+          if (response.promptFeedback.blockReason) {
+            var blockReason = response.promptFeedback.blockReason;
+            var blockReasons = response.promptFeedback.safetyRatings.filter(function (r) {
+              return r.probability !== 'NEGLIGIBLE';
+            });
+            return "prompt was blocked: ".concat(blockReason, " (").concat(JSON.stringify(blockReasons), ")");
+          }
+          return "no candidate #".concat(candidateIndex);
+        }
+        var candidate = response.candidates[candidateIndex - 1];
+        if (!candidate) {
+          return "no candidate #".concat(candidateIndex);
+        }
+        if (!candidate.content) {
+          if (candidate.finishReason === 'SAFETY') {
+            return "finished by safety: ".concat(JSON.stringify(candidate.safetyRatings));
+          }
+          return candidate.finishReason;
+        }
+        return candidate.content.parts[0].text;
+      } catch (error) {
+        log$1.error("responseText: ".concat(error.message));
+        return error.message;
       }
-      var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-      var candidate = response.candidates[candidateIndex - 1];
-      if (!candidate) {
-        return "no candidate #".concat(candidateIndex);
-      }
-      if (!candidate.content) {
-        return candidate.finishReason;
-      }
-      return candidate.content.parts[0].text;
     }
 
     /**
@@ -3807,37 +3822,51 @@ var GeminiBlocks = /*#__PURE__*/function () {
       if (!response) {
         return '';
       }
-      var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-      var candidate = response.candidates[candidateIndex - 1];
-      if (!candidate) {
-        return "no candidate #".concat(candidateIndex);
+      try {
+        var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+        if (!response.candidates) {
+          if (response.promptFeedback.blockReason) {
+            var blockReason = response.promptFeedback.blockReason;
+            var blockReasons = response.promptFeedback.safetyRatings.filter(function (r) {
+              return r.probability !== 'NEGLIGIBLE';
+            });
+            return "prompt was blocked: ".concat(blockReason, " (").concat(JSON.stringify(blockReasons), ")");
+          }
+          return "no candidate #".concat(candidateIndex);
+        }
+        var candidate = response.candidates[candidateIndex - 1];
+        var category = args.HARM_CATEGORY;
+        var rating = candidate.safetyRatings.find(function (r) {
+          return r.category === category;
+        });
+        if (!rating) {
+          return "";
+        }
+        var probabilityText = rating.probability;
+        switch (probabilityText) {
+          case 'HARM_PROBABILITY_UNSPECIFIED':
+            probabilityText = 'Unspecified';
+            break;
+          case 'NEGLIGIBLE':
+            probabilityText = 'Negligible';
+            break;
+          case 'LOW':
+            probabilityText = 'Low';
+            break;
+          case 'MEDIUM':
+            probabilityText = 'Medium';
+            break;
+          case 'HIGH':
+            probabilityText = 'High';
+            break;
+          default:
+            break;
+        }
+        return probabilityText;
+      } catch (error) {
+        log$1.error("responseSafetyRating: ".concat(error.message));
+        return error.message;
       }
-      var category = args.HARM_CATEGORY;
-      var rating = candidate.safetyRatings.find(function (r) {
-        return r.category === category;
-      });
-      if (!rating) {
-        return "";
-      }
-      var probability = rating.probability;
-      switch (probability) {
-        case 'HARM_PROBABILITY_UNSPECIFIED':
-          probability = 'Unspecified';
-          break;
-        case 'NEGLIGIBLE':
-          probability = 'Negligible';
-          break;
-        case 'LOW':
-          probability = 'Low';
-          break;
-        case 'MEDIUM':
-          probability = 'Medium';
-          break;
-        case 'HIGH':
-          probability = 'High';
-          break;
-      }
-      return probability;
     }
 
     /**
@@ -3942,7 +3971,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var modelParams = ai.getModelParams();
       var configKey = args.CONFIG;
       var configValue = modelParams.generationConfig[configKey];
-      if (typeof configValue === 'undefined') {
+      if (configValue === null || typeof configValue === 'undefined') {
         return '';
       }
       return configValue;
@@ -3978,7 +4007,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         var result = jsonText.substring(1, jsonText.length - 1);
         return result;
       }).catch(function (error) {
-        log$1.error(error);
+        log$1.error("embeddingFor: ".concat(error.message));
         return error.message;
       }).finally(function () {
         ai.setRequesting(false);
