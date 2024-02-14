@@ -82,7 +82,9 @@ export class GeminiAdapter {
      * Remove all Gemini Adapter.
      */
     static removeAllAdapter () {
-        GeminiAdapter.ADAPTERS = {};
+        Object.keys(GeminiAdapter.ADAPTERS).forEach(key => {
+            delete GeminiAdapter.ADAPTERS[key];
+        });
     }
 
     /**
