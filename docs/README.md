@@ -11,6 +11,7 @@ This extension enables you to query the generative AI with images and sentences 
 
 Play the example project to look at what you can do with "GAI" extension. 
 This project is an example of sending camera images to Gemini to generate text.
+(You need API key of the Gemini (ref. [Set API key](how-to-use?id=set-api-key)) and allow camera access to play this project.)
 
 Example Project
 ([open in a new window](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3))

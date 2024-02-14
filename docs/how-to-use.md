@@ -1,7 +1,7 @@
 
 # How to Use
 
-## Setting the API key
+## Set API key
 
 To set the AI's API key, use the ``ask API Key`` or ``set API Key to ( )`` block. Once you enter the API key, it will be available until you exit Scratch.
 
@@ -14,7 +14,7 @@ The ```ask for API key``` block displays a dialog for entering the API key.
 ```API key``` retrieves the currently set API key.
 
 
-## Quering the AI
+## Querying AI
 
 Querying AI is done using ```generate(prompt)``` and ```chat(prompt)``` blocks.
 
@@ -32,7 +32,7 @@ _* The currently released Gemini pro API v1 does not allow you to select one ans
 If the ```when partial response received``` block is used in a code area, you can use the ```partial response text``` block to retrieve partially sent answers before the full answer is returned.
 
 
-## Using images
+## Querying with images
 
 You can query ```generate (prompt)``` with ```dataURL``` to include a sentence containing data in the form of an image Data URL.
 
@@ -45,7 +45,7 @@ _* Images are not available for chat in the currently released Gemini pro API v1
 - The ```snapshot data``` block retrieves the ```dataURL``` snapshot images of the stage and the displayed sprites.
 
 
-## Setting safety
+## Set safety parameters
 
 The ```set (safety category) to (setting level)``` block allows you to set the safety of AI generated results.
 
@@ -66,7 +66,7 @@ In the ```(safety category)``` you can specify the following.
 - ```Block none```
 
 
-## Setting parameters for generation
+## Set generation parameters
 
 The parameter settings of the generated model used by AI can be set separately for each sprite.
 
@@ -84,7 +84,7 @@ The following can be specified for ```(parameter)```.
 The ```generation (parameter)``` block retrieves the parameters of the generation model used by the sprite.
 
 
-## Use of embedding
+## Embedding
 
 The ```embedding of ( ) for (task type)``` block obtains an embedded representation of the specified task type for the input sentence.
 
