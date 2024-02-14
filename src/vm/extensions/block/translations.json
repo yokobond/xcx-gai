@@ -5,7 +5,7 @@
     "gai.generateDefault": "What is AI?",
     "gai.costumeData": "costume data [COSTUME]",
     "gai.backdropData": "backdrop data [BACKDROP]",
-    "gai.snapshotData": "snapshot data [SNAPSHOT]",
+    "gai.snapshotData": "snapshot data]",
     "gai.chat": "chat [PROMPT]",
     "gai.chatDefault": "Hello Gemini!",
     "gai.chatHistory": "chat history",
