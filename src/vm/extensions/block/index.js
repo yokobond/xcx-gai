@@ -1265,7 +1265,7 @@ class GeminiBlocks {
         const modelParams = ai.getModelParams();
         const configKey = args.CONFIG;
         const configValue = modelParams.generationConfig[configKey];
-        if (typeof configValue === 'undefined') {
+        if (configValue === null || typeof configValue === 'undefined') {
             return '';
         }
         return configValue;
@@ -1301,7 +1301,7 @@ class GeminiBlocks {
                 return result;
             })
             .catch(error => {
-                log.error(error);
+                log.error(`embeddingFor: ${error.message}`);
                 return error.message;
             })
             .finally(() => {
