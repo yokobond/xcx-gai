@@ -1100,6 +1100,9 @@ class GeminiBlocks {
                 return `no candidate #${candidateIndex}`;
             }
             if (!candidate.content) {
+                if (candidate.finishReason === 'SAFETY') {
+                    return `finished by safety: ${JSON.stringify(candidate.safetyRatings)}`;
+                }
                 return candidate.finishReason;
             }
             return candidate.content.parts[0].text;
