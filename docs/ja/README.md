@@ -11,6 +11,7 @@ Scratch内の文章と画像を使って Gemini へ文章の生成を問い合�
 
 GAI 拡張機能を使って何ができるかを見るために、サンプルプロジェクトで遊んでみてください。
 このプロジェクトはカメラ画像を Gemini に送って、文章を生成する例です。
+(このプロジェクトを動かすには、GeminiのAPIキー(参照:[APIキーの設定](how-to-use?id=apiキーの設定))と、カメラへのアクセスの許可が必要です。)
 
 サンプルプロジェクト
 ([別画面で開く](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3))
