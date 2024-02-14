@@ -1061,8 +1061,9 @@ class GeminiBlocks {
         try {
             const history = JSON.parse(`[${historyText}]`);
             this.getAI(target).startChat(history);
-        } catch (e) {
-            this.getAI(target).startChat([]);
+        } catch (error) {
+            log.error(`startChat: ${error.message}`);
+            return error.message;
         }
     }
 
