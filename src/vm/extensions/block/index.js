@@ -1083,19 +1083,29 @@ class GeminiBlocks {
         if (!response) {
             return '';
         }
-        if (response.promptFeedback.blockReason) {
-            const blockReasons = response.promptFeedback.safetyRatings.filter(r => r.probability !== 'NEGLIGIBLE');
-            return `Blocked by ${response.promptFeedback.blockReason} (${JSON.stringify(blockReasons)})`;
+        try {
+            const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+            if (!response.candidates) {
+                if (response.promptFeedback.blockReason) {
+                    const blockReason = response.promptFeedback.blockReason;
+                    const blockReasons = response.promptFeedback
+                        .safetyRatings.filter(r => r.probability !== 'NEGLIGIBLE');
+                    return `prompt was blocked: ${blockReason} (${JSON.stringify(blockReasons)})`;
+                }
+                return `no candidate #${candidateIndex}`;
+            }
+            const candidate = response.candidates[candidateIndex - 1];
+            if (!candidate) {
+                return `no candidate #${candidateIndex}`;
+            }
+            if (!candidate.content) {
+                return candidate.finishReason;
+            }
+            return candidate.content.parts[0].text;
+        } catch (error) {
+            log.error(`responseText: ${error.message}`);
+            return error.message;
         }
-        const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-        const candidate = response.candidates[candidateIndex - 1];
-        if (!candidate) {
-            return `no candidate #${candidateIndex}`;
-        }
-        if (!candidate.content) {
-            return candidate.finishReason;
-        }
-        return candidate.content.parts[0].text;
     }
 
     /**
@@ -1116,37 +1126,48 @@ class GeminiBlocks {
         if (!response) {
             return '';
         }
-        const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-        const candidate = response.candidates[candidateIndex - 1];
-        if (!candidate) {
-            return `no candidate #${candidateIndex}`;
+        try {
+            const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+            if (!response.candidates) {
+                if (response.promptFeedback.blockReason) {
+                    const blockReason = response.promptFeedback.blockReason;
+                    const blockReasons = response.promptFeedback
+                        .safetyRatings.filter(r => r.probability !== 'NEGLIGIBLE');
+                    return `prompt was blocked: ${blockReason} (${JSON.stringify(blockReasons)})`;
+                }
+                return `no candidate #${candidateIndex}`;
+            }
+            const candidate = response.candidates[candidateIndex - 1];
+            const category = args.HARM_CATEGORY;
+            const rating = candidate.safetyRatings.find(r => r.category === category);
+            if (!rating) {
+                return ``;
+            }
+            let probabilityText = rating.probability;
+            switch (probabilityText) {
+            case 'HARM_PROBABILITY_UNSPECIFIED':
+                probabilityText = 'Unspecified';
+                break;
+            case 'NEGLIGIBLE':
+                probabilityText = 'Negligible';
+                break;
+            case 'LOW':
+                probabilityText = 'Low';
+                break;
+            case 'MEDIUM':
+                probabilityText = 'Medium';
+                break;
+            case 'HIGH':
+                probabilityText = 'High';
+                break;
+            default:
+                break;
+            }
+            return probabilityText;
+        } catch (error) {
+            log.error(`responseSafetyRating: ${error.message}`);
+            return error.message;
         }
-        const category = args.HARM_CATEGORY;
-        const rating = candidate.safetyRatings.find(r => r.category === category);
-        if (!rating) {
-            return ``;
-        }
-        let probability = rating.probability;
-        switch (probability) {
-        case 'HARM_PROBABILITY_UNSPECIFIED':
-            probability = 'Unspecified';
-            break;
-        case 'NEGLIGIBLE':
-            probability = 'Negligible';
-            break;
-        case 'LOW':
-            probability = 'Low';
-            break;
-        case 'MEDIUM':
-            probability = 'Medium';
-            break;
-        case 'HIGH':
-            probability = 'High';
-            break;
-        default:
-            break;
-        }
-        return probability;
     }
 
     /**
