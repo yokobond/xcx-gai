@@ -10,10 +10,13 @@ GAI とは Xcratch で Google の生成AI、Gemini の拡張機能です。
 Scratch内の文章と画像を使って Gemini へ文章の生成を問い合わせることができます。
 
 GAI 拡張機能を使って何ができるかを見るために、サンプルプロジェクトで遊んでみてください。
-
 このプロジェクトはカメラ画像を Gemini に送って、文章を生成する例です。
 
-<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3" width="540px" height="460px"></iframe>
+サンプルプロジェクト
+([別画面で開く](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3))
+
+<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3" width="540px" height="460px" allow="camera"></iframe>
+
 
 ## Xcratchへのロード
 
