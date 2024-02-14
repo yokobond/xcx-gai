@@ -7,13 +7,16 @@ This extension add extra-blocks for [Google Gemini AI](https://deepmind.google/t
 
 ## ✨ What You Can Do With This Extension
 
-Play [Example Project](https://xcratch.github.io/editor/#https://yokobond.github.io/xcx-gai/projects/example.sb3) to look at what you can do with "GAI" extension. 
-<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/projects/example.sb3" width="540px" height="460px"></iframe>
+This extension enables you to query the generative AI with images and sentences in Scratch.
+
+Please read the document for details. 
+- [xcx-gai docs](https://yokobond.github.io/xcx-gai/docs)
 
 
 ## How to Use in Xcratch
 
-This extension can be used with other extension in [Xcratch](https://xcratch.github.io/). 
+This extension can be used with other extension in Xcratch.
+
 1. Open [Xcratch Editor](https://xcratch.github.io/editor)
 2. Click 'Add Extension' button
 3. Select 'Extension Loader' extension
@@ -21,6 +24,9 @@ This extension can be used with other extension in [Xcratch](https://xcratch.git
 ```
 https://yokobond.github.io/xcx-gai/dist/gai.mjs
 ```
+5. Click 'OK' button
+6. Now you can use the blocks of this extension
+
 
 ## Development
 
