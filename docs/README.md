@@ -10,10 +10,12 @@ This extension add extra-blocks for [Google Gemini AI](https://deepmind.google/t
 This extension enables you to query the generative AI with images and sentences in Scratch.
 
 Play the example project to look at what you can do with "GAI" extension. 
-
 This project is an example of sending camera images to Gemini to generate text.
 
-<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/projects/example.sb3" width="540px" height="460px"></iframe>
+Example Project
+([open in a new window](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3))
+
+<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/projects/example.sb3" width="540px" height="460px" allow="camera"></iframe>
 
 
 ## Load into Xcratch
