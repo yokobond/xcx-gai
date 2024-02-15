@@ -1,14 +1,14 @@
 {
   "en": {
     "gai.entry.name": "GAI",
-    "gai.entry.description": "Description of this extension"
+    "gai.entry.description": "Play with Google generative AI, Gemini!"
   },
   "ja": {
     "gai.entry.name": "GAI",
-    "gai.entry.description": "拡張機能の説明"
+    "gai.entry.description": "Google生成AI、Geminiと遊ぼう!"
   },
   "ja-Hira": {
     "gai.entry.name": "GAI",
-    "gai.entry.description": "かくちょうきのうのせつめい"
+    "gai.entry.description": "GoogleせいせいAI、Geminiとあそぼう!"
   }
 }
