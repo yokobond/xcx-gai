@@ -37,4 +37,4 @@ https://yokobond.github.io/xcx-gai/dist/gai.mjs
 
 ## </> Source Code
 
-Source code is open on GitHub [https://yokobond.github.io/xcx-gai/](https://yokobond.github.io/xcx-gai/)
+Source code is open on GitHub [https://github.com/yokobond/xcx-gai](https://github.com/yokobond/xcx-gai)
