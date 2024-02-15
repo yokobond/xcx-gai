@@ -1,6 +1,6 @@
 # GAIとは
 
-GAI とは Xcratch で Google の生成AI、Gemini の拡張機能です。
+GAI は Xcratch で Google の生成AI、Gemini を使うための拡張機能です。
 
 [Google Gemini AI](https://deepmind.google/technologies/gemini/#introduction) を使うための特別なブロックを [Xcratch](https://xcratch.github.io/) に追加します。
 
@@ -17,6 +17,8 @@ GAI 拡張機能を使って何ができるかを見るために、サンプル�
 ([別画面で開く](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3))
 
 <iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3" width="540px" height="460px" allow="camera"></iframe>
+
+詳しくは、[使い方](how-to-use) を参照してください。
 
 
 ## Xcratchへのロード
