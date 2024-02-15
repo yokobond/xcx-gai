@@ -38,4 +38,4 @@ https://yokobond.github.io/xcx-gai/dist/gai.mjs
 
 ## </> Source Code
 
-ソースコードは GitHub [https://yokobond.github.io/xcx-gai/](https://yokobond.github.io/xcx-gai/) で公開されています。
+ソースコードは GitHub [https://github.com/yokobond/xcx-gai](https://github.com/yokobond/xcx-gai) で公開しています。
