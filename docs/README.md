@@ -18,6 +18,7 @@ Example Project
 
 <iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/projects/example.sb3" width="540px" height="460px" allow="camera"></iframe>
 
+Refer to [How to Use](how-to-use) for more details.
 
 ## Load into Xcratch
 
