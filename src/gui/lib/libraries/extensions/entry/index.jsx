@@ -14,6 +14,8 @@ import translations from './translations.json';
  */
 let formatMessage = messageData => messageData.defaultMessage;
 
+const version = 'v0.1.0';
+
 const entry = {
     get name () {
         return formatMessage({
@@ -24,15 +26,15 @@ const entry = {
     },
     extensionId: 'gai',
     extensionURL: 'https://yokobond.github.io/xcx-gai/dist/gai.mjs',
-    collaborator: 'yokobond',
+    collaborator: 'Yengawa Lab',
     iconURL: iconURL,
     insetIconURL: insetIconURL,
     get description () {
-        return formatMessage({
-            defaultMessage: 'an extension for Xcratch',
+        return `${formatMessage({
+            defaultMessage: 'Play with Google generative AI, Gemini!',
             description: 'Description for this extension',
             id: 'gai.entry.description'
-        });
+        })} (${version})`;
     },
     featured: true,
     disabled: false,
