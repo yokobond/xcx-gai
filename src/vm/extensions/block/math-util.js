@@ -41,7 +41,6 @@ export const dotProduct = function (vectorA, vectorB) {
  */
 export const cosineDistance = function (vectorA, vectorB) {
     const dotProd = dotProduct(vectorA, vectorB);
-    if (dotProd === null) return null;
     const normA = Math.hypot(...vectorA);
     const normB = Math.hypot(...vectorB);
     return (1 - (dotProd / (normA * normB)));
