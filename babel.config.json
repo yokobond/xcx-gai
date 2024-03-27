@@ -12,6 +12,7 @@
           "proposals": true
         }
       }
-    ]
+    ],
+    "@babel/preset-react"
   ]
 }
