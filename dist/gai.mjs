@@ -33,7 +33,7 @@ var translations$1 = {
 var formatMessage$1 = function formatMessage(messageData) {
   return messageData.defaultMessage;
 };
-var version = 'v0.1.0';
+var version = 'v0.1.1';
 var entry = {
   get name() {
     return formatMessage$1({
@@ -1842,21 +1842,6 @@ var checkDebugMode = function checkDebugMode() {
   return DEBUG;
 };
 
-function _defineProperty(obj, key, value) {
-  key = toPropertyKey$1(key);
-  if (key in obj) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-  } else {
-    obj[key] = value;
-  }
-  return obj;
-}
-
 function _arrayLikeToArray$1(arr, len) {
   if (len == null || len > arr.length) len = arr.length;
   for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
@@ -1886,6 +1871,21 @@ function _nonIterableSpread() {
 
 function _toConsumableArray(arr) {
   return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray$1(arr) || _nonIterableSpread();
+}
+
+function _defineProperty(obj, key, value) {
+  key = toPropertyKey$1(key);
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+  return obj;
 }
 
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
@@ -1938,6 +1938,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
     this.target = target;
     GeminiAdapter.ADAPTERS[target.id] = this;
     this.sdk = null;
+    this.modelCode = Object.assign({}, GeminiAdapter.modelCode);
     this.models = {};
     this.modelParams = {
       generationConfig: {},
@@ -1963,16 +1964,16 @@ var GeminiAdapter = /*#__PURE__*/function () {
     }
 
     /**
-     * Get model. Initialize if not exists.
-     * @param {string} type - type of model
+     * Get model for data type.
+     * @param {string} type - type of model ['generative' | 'embedding' | 'qa']
      * @returns {GenerativeModel} - model
      */
   }, {
-    key: "getModel",
-    value: function getModel(type) {
+    key: "getModelFor",
+    value: function getModelFor(type) {
       var modelParams = this.getModelParams();
       var model = this.getSDK().getGenerativeModel({
-        model: type,
+        model: this.modelCode[type],
         generationConfig: modelParams.generationConfig,
         safetySettings: modelParams.safetySettings
       });
@@ -2003,18 +2004,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
         return _regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
-              if (typeof content === 'string') {
-                // prompt is a string
-                model = this.getModel('gemini-pro');
-              } else if (content.every(function (p) {
-                return typeof p === 'string';
-              })) {
-                // prompt is a list of strings
-                model = this.getModel('gemini-pro');
-              } else {
-                // prompt is multimodal
-                model = this.getModel('gemini-pro-vision');
-              }
+              model = this.getModelFor('generative');
               if (!(requestType === 'generate')) {
                 _context2.next = 7;
                 break;
@@ -2171,17 +2161,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestGenerate",
     value: function requestGenerate(contentParts, isStreaming) {
-      var type = '';
-      if (contentParts.every(function (p) {
-        return p.type === 'text';
-      })) {
-        // prompt is a list of strings
-        type = 'gemini-pro';
-      } else {
-        // prompt is multimodal
-        type = 'gemini-pro-vision';
-      }
-      var model = this.getModel(type);
+      var model = this.getModelFor('generative');
       var geminiContentParts = this.convertContentParts(contentParts);
       if (isStreaming) {
         return model.generateContentStream(geminiContentParts);
@@ -2197,7 +2177,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "startChat",
     value: function startChat(history) {
-      var model = this.getModel('gemini-pro');
+      var model = this.getModelFor('generative');
       this.chatSession = model.startChat(_objectSpread({
         history: history
       }, this.getModelParams()));
@@ -2263,7 +2243,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
               }
               return _context3.abrupt("return", cache[key]);
             case 9:
-              model = this.getModel('embedding-001');
+              model = this.getModelFor('embedding');
               _context3.next = 12;
               return model.embedContent(toEmbed, taskType);
             case 12:
@@ -2294,15 +2274,20 @@ var GeminiAdapter = /*#__PURE__*/function () {
     }
 
     /**
+     * Get model code for data type.
+     * @returns {object} model code for data type
+     */
+  }, {
+    key: "existsForTarget",
+    value:
+    /**
      * Check if Gemini AI exists for target.
      * @param {Target} target - target to check
      * @returns {boolean} - whether Gemini AI exists for target
      * @static
      * @public
      */
-  }, {
-    key: "existsForTarget",
-    value: function existsForTarget(target) {
+    function existsForTarget(target) {
       return !!GeminiAdapter.ADAPTERS[target.id];
     }
 
@@ -2366,6 +2351,10 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }]);
   return GeminiAdapter;
 }();
+_defineProperty(GeminiAdapter, "modelCode", {
+  generative: 'gemini-1.5-flash',
+  embedding: 'text-embedding-004'
+});
 
 /**
  * This module provides a set of utility functions for working with costumes.
