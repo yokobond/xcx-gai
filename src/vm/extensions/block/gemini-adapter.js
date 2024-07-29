@@ -46,6 +46,15 @@ export class GeminiAdapter {
     }
 
     /**
+     * Get model code for data type.
+     * @returns {object} model code for data type
+     */
+    static modelCode = {
+        generative: 'gemini-1.5-flash',
+        embedding: 'text-embedding-004'
+    };
+
+    /**
      * Check if Gemini AI exists for target.
      * @param {Target} target - target to check
      * @returns {boolean} - whether Gemini AI exists for target
@@ -109,6 +118,7 @@ export class GeminiAdapter {
         this.target = target;
         GeminiAdapter.ADAPTERS[target.id] = this;
         this.sdk = null;
+        this.modelCode = Object.assign({}, GeminiAdapter.modelCode);
         this.models = {};
         this.modelParams = {
             generationConfig: {},
@@ -132,14 +142,14 @@ export class GeminiAdapter {
     }
 
     /**
-     * Get model. Initialize if not exists.
-     * @param {string} type - type of model
+     * Get model for data type.
+     * @param {string} type - type of model ['generative' | 'embedding' | 'qa']
      * @returns {GenerativeModel} - model
      */
-    getModel (type) {
+    getModelFor (type) {
         const modelParams = this.getModelParams();
         const model = this.getSDK().getGenerativeModel({
-            model: type,
+            model: this.modelCode[type],
             generationConfig: modelParams.generationConfig,
             safetySettings: modelParams.safetySettings
         });
@@ -161,17 +171,7 @@ export class GeminiAdapter {
      * @returns {Promise<number>} - a Promise that resolves when the tokens are counted
      */
     async countTokensAs (content, requestType) {
-        let model;
-        if (typeof content === 'string') {
-            // prompt is a string
-            model = this.getModel('gemini-pro');
-        } else if (content.every(p => typeof p === 'string')) {
-            // prompt is a list of strings
-            model = this.getModel('gemini-pro');
-        } else {
-            // prompt is multimodal
-            model = this.getModel('gemini-pro-vision');
-        }
+        const model = this.getModelFor('generative');
         let result;
         if (requestType === 'generate') {
             result = await model.countTokens(content);
@@ -278,15 +278,7 @@ export class GeminiAdapter {
      * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the prompt is sent
      */
     requestGenerate (contentParts, isStreaming) {
-        let type = '';
-        if (contentParts.every(p => p.type === 'text')) {
-            // prompt is a list of strings
-            type = 'gemini-pro';
-        } else {
-            // prompt is multimodal
-            type = 'gemini-pro-vision';
-        }
-        const model = this.getModel(type);
+        const model = this.getModelFor('generative');
         const geminiContentParts = this.convertContentParts(contentParts);
         if (isStreaming) {
             return model.generateContentStream(geminiContentParts);
@@ -300,7 +292,7 @@ export class GeminiAdapter {
      * @returns {void}
      */
     startChat (history) {
-        const model = this.getModel('gemini-pro');
+        const model = this.getModelFor('generative');
         this.chatSession = model.startChat({history, ...this.getModelParams()});
     }
 
@@ -349,7 +341,7 @@ export class GeminiAdapter {
         if (cache[key]) {
             return cache[key];
         }
-        const model = this.getModel('embedding-001');
+        const model = this.getModelFor('embedding');
         const result = await model.embedContent(toEmbed, taskType);
         cache[key] = result.embedding.values;
         return result.embedding.values;
