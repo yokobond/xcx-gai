@@ -14,7 +14,7 @@ import translations from './translations.json';
  */
 let formatMessage = messageData => messageData.defaultMessage;
 
-const version = 'v0.1.0';
+const version = 'v0.1.1';
 
 const entry = {
     get name () {
