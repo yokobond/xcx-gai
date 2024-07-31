@@ -14,7 +14,7 @@ This project is an example of sending camera images to Gemini to generate text.
 (You need API key of the Gemini (ref. [Set API key](how-to-use?id=set-api-key)) and allow camera access to play this project.)
 
 Example Project
-([open in a new window](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/example-ja.sb3))
+([open in a new window](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/example.sb3))
 
 <iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/projects/example.sb3" width="540px" height="460px" allow="camera"></iframe>
 

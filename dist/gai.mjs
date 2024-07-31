@@ -33,7 +33,7 @@ var translations$1 = {
 var formatMessage$1 = function formatMessage(messageData) {
   return messageData.defaultMessage;
 };
-var version = 'v0.1.1';
+var version = 'v0.2.0';
 var entry = {
   get name() {
     return formatMessage$1({
@@ -1661,6 +1661,7 @@ var en = {
 	"gai.chatHistory": "chat history",
 	"gai.startChat": "start chat with history [HISTORY]",
 	"gai.embeddingFor": "embedding of [CONTENT] for [TASK_TYPE]",
+	"gai.embedding": "embedding of [CONTENT]",
 	"gai.embeddingTaskTypeMenu.retrievalQuery": "Retrieval query",
 	"gai.embeddingTaskTypeMenu.retrievalDocument": "Retrieval document",
 	"gai.embeddingTaskTypeMenu.semanticSimilarity": "Semantic similarity",
@@ -1674,6 +1675,8 @@ var en = {
 	"gai.setSafetyRating": "set [HARM_CATEGORY] to [BLOCK_THRESHOLD]",
 	"gai.whenPartialResponseReceived": "when partial response received",
 	"gai.partialResponseText": "partial response text",
+	"gai.setGenerativeModel": "use model [MODEL_CODE] for generative",
+	"gai.setEmbeddingModel": "use model [MODEL_CODE] for embedding",
 	"gai.setGenerationConfig": "set generation [CONFIG] to [VALUE]",
 	"gai.generationConfigMenu.maxOutputTokens": "Max output tokens",
 	"gai.generationConfigMenu.candidateCount": "Candidate count",
@@ -1714,6 +1717,7 @@ var ja = {
 	"gai.chatHistory": "対話履歴",
 	"gai.startChat": "[HISTORY]に続けて対話を始める",
 	"gai.embeddingFor": "[CONTENT]の[TASK_TYPE]の埋め込み表現",
+	"gai.embedding": "[CONTENT]の埋め込み表現",
 	"gai.embeddingTaskTypeMenu.retrievalQuery": "検索の質問として",
 	"gai.embeddingTaskTypeMenu.retrievalDocument": "検索される文書として",
 	"gai.embeddingTaskTypeMenu.semanticSimilarity": "似た意味を探すため",
@@ -1727,6 +1731,8 @@ var ja = {
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
 	"gai.whenPartialResponseReceived": "回答の一部を受け取ったとき",
 	"gai.partialResponseText": "回答の一部",
+	"gai.setGenerativeModel": "生成のモデルに[MODEL_CODE]を使う",
+	"gai.setEmbeddingModel": "埋め込み表現のモデルに[MODEL_CODE]を使う",
 	"gai.setGenerationConfig": "生成の[CONFIG]を[VALUE]にする",
 	"gai.generationConfigMenu.maxOutputTokens": "最大トークン数",
 	"gai.generationConfigMenu.candidateCount": "回答候補の数",
@@ -1770,6 +1776,7 @@ var translations = {
 	"gai.chatHistory": "たいわ の きろく",
 	"gai.startChat": "[HISTORY]に つづけて たいわ を はじめる",
 	"gai.embeddingFor": "[CONTENT]の[TASK_TYPE]の うめこみひょうげん",
+	"gai.embedding": "[CONTENT]の うめこみひょうげん",
 	"gai.embeddingTaskTypeMenu.retrievalQuery": "けんさく の しつもん として",
 	"gai.embeddingTaskTypeMenu.retrievalDocument": "けんさく される ぶんしょ として",
 	"gai.embeddingTaskTypeMenu.semanticSimilarity": "にた いみ を さがす ため",
@@ -1783,6 +1790,8 @@ var translations = {
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
 	"gai.whenPartialResponseReceived": "かいとう の いちぶ を うけとった とき",
 	"gai.partialResponseText": "かいとう の いちぶ",
+	"gai.setGenerativeModel": "せいせい の モデル に[MODEL_CODE]を つかう",
+	"gai.setEmbeddingModel": "うめこみひょうげん の モデル に[MODEL_CODE]を つかう",
 	"gai.setGenerationConfig": "せいせい の[CONFIG]を[VALUE]に する",
 	"gai.generationConfigMenu.maxOutputTokens": "さいだいトークンすう",
 	"gai.generationConfigMenu.candidateCount": "かいとうこうほ の かず",
@@ -1938,7 +1947,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
     this.target = target;
     GeminiAdapter.ADAPTERS[target.id] = this;
     this.sdk = null;
-    this.modelCode = Object.assign({}, GeminiAdapter.modelCode);
+    this.modelCode = Object.assign({}, GeminiAdapter.MODEL_CODE);
     this.models = {};
     this.modelParams = {
       generationConfig: {},
@@ -2274,7 +2283,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
     }
 
     /**
-     * Get model code for data type.
+     * Default model code for each data type.
      * @returns {object} model code for data type
      */
   }, {
@@ -2351,7 +2360,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }]);
   return GeminiAdapter;
 }();
-_defineProperty(GeminiAdapter, "modelCode", {
+_defineProperty(GeminiAdapter, "MODEL_CODE", {
   generative: 'gemini-1.5-flash',
   embedding: 'text-embedding-004'
 });
@@ -2883,6 +2892,36 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'partialResponseText',
           arguments: {}
         }, '---', {
+          opcode: 'setGenerativeModel',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.setGenerativeModel',
+            default: 'use model [MODEL_CODE] for generative',
+            description: 'generative model code setting block for Gemini'
+          }),
+          func: 'setGenerativeModel',
+          arguments: {
+            MODEL_CODE: {
+              type: ArgumentType$1.STRING,
+              defaultValue: GeminiAdapter.MODEL_CODE.generative
+            }
+          }
+        }, {
+          opcode: 'setEmbeddingModel',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.setEmbeddingModel',
+            default: 'use model [MODEL_CODE] for embedding',
+            description: 'embedding model code setting block for Gemini'
+          }),
+          func: 'setEmbeddingModel',
+          arguments: {
+            MODEL_CODE: {
+              type: ArgumentType$1.STRING,
+              defaultValue: GeminiAdapter.MODEL_CODE.embedding
+            }
+          }
+        }, {
           opcode: 'setSafetyRating',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
@@ -2958,6 +2997,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           }
         }, '---', {
           opcode: 'embeddingFor',
+          hideFromPalette: true,
           blockType: BlockType$1.REPORTER,
           text: formatMessage({
             id: 'gai.embeddingFor',
@@ -2973,6 +3013,21 @@ var GeminiBlocks = /*#__PURE__*/function () {
             TASK_TYPE: {
               type: ArgumentType$1.STRING,
               menu: 'embeddingTaskTypeMenu'
+            }
+          }
+        }, {
+          opcode: 'embedding',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.embedding',
+            default: 'embedding of [CONTENT]',
+            description: 'embed block text for Gemini'
+          }),
+          func: 'embeddingFor',
+          arguments: {
+            CONTENT: {
+              type: ArgumentType$1.STRING,
+              defaultValue: ' '
             }
           }
         }, {
@@ -3592,6 +3647,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         });
       }
       return this.requestContent(prompt, target, requestType).catch(function (error) {
+        log$1.error("requestToAI: ".concat(error.message));
         return error.message;
       }).finally(function () {
         ai.setRequesting(false);
@@ -3991,7 +4047,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
       ai.setRequesting(true);
       var contentText = Cast$1.toString(args.CONTENT).trim();
       var content = interpretContentPartsText(contentText);
-      var taskType = args.TASK_TYPE;
+      var taskType = args.TASK_TYPE ? args.TASK_TYPE : EmbeddingTaskType.TASK_TYPE_UNSPECIFIED;
       return ai.requestEmbedding(content, taskType).then(function (embedding) {
         var jsonText = JSON.stringify(embedding);
         var result = jsonText.substring(1, jsonText.length - 1);
@@ -4097,6 +4153,34 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }).finally(function () {
         ai.setRequesting(false);
       });
+    }
+
+    /**
+     * Set generative model code.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_CODE - model code
+     * @param {object} util - utility object provided by the runtime.
+     */
+  }, {
+    key: "setGenerativeModel",
+    value: function setGenerativeModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      ai.modelCode.generative = args.MODEL_CODE;
+    }
+
+    /**
+     * Set embedding model code.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_CODE - model code
+     * @param {object} util - utility object provided by the runtime.
+     */
+  }, {
+    key: "setEmbeddingModel",
+    value: function setEmbeddingModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      ai.modelCode.embedding = args.MODEL_CODE;
     }
 
     /**
