@@ -306,6 +306,38 @@ class GeminiBlocks {
                 },
                 '---',
                 {
+                    opcode: 'setGenerativeModel',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setGenerativeModel',
+                        default: 'use model [MODEL_CODE] for generative',
+                        description: 'generative model code setting block for Gemini'
+                    }),
+                    func: 'setGenerativeModel',
+                    arguments: {
+                        MODEL_CODE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: GeminiAdapter.MODEL_CODE.generative
+                        }
+                    }
+                },
+                {
+                    opcode: 'setEmbeddingModel',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setEmbeddingModel',
+                        default: 'use model [MODEL_CODE] for embedding',
+                        description: 'embedding model code setting block for Gemini'
+                    }),
+                    func: 'setEmbeddingModel',
+                    arguments: {
+                        MODEL_CODE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: GeminiAdapter.MODEL_CODE.embedding
+                        }
+                    }
+                },
+                {
                     opcode: 'setSafetyRating',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
@@ -925,7 +957,10 @@ class GeminiBlocks {
                 });
         }
         return this.requestContent(prompt, target, requestType)
-            .catch(error => error.message)
+            .catch(error => {
+                log.error(`requestToAI: ${error.message}`);
+                return error.message;
+            })
             .finally(() => {
                 ai.setRequesting(false);
             });
@@ -1393,6 +1428,30 @@ class GeminiBlocks {
             .finally(() => {
                 ai.setRequesting(false);
             });
+    }
+
+    /**
+     * Set generative model code.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_CODE - model code
+     * @param {object} util - utility object provided by the runtime.
+     */
+    setGenerativeModel (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        ai.modelCode.generative = args.MODEL_CODE;
+    }
+
+    /**
+     * Set embedding model code.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_CODE - model code
+     * @param {object} util - utility object provided by the runtime.
+     */
+    setEmbeddingModel (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        ai.modelCode.embedding = args.MODEL_CODE;
     }
 
     /**

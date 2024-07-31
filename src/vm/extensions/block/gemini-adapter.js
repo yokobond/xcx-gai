@@ -46,10 +46,10 @@ export class GeminiAdapter {
     }
 
     /**
-     * Get model code for data type.
+     * Default model code for each data type.
      * @returns {object} model code for data type
      */
-    static modelCode = {
+    static MODEL_CODE = {
         generative: 'gemini-1.5-flash',
         embedding: 'text-embedding-004'
     };
@@ -118,7 +118,7 @@ export class GeminiAdapter {
         this.target = target;
         GeminiAdapter.ADAPTERS[target.id] = this;
         this.sdk = null;
-        this.modelCode = Object.assign({}, GeminiAdapter.modelCode);
+        this.modelCode = Object.assign({}, GeminiAdapter.MODEL_CODE);
         this.models = {};
         this.modelParams = {
             generationConfig: {},
