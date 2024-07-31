@@ -18,7 +18,7 @@ The ```ask for API key``` block displays a dialog for entering the API key.
 
 Querying AI is done using ```generate(prompt)``` and ```chat(prompt)``` blocks.
 
-The ```generate(prompt)``` sends a ```(prompt)``` to the AI and waits for the AI to generate a subsequent sentence.
+The ```generate (prompt)``` sends a ```(prompt)``` to the AI and waits for the AI to generate a subsequent sentence.
 
 
 ```chat (prompt)``` sends ```(prompt)``` to the AI as a continuation of the previous dialog, and waits for the AI to generate sentences following the dialog. By running this block in succession, you can automatically build up a dialog.
@@ -30,6 +30,8 @@ The answer from the AI can be retrieved in ```response draft (Candidate Number)`
 _* The currently released Gemini pro API v1 does not allow you to select one answer. _
 
 If the ```when partial response received``` block is used in a code area, you can use the ```partial response text``` block to retrieve partially sent answers before the full answer is returned.
+
+To specify the model to use for generation, use the ``Use model (model name) for generation`` block before executing the ``generate(prompt)`` or ``chat (prompt)`` block. The ``(model name)`` is the model code of the generated model in [Gemini models](https://ai.google.dev/gemini-api/docs/models/gemini).
 
 
 ## Querying with images
@@ -86,16 +88,10 @@ The ```generation (parameter)``` block retrieves the parameters of the generatio
 
 ## Embedding
 
-The ```embedding of ( ) for (task type)``` block obtains an embedded representation of the specified task type for the input sentence.
+The ```embedding of ( )``` block obtains an embedded representation for the input sentence.
 
-The ```(task type)``` can be specified as follows.
+Embedded representations can be used to compute similarity using the ```(Vector A) and (Vector B) (calculation method)``` block. Vector A and Vector B specify the embedded representation obtained by the ```embedding of ( )``` block.
 
-- ```Retrieval Query``` retrieves from AI an embedded expression that can be used as a search question.
-- ```Retrieval Document``` retrieves from the AI an embedded expression that can be used as a search target document.
-- ```Semantic Similarity``` retrieves embedded expressions from the AI that can be used to search for similar meanings.
-- ```Classification``` retrieves embedded expressions from the AI for classification.
-- ```Clustering``` retrieves an embedded representation from the AI for clustering.
+ For ```(calculation method)``` you can specify either ```Dot product``` or ``Euclidean distance``.
 
-Embedded representations can be used to compute similarity using the ```(Vector A) and (Vector B) (calculation method)``` block. Vector A and Vector B specify the embedded representation obtained by the ```embedding of ( ) for (task type)``` block.
-
- For ``(calculation method)`` you can specify either ```Dot product``` or ``Euclidean distance``.
+To specify the model to use for the embedding representation, use the ```Use model (model name) for embedding``` block before executing the ```embedding of ( )``` block. The ``(model name)`` is the model code for the text embedding found in [Gemini models](https://ai.google.dev/gemini-api/docs/models/gemini).
