@@ -306,38 +306,6 @@ class GeminiBlocks {
                 },
                 '---',
                 {
-                    opcode: 'setGenerativeModel',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.setGenerativeModel',
-                        default: 'use model [MODEL_CODE] for generative',
-                        description: 'generative model code setting block for Gemini'
-                    }),
-                    func: 'setGenerativeModel',
-                    arguments: {
-                        MODEL_CODE: {
-                            type: ArgumentType.STRING,
-                            defaultValue: GeminiAdapter.MODEL_CODE.generative
-                        }
-                    }
-                },
-                {
-                    opcode: 'setEmbeddingModel',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.setEmbeddingModel',
-                        default: 'use model [MODEL_CODE] for embedding',
-                        description: 'embedding model code setting block for Gemini'
-                    }),
-                    func: 'setEmbeddingModel',
-                    arguments: {
-                        MODEL_CODE: {
-                            type: ArgumentType.STRING,
-                            defaultValue: GeminiAdapter.MODEL_CODE.embedding
-                        }
-                    }
-                },
-                {
                     opcode: 'setSafetyRating',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
@@ -415,6 +383,22 @@ class GeminiBlocks {
                         }
                     }
                 },
+                {
+                    opcode: 'setGenerativeModel',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setGenerativeModel',
+                        default: 'use model [MODEL_CODE] for generative',
+                        description: 'generative model code setting block for Gemini'
+                    }),
+                    func: 'setGenerativeModel',
+                    arguments: {
+                        MODEL_CODE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: GeminiAdapter.MODEL_CODE.generative
+                        }
+                    }
+                },
                 '---',
                 {
                     opcode: 'embeddingFor',
@@ -457,6 +441,23 @@ class GeminiBlocks {
                         VECTOR_B: {
                             type: ArgumentType.STRING,
                             defaultValue: '1,2,3'
+                        }
+                    }
+                },
+                '---',
+                {
+                    opcode: 'setEmbeddingModel',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setEmbeddingModel',
+                        default: 'use model [MODEL_CODE] for embedding',
+                        description: 'embedding model code setting block for Gemini'
+                    }),
+                    func: 'setEmbeddingModel',
+                    arguments: {
+                        MODEL_CODE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: GeminiAdapter.MODEL_CODE.embedding
                         }
                     }
                 },
