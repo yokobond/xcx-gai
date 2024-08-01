@@ -1661,7 +1661,6 @@ var en = {
 	"gai.chatHistory": "chat history",
 	"gai.startChat": "start chat with history [HISTORY]",
 	"gai.embeddingFor": "embedding of [CONTENT] for [TASK_TYPE]",
-	"gai.embedding": "embedding of [CONTENT]",
 	"gai.embeddingTaskTypeMenu.retrievalQuery": "Retrieval query",
 	"gai.embeddingTaskTypeMenu.retrievalDocument": "Retrieval document",
 	"gai.embeddingTaskTypeMenu.semanticSimilarity": "Semantic similarity",
@@ -1676,7 +1675,9 @@ var en = {
 	"gai.whenPartialResponseReceived": "when partial response received",
 	"gai.partialResponseText": "partial response text",
 	"gai.setGenerativeModel": "use model [MODEL_CODE] for generative",
+	"gai.getGenerativeModel": "generative model",
 	"gai.setEmbeddingModel": "use model [MODEL_CODE] for embedding",
+	"gai.getEmbeddingModel": "embedding model",
 	"gai.setGenerationConfig": "set generation [CONFIG] to [VALUE]",
 	"gai.generationConfigMenu.maxOutputTokens": "Max output tokens",
 	"gai.generationConfigMenu.candidateCount": "Candidate count",
@@ -1717,7 +1718,6 @@ var ja = {
 	"gai.chatHistory": "対話履歴",
 	"gai.startChat": "[HISTORY]に続けて対話を始める",
 	"gai.embeddingFor": "[CONTENT]の[TASK_TYPE]の埋め込み表現",
-	"gai.embedding": "[CONTENT]の埋め込み表現",
 	"gai.embeddingTaskTypeMenu.retrievalQuery": "検索の質問として",
 	"gai.embeddingTaskTypeMenu.retrievalDocument": "検索される文書として",
 	"gai.embeddingTaskTypeMenu.semanticSimilarity": "似た意味を探すため",
@@ -1732,7 +1732,9 @@ var ja = {
 	"gai.whenPartialResponseReceived": "回答の一部を受け取ったとき",
 	"gai.partialResponseText": "回答の一部",
 	"gai.setGenerativeModel": "生成のモデルに[MODEL_CODE]を使う",
+	"gai.getGenerativeModel": "生成のモデル",
 	"gai.setEmbeddingModel": "埋め込み表現のモデルに[MODEL_CODE]を使う",
+	"gai.getEmbeddingModel": "埋め込み表現のモデル",
 	"gai.setGenerationConfig": "生成の[CONFIG]を[VALUE]にする",
 	"gai.generationConfigMenu.maxOutputTokens": "最大トークン数",
 	"gai.generationConfigMenu.candidateCount": "回答候補の数",
@@ -1776,7 +1778,6 @@ var translations = {
 	"gai.chatHistory": "たいわ の きろく",
 	"gai.startChat": "[HISTORY]に つづけて たいわ を はじめる",
 	"gai.embeddingFor": "[CONTENT]の[TASK_TYPE]の うめこみひょうげん",
-	"gai.embedding": "[CONTENT]の うめこみひょうげん",
 	"gai.embeddingTaskTypeMenu.retrievalQuery": "けんさく の しつもん として",
 	"gai.embeddingTaskTypeMenu.retrievalDocument": "けんさく される ぶんしょ として",
 	"gai.embeddingTaskTypeMenu.semanticSimilarity": "にた いみ を さがす ため",
@@ -1791,7 +1792,9 @@ var translations = {
 	"gai.whenPartialResponseReceived": "かいとう の いちぶ を うけとった とき",
 	"gai.partialResponseText": "かいとう の いちぶ",
 	"gai.setGenerativeModel": "せいせい の モデル に[MODEL_CODE]を つかう",
+	"gai.getGenerativeModel": "せいせい の モデル",
 	"gai.setEmbeddingModel": "うめこみひょうげん の モデル に[MODEL_CODE]を つかう",
+	"gai.getEmbeddingModel": "うめこみひょうげん の モデル",
 	"gai.setGenerationConfig": "せいせい の[CONFIG]を[VALUE]に する",
 	"gai.generationConfigMenu.maxOutputTokens": "さいだいトークンすう",
 	"gai.generationConfigMenu.candidateCount": "かいとうこうほ の かず",
@@ -2892,36 +2895,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'partialResponseText',
           arguments: {}
         }, '---', {
-          opcode: 'setGenerativeModel',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.setGenerativeModel',
-            default: 'use model [MODEL_CODE] for generative',
-            description: 'generative model code setting block for Gemini'
-          }),
-          func: 'setGenerativeModel',
-          arguments: {
-            MODEL_CODE: {
-              type: ArgumentType$1.STRING,
-              defaultValue: GeminiAdapter.MODEL_CODE.generative
-            }
-          }
-        }, {
-          opcode: 'setEmbeddingModel',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.setEmbeddingModel',
-            default: 'use model [MODEL_CODE] for embedding',
-            description: 'embedding model code setting block for Gemini'
-          }),
-          func: 'setEmbeddingModel',
-          arguments: {
-            MODEL_CODE: {
-              type: ArgumentType$1.STRING,
-              defaultValue: GeminiAdapter.MODEL_CODE.embedding
-            }
-          }
-        }, {
           opcode: 'setSafetyRating',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
@@ -2995,9 +2968,34 @@ var GeminiBlocks = /*#__PURE__*/function () {
               menu: 'countTokensRequestTypeMenu'
             }
           }
+        }, {
+          opcode: 'setGenerativeModel',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.setGenerativeModel',
+            default: 'use model [MODEL_CODE] for generative',
+            description: 'generative model code setting block for Gemini'
+          }),
+          func: 'setGenerativeModel',
+          arguments: {
+            MODEL_CODE: {
+              type: ArgumentType$1.STRING,
+              defaultValue: GeminiAdapter.MODEL_CODE.generative
+            }
+          }
+        }, {
+          opcode: 'getGenerativeModel',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.getGenerativeModel',
+            default: 'generative model',
+            description: 'generative model block text for Gemini'
+          }),
+          func: 'getGenerativeModel',
+          arguments: {}
         }, '---', {
           opcode: 'embeddingFor',
-          hideFromPalette: true,
           blockType: BlockType$1.REPORTER,
           text: formatMessage({
             id: 'gai.embeddingFor',
@@ -3013,21 +3011,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
             TASK_TYPE: {
               type: ArgumentType$1.STRING,
               menu: 'embeddingTaskTypeMenu'
-            }
-          }
-        }, {
-          opcode: 'embedding',
-          blockType: BlockType$1.REPORTER,
-          text: formatMessage({
-            id: 'gai.embedding',
-            default: 'embedding of [CONTENT]',
-            description: 'embed block text for Gemini'
-          }),
-          func: 'embeddingFor',
-          arguments: {
-            CONTENT: {
-              type: ArgumentType$1.STRING,
-              defaultValue: ' '
             }
           }
         }, {
@@ -3053,6 +3036,32 @@ var GeminiBlocks = /*#__PURE__*/function () {
               defaultValue: '1,2,3'
             }
           }
+        }, '---', {
+          opcode: 'setEmbeddingModel',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.setEmbeddingModel',
+            default: 'use model [MODEL_CODE] for embedding',
+            description: 'embedding model code setting block for Gemini'
+          }),
+          func: 'setEmbeddingModel',
+          arguments: {
+            MODEL_CODE: {
+              type: ArgumentType$1.STRING,
+              defaultValue: GeminiAdapter.MODEL_CODE.embedding
+            }
+          }
+        }, {
+          opcode: 'getEmbeddingModel',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.getEmbeddingModel',
+            default: 'embedding model',
+            description: 'embedding model block text for Gemini'
+          }),
+          func: 'getEmbeddingModel',
+          arguments: {}
         }, '---', {
           opcode: 'askApiKey',
           blockType: BlockType$1.COMMAND,
@@ -4047,7 +4056,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
       ai.setRequesting(true);
       var contentText = Cast$1.toString(args.CONTENT).trim();
       var content = interpretContentPartsText(contentText);
-      var taskType = args.TASK_TYPE ? args.TASK_TYPE : EmbeddingTaskType.TASK_TYPE_UNSPECIFIED;
+      var taskType = args.TASK_TYPE;
       return ai.requestEmbedding(content, taskType).then(function (embedding) {
         var jsonText = JSON.stringify(embedding);
         var result = jsonText.substring(1, jsonText.length - 1);
@@ -4170,6 +4179,20 @@ var GeminiBlocks = /*#__PURE__*/function () {
     }
 
     /**
+     * Get generative model code.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model code
+     */
+  }, {
+    key: "getGenerativeModel",
+    value: function getGenerativeModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      return ai.modelCode.generative;
+    }
+
+    /**
      * Set embedding model code.
      * @param {object} args - the block's arguments.
      * @param {string} args.MODEL_CODE - model code
@@ -4181,6 +4204,20 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var target = util.target;
       var ai = this.getAI(target);
       ai.modelCode.embedding = args.MODEL_CODE;
+    }
+
+    /**
+     * Get embedding model code.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model code
+     */
+  }, {
+    key: "getEmbeddingModel",
+    value: function getEmbeddingModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      return ai.modelCode.embedding;
     }
 
     /**

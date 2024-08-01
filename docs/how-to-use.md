@@ -88,10 +88,18 @@ The ```generation (parameter)``` block retrieves the parameters of the generatio
 
 ## Embedding
 
-The ```embedding of ( )``` block obtains an embedded representation for the input sentence.
+The ```embedding of ( ) for (task type)``` block obtains an embedded representation of the specified task type for the input sentence.
 
-Embedded representations can be used to compute similarity using the ```(Vector A) and (Vector B) (calculation method)``` block. Vector A and Vector B specify the embedded representation obtained by the ```embedding of ( )``` block.
+The ```(task type)``` can be specified as follows.
 
- For ```(calculation method)``` you can specify either ```Dot product``` or ``Euclidean distance``.
+- ```Retrieval Query``` retrieves from AI an embedded expression that can be used as a search question.
+- ```Retrieval Document``` retrieves from the AI an embedded expression that can be used as a search target document.
+- ```Semantic Similarity``` retrieves embedded expressions from the AI that can be used to search for similar meanings.
+- ```Classification``` retrieves embedded expressions from the AI for classification.
+- ```Clustering``` retrieves an embedded representation from the AI for clustering.
+
+Embedded representations can be used to compute similarity using the ```(Vector A) and (Vector B) (calculation method)``` block. Vector A and Vector B specify the embedded representation obtained by the ```embedding of ( ) for (task type)``` block.
+
+ For ``(calculation method)`` you can specify either ```Dot product``` or ``Euclidean distance``.
 
 To specify the model to use for the embedding representation, use the ```Use model (model name) for embedding``` block before executing the ```embedding of ( )``` block. The ``(model name)`` is the model code for the text embedding found in [Gemini models](https://ai.google.dev/gemini-api/docs/models/gemini).
