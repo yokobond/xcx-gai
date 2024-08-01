@@ -399,6 +399,19 @@ class GeminiBlocks {
                         }
                     }
                 },
+                {
+                    opcode: 'getGenerativeModel',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getGenerativeModel',
+                        default: 'generative model',
+                        description: 'generative model block text for Gemini'
+                    }),
+                    func: 'getGenerativeModel',
+                    arguments: {
+                    }
+                },
                 '---',
                 {
                     opcode: 'embeddingFor',
@@ -459,6 +472,19 @@ class GeminiBlocks {
                             type: ArgumentType.STRING,
                             defaultValue: GeminiAdapter.MODEL_CODE.embedding
                         }
+                    }
+                },
+                {
+                    opcode: 'getEmbeddingModel',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getEmbeddingModel',
+                        default: 'embedding model',
+                        description: 'embedding model block text for Gemini'
+                    }),
+                    func: 'getEmbeddingModel',
+                    arguments: {
                     }
                 },
                 '---',
@@ -1444,6 +1470,18 @@ class GeminiBlocks {
     }
 
     /**
+     * Get generative model code.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model code
+     */
+    getGenerativeModel (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        return ai.modelCode.generative;
+    }
+
+    /**
      * Set embedding model code.
      * @param {object} args - the block's arguments.
      * @param {string} args.MODEL_CODE - model code
@@ -1453,6 +1491,18 @@ class GeminiBlocks {
         const target = util.target;
         const ai = this.getAI(target);
         ai.modelCode.embedding = args.MODEL_CODE;
+    }
+
+    /**
+     * Get embedding model code.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model code
+     */
+    getEmbeddingModel (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        return ai.modelCode.embedding;
     }
 
     /**
