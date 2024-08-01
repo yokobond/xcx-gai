@@ -33,7 +33,7 @@ var translations$1 = {
 var formatMessage$1 = function formatMessage(messageData) {
   return messageData.defaultMessage;
 };
-var version = 'v0.1.1';
+var version = 'v0.2.0';
 var entry = {
   get name() {
     return formatMessage$1({
@@ -1674,6 +1674,10 @@ var en = {
 	"gai.setSafetyRating": "set [HARM_CATEGORY] to [BLOCK_THRESHOLD]",
 	"gai.whenPartialResponseReceived": "when partial response received",
 	"gai.partialResponseText": "partial response text",
+	"gai.setGenerativeModel": "use model [MODEL_CODE] for generative",
+	"gai.getGenerativeModel": "generative model",
+	"gai.setEmbeddingModel": "use model [MODEL_CODE] for embedding",
+	"gai.getEmbeddingModel": "embedding model",
 	"gai.setGenerationConfig": "set generation [CONFIG] to [VALUE]",
 	"gai.generationConfigMenu.maxOutputTokens": "Max output tokens",
 	"gai.generationConfigMenu.candidateCount": "Candidate count",
@@ -1727,6 +1731,10 @@ var ja = {
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
 	"gai.whenPartialResponseReceived": "回答の一部を受け取ったとき",
 	"gai.partialResponseText": "回答の一部",
+	"gai.setGenerativeModel": "生成のモデルに[MODEL_CODE]を使う",
+	"gai.getGenerativeModel": "生成のモデル",
+	"gai.setEmbeddingModel": "埋め込み表現のモデルに[MODEL_CODE]を使う",
+	"gai.getEmbeddingModel": "埋め込み表現のモデル",
 	"gai.setGenerationConfig": "生成の[CONFIG]を[VALUE]にする",
 	"gai.generationConfigMenu.maxOutputTokens": "最大トークン数",
 	"gai.generationConfigMenu.candidateCount": "回答候補の数",
@@ -1783,6 +1791,10 @@ var translations = {
 	"gai.setSafetyRating": "[HARM_CATEGORY]の[BLOCK_THRESHOLD]",
 	"gai.whenPartialResponseReceived": "かいとう の いちぶ を うけとった とき",
 	"gai.partialResponseText": "かいとう の いちぶ",
+	"gai.setGenerativeModel": "せいせい の モデル に[MODEL_CODE]を つかう",
+	"gai.getGenerativeModel": "せいせい の モデル",
+	"gai.setEmbeddingModel": "うめこみひょうげん の モデル に[MODEL_CODE]を つかう",
+	"gai.getEmbeddingModel": "うめこみひょうげん の モデル",
 	"gai.setGenerationConfig": "せいせい の[CONFIG]を[VALUE]に する",
 	"gai.generationConfigMenu.maxOutputTokens": "さいだいトークンすう",
 	"gai.generationConfigMenu.candidateCount": "かいとうこうほ の かず",
@@ -1938,7 +1950,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
     this.target = target;
     GeminiAdapter.ADAPTERS[target.id] = this;
     this.sdk = null;
-    this.modelCode = Object.assign({}, GeminiAdapter.modelCode);
+    this.modelCode = Object.assign({}, GeminiAdapter.MODEL_CODE);
     this.models = {};
     this.modelParams = {
       generationConfig: {},
@@ -2274,7 +2286,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
     }
 
     /**
-     * Get model code for data type.
+     * Default model code for each data type.
      * @returns {object} model code for data type
      */
   }, {
@@ -2351,7 +2363,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }]);
   return GeminiAdapter;
 }();
-_defineProperty(GeminiAdapter, "modelCode", {
+_defineProperty(GeminiAdapter, "MODEL_CODE", {
   generative: 'gemini-1.5-flash',
   embedding: 'text-embedding-004'
 });
@@ -2956,6 +2968,32 @@ var GeminiBlocks = /*#__PURE__*/function () {
               menu: 'countTokensRequestTypeMenu'
             }
           }
+        }, {
+          opcode: 'setGenerativeModel',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.setGenerativeModel',
+            default: 'use model [MODEL_CODE] for generative',
+            description: 'generative model code setting block for Gemini'
+          }),
+          func: 'setGenerativeModel',
+          arguments: {
+            MODEL_CODE: {
+              type: ArgumentType$1.STRING,
+              defaultValue: GeminiAdapter.MODEL_CODE.generative
+            }
+          }
+        }, {
+          opcode: 'getGenerativeModel',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.getGenerativeModel',
+            default: 'generative model',
+            description: 'generative model block text for Gemini'
+          }),
+          func: 'getGenerativeModel',
+          arguments: {}
         }, '---', {
           opcode: 'embeddingFor',
           blockType: BlockType$1.REPORTER,
@@ -2998,6 +3036,32 @@ var GeminiBlocks = /*#__PURE__*/function () {
               defaultValue: '1,2,3'
             }
           }
+        }, '---', {
+          opcode: 'setEmbeddingModel',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.setEmbeddingModel',
+            default: 'use model [MODEL_CODE] for embedding',
+            description: 'embedding model code setting block for Gemini'
+          }),
+          func: 'setEmbeddingModel',
+          arguments: {
+            MODEL_CODE: {
+              type: ArgumentType$1.STRING,
+              defaultValue: GeminiAdapter.MODEL_CODE.embedding
+            }
+          }
+        }, {
+          opcode: 'getEmbeddingModel',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.getEmbeddingModel',
+            default: 'embedding model',
+            description: 'embedding model block text for Gemini'
+          }),
+          func: 'getEmbeddingModel',
+          arguments: {}
         }, '---', {
           opcode: 'askApiKey',
           blockType: BlockType$1.COMMAND,
@@ -3592,6 +3656,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         });
       }
       return this.requestContent(prompt, target, requestType).catch(function (error) {
+        log$1.error("requestToAI: ".concat(error.message));
         return error.message;
       }).finally(function () {
         ai.setRequesting(false);
@@ -4097,6 +4162,62 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }).finally(function () {
         ai.setRequesting(false);
       });
+    }
+
+    /**
+     * Set generative model code.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_CODE - model code
+     * @param {object} util - utility object provided by the runtime.
+     */
+  }, {
+    key: "setGenerativeModel",
+    value: function setGenerativeModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      ai.modelCode.generative = args.MODEL_CODE;
+    }
+
+    /**
+     * Get generative model code.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model code
+     */
+  }, {
+    key: "getGenerativeModel",
+    value: function getGenerativeModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      return ai.modelCode.generative;
+    }
+
+    /**
+     * Set embedding model code.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_CODE - model code
+     * @param {object} util - utility object provided by the runtime.
+     */
+  }, {
+    key: "setEmbeddingModel",
+    value: function setEmbeddingModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      ai.modelCode.embedding = args.MODEL_CODE;
+    }
+
+    /**
+     * Get embedding model code.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model code
+     */
+  }, {
+    key: "getEmbeddingModel",
+    value: function getEmbeddingModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      return ai.modelCode.embedding;
     }
 
     /**
