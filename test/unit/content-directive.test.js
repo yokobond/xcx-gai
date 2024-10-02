@@ -2,6 +2,7 @@ import { describe, it } from "mocha";
 import { assert, expect } from "chai";
 import { parseContentPartsText, interpretContentPartDirectives } from "../../src/vm/extensions/block/content-directive.js";
 import { images } from "./images.js";
+import { sounds } from "./sounds.js";
 
 describe("gemini-helper", () => {
   describe("functions", () => {
@@ -57,6 +58,15 @@ describe("gemini-helper", () => {
       assert.deepEqual(result[0], {type: 'text', data: 'These are image data:'});
       assert.deepEqual(result[1], {type: 'dataURL', data: images.whiteWall});
       assert.deepEqual(result[2], {type: 'dataURL', data: images.blackWall});
+    });
+    it("parseContentPartsText with sound", () => {
+      const contentPartsText = `Please explain ${sounds.meow} sound.`;
+      const result = parseContentPartsText(contentPartsText);
+      assert.exists(result);
+      assert.lengthOf(result, 3);
+      assert.equal(result[0], 'Please explain');
+      assert.equal(result[1], `${sounds.meow}`);
+      assert.equal(result[2], "sound.");
     });
   });
 });

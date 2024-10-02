@@ -912,11 +912,13 @@ var Cast = /*#__PURE__*/function () {
         }
         return value;
       }
-      // Replace full-width numbers with half-width ones.
-      value = value.replace(/[０-９＋．ｅ]/g, function (s) {
-        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-      });
-      value = value.replace(/[-－﹣−‐⁃‑‒–—﹘―⎯⏤ーｰ─━]/g, '-');
+      if (typeof value === 'string') {
+        // Replace full-width numbers with half-width ones.
+        value = value.replace(/[０-９＋．ｅ]/g, function (s) {
+          return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+        });
+        value = value.replace(/[-－﹣−‐⁃‑‒–—﹘―⎯⏤ーｰ─━]/g, '-');
+      }
       var n = Number(value);
       if (Number.isNaN(n)) {
         // Scratch treats NaN as 0, when needed as a number.
@@ -1656,6 +1658,7 @@ var en = {
 	"gai.costumeData": "costume data [COSTUME]",
 	"gai.backdropData": "backdrop data [BACKDROP]",
 	"gai.snapshotData": "snapshot data",
+	"gai.soundData": "sound data [SOUND]",
 	"gai.chat": "chat [PROMPT]",
 	"gai.chatDefault": "Hello Gemini!",
 	"gai.chatHistory": "chat history",
@@ -1713,6 +1716,7 @@ var ja = {
 	"gai.costumeData": "コスチューム[COSTUME]のデータ",
 	"gai.backdropData": "バックドロップ[BACKDROP]のデータ",
 	"gai.snapshotData": "スナップショットのデータ",
+	"gai.soundData": "音[SOUND]のデータ",
 	"gai.chat": "対話[PROMPT]",
 	"gai.chatDefault": "こんにちはジェミニ！",
 	"gai.chatHistory": "対話履歴",
@@ -1773,6 +1777,7 @@ var translations = {
 	"gai.costumeData": "コスチューム[COSTUME]のデータ",
 	"gai.backdropData": "バックドロップ[BACKDROP]のデータ",
 	"gai.snapshotData": "スナップショットのデータ",
+	"gai.soundData": "おと[SOUND]の データ",
 	"gai.chat": "たいわ[PROMPT]",
 	"gai.chatDefault": "こんにちはジェミニ！",
 	"gai.chatHistory": "たいわ の きろく",
@@ -2793,6 +2798,22 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'snapshotData',
           arguments: {}
         }, {
+          opcode: 'soundData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.soundData',
+            default: 'sound data [SOUND]',
+            description: 'soundData block text for Gemini'
+          }),
+          func: 'soundData',
+          arguments: {
+            SOUND: {
+              type: ArgumentType$1.STRING,
+              menu: 'soundMenu'
+            }
+          }
+        }, {
           opcode: 'chat',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
@@ -3110,6 +3131,10 @@ var GeminiBlocks = /*#__PURE__*/function () {
             acceptReporters: true,
             items: 'getBackdropMenu'
           },
+          soundMenu: {
+            acceptReporters: true,
+            items: 'getSoundMenu'
+          },
           responseCandidateIndexMenu: {
             acceptReporters: true,
             items: 'getResponseCandidateIndexMenu'
@@ -3173,6 +3198,26 @@ var GeminiBlocks = /*#__PURE__*/function () {
           text: backdrops[i].name,
           value: backdrops[i].name
         });
+      }
+      return menu;
+    }
+  }, {
+    key: "getSoundMenu",
+    value: function getSoundMenu() {
+      var menu = [];
+      var target = this.runtime.getEditingTarget();
+      if (!target) {
+        return [''];
+      }
+      var sounds = target.sprite.sounds;
+      for (var i = 0; i < sounds.length; i++) {
+        menu.push({
+          text: sounds[i].name,
+          value: sounds[i].name
+        });
+      }
+      if (sounds.length === 0) {
+        return [''];
       }
       return menu;
     }
@@ -3764,6 +3809,24 @@ var GeminiBlocks = /*#__PURE__*/function () {
           resolve(" ".concat(imageDataURL, " "));
         });
       });
+    }
+  }, {
+    key: "soundData",
+    value: function soundData(args, util) {
+      var soundName = Cast$1.toString(args.SOUND);
+      var target = util.target;
+      var sounds = target.sprite.sounds;
+      var sound;
+      for (var i = 0; i < sounds.length; i++) {
+        if (sounds[i].name === soundName) {
+          sound = sounds[i];
+          break;
+        }
+      }
+      if (!sound) {
+        return '';
+      }
+      return " ".concat(sound.asset.encodeDataURI(), " ");
     }
 
     /**

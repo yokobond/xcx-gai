@@ -193,6 +193,23 @@ class GeminiBlocks {
                     }
                 },
                 {
+                    opcode: 'soundData',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.soundData',
+                        default: 'sound data [SOUND]',
+                        description: 'soundData block text for Gemini'
+                    }),
+                    func: 'soundData',
+                    arguments: {
+                        SOUND: {
+                            type: ArgumentType.STRING,
+                            menu: 'soundMenu'
+                        }
+                    }
+                },
+                {
                     opcode: 'chat',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
@@ -541,6 +558,10 @@ class GeminiBlocks {
                     acceptReporters: true,
                     items: 'getBackdropMenu'
                 },
+                soundMenu: {
+                    acceptReporters: true,
+                    items: 'getSoundMenu'
+                },
                 responseCandidateIndexMenu: {
                     acceptReporters: true,
                     items: 'getResponseCandidateIndexMenu'
@@ -602,6 +623,25 @@ class GeminiBlocks {
                 text: backdrops[i].name,
                 value: backdrops[i].name
             });
+        }
+        return menu;
+    }
+
+    getSoundMenu () {
+        const menu = [];
+        const target = this.runtime.getEditingTarget();
+        if (!target) {
+            return [''];
+        }
+        const sounds = target.sprite.sounds;
+        for (let i = 0; i < sounds.length; i++) {
+            menu.push({
+                text: sounds[i].name,
+                value: sounds[i].name
+            });
+        }
+        if (sounds.length === 0) {
+            return [''];
         }
         return menu;
     }
@@ -1087,6 +1127,23 @@ class GeminiBlocks {
                 resolve(` ${imageDataURL} `);
             });
         });
+    }
+
+    soundData (args, util) {
+        const soundName = Cast.toString(args.SOUND);
+        const target = util.target;
+        const sounds = target.sprite.sounds;
+        let sound;
+        for (let i = 0; i < sounds.length; i++) {
+            if (sounds[i].name === soundName) {
+                sound = sounds[i];
+                break;
+            }
+        }
+        if (!sound) {
+            return '';
+        }
+        return ` ${sound.asset.encodeDataURI()} `;
     }
 
     /**
