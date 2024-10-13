@@ -3529,97 +3529,120 @@ var GeminiBlocks = /*#__PURE__*/function () {
     key: "requestContentStream",
     value: (function () {
       var _requestContentStream = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee(prompt, target, requestType) {
-        var ai, streamingResult, _streamingResult, partialResponseStream, totalResponseReceived, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialResponse, totalResponse;
+        var ai, streamingResult, _totalResponse, _streamingResult, partialResponseStream, totalResponseReceived, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialResponse, totalResponse;
         return _regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
               ai = this.getAI(target);
+              _context.prev = 1;
               if (!(requestType === 'generate')) {
-                _context.next = 7;
+                _context.next = 8;
                 break;
               }
-              _context.next = 4;
+              _context.next = 5;
               return ai.requestGenerate(prompt, true);
-            case 4:
+            case 5:
               streamingResult = _context.sent;
-              _context.next = 14;
+              _context.next = 15;
               break;
-            case 7:
+            case 8:
               if (!(requestType === 'chat')) {
-                _context.next = 13;
+                _context.next = 14;
                 break;
               }
-              _context.next = 10;
+              _context.next = 11;
               return ai.requestChat(prompt, true);
-            case 10:
+            case 11:
               streamingResult = _context.sent;
-              _context.next = 14;
+              _context.next = 15;
               break;
-            case 13:
-              throw new Error("unknown request type: ".concat(requestType));
             case 14:
+              throw new Error("unknown request type: ".concat(requestType));
+            case 15:
+              _context.next = 24;
+              break;
+            case 17:
+              _context.prev = 17;
+              _context.t0 = _context["catch"](1);
+              _totalResponse = {
+                text: function text() {
+                  return _context.t0.message;
+                },
+                candidates: [{
+                  content: {
+                    parts: [{
+                      text: _context.t0.message
+                    }]
+                  }
+                }]
+              };
+              ai.setLastPartialResponse(_totalResponse);
+              this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+              ai.setLastResponse(_totalResponse);
+              return _context.abrupt("return", _totalResponse.text());
+            case 24:
               _streamingResult = streamingResult, partialResponseStream = _streamingResult.stream, totalResponseReceived = _streamingResult.response;
               _iteratorAbruptCompletion = false;
               _didIteratorError = false;
-              _context.prev = 17;
+              _context.prev = 27;
               _iterator = _asyncIterator(partialResponseStream);
-            case 19:
-              _context.next = 21;
+            case 29:
+              _context.next = 31;
               return _iterator.next();
-            case 21:
+            case 31:
               if (!(_iteratorAbruptCompletion = !(_step = _context.sent).done)) {
-                _context.next = 29;
+                _context.next = 39;
                 break;
               }
               partialResponse = _step.value;
               if (DEBUG) log$1.log("partial response for ".concat(requestType, ":").concat(partialResponse.text()));
               ai.setLastPartialResponse(partialResponse);
               this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
-            case 26:
+            case 36:
               _iteratorAbruptCompletion = false;
-              _context.next = 19;
+              _context.next = 29;
               break;
-            case 29:
-              _context.next = 35;
+            case 39:
+              _context.next = 45;
               break;
-            case 31:
-              _context.prev = 31;
-              _context.t0 = _context["catch"](17);
+            case 41:
+              _context.prev = 41;
+              _context.t1 = _context["catch"](27);
               _didIteratorError = true;
-              _iteratorError = _context.t0;
-            case 35:
-              _context.prev = 35;
-              _context.prev = 36;
+              _iteratorError = _context.t1;
+            case 45:
+              _context.prev = 45;
+              _context.prev = 46;
               if (!(_iteratorAbruptCompletion && _iterator.return != null)) {
-                _context.next = 40;
+                _context.next = 50;
                 break;
               }
-              _context.next = 40;
+              _context.next = 50;
               return _iterator.return();
-            case 40:
-              _context.prev = 40;
+            case 50:
+              _context.prev = 50;
               if (!_didIteratorError) {
-                _context.next = 43;
+                _context.next = 53;
                 break;
               }
               throw _iteratorError;
-            case 43:
-              return _context.finish(40);
-            case 44:
-              return _context.finish(35);
-            case 45:
-              _context.next = 47;
+            case 53:
+              return _context.finish(50);
+            case 54:
+              return _context.finish(45);
+            case 55:
+              _context.next = 57;
               return totalResponseReceived;
-            case 47:
+            case 57:
               totalResponse = _context.sent;
               if (DEBUG) log$1.log("response for ".concat(requestType, ":").concat(totalResponse.text()));
               ai.setLastResponse(totalResponse);
               return _context.abrupt("return", totalResponse.text());
-            case 51:
+            case 61:
             case "end":
               return _context.stop();
           }
-        }, _callee, this, [[17, 31, 35, 45], [36,, 40, 44]]);
+        }, _callee, this, [[1, 17], [27, 41, 45, 55], [46,, 50, 54]]);
       }));
       function requestContentStream(_x, _x2, _x3) {
         return _requestContentStream.apply(this, arguments);
@@ -3644,39 +3667,60 @@ var GeminiBlocks = /*#__PURE__*/function () {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
               ai = this.getAI(target);
+              _context2.prev = 1;
               if (!(requestType === 'generate')) {
-                _context2.next = 7;
+                _context2.next = 8;
                 break;
               }
-              _context2.next = 4;
+              _context2.next = 5;
               return ai.requestGenerate(prompt, false);
-            case 4:
+            case 5:
               result = _context2.sent;
-              _context2.next = 14;
+              _context2.next = 15;
               break;
-            case 7:
+            case 8:
               if (!(requestType === 'chat')) {
-                _context2.next = 13;
+                _context2.next = 14;
                 break;
               }
-              _context2.next = 10;
+              _context2.next = 11;
               return ai.requestChat(prompt, false);
-            case 10:
+            case 11:
               result = _context2.sent;
-              _context2.next = 14;
+              _context2.next = 15;
               break;
-            case 13:
-              throw new Error("unknown request type: ".concat(requestType));
             case 14:
+              throw new Error("unknown request type: ".concat(requestType));
+            case 15:
+              _context2.next = 20;
+              break;
+            case 17:
+              _context2.prev = 17;
+              _context2.t0 = _context2["catch"](1);
+              result = {
+                response: {
+                  text: function text() {
+                    return _context2.t0.message;
+                  },
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: _context2.t0.message
+                      }]
+                    }
+                  }]
+                }
+              };
+            case 20:
               response = result.response;
               ai.setLastResponse(response);
               if (DEBUG) log$1.log("response for ".concat(requestType, ":").concat(response.text()));
               return _context2.abrupt("return", response.text());
-            case 18:
+            case 24:
             case "end":
               return _context2.stop();
           }
-        }, _callee2, this);
+        }, _callee2, this, [[1, 17]]);
       }));
       function requestContent(_x4, _x5, _x6) {
         return _requestContent.apply(this, arguments);
@@ -3694,16 +3738,11 @@ var GeminiBlocks = /*#__PURE__*/function () {
       ai.setRequesting(true);
       var prompt = interpretContentPartsText(promptText);
       if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
-        return this.requestContentStream(prompt, target, requestType).catch(function (error) {
-          return error.message;
-        }).finally(function () {
+        return this.requestContentStream(prompt, target, requestType).finally(function () {
           ai.setRequesting(false);
         });
       }
-      return this.requestContent(prompt, target, requestType).catch(function (error) {
-        log$1.error("requestToAI: ".concat(error.message));
-        return error.message;
-      }).finally(function () {
+      return this.requestContent(prompt, target, requestType).finally(function () {
         ai.setRequesting(false);
       });
     }

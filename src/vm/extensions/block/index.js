@@ -965,12 +965,29 @@ class GeminiBlocks {
     async requestContentStream (prompt, target, requestType) {
         const ai = this.getAI(target);
         let streamingResult;
-        if (requestType === 'generate') {
-            streamingResult = await ai.requestGenerate(prompt, true);
-        } else if (requestType === 'chat') {
-            streamingResult = await ai.requestChat(prompt, true);
-        } else {
-            throw new Error(`unknown request type: ${requestType}`);
+        try {
+            if (requestType === 'generate') {
+                streamingResult = await ai.requestGenerate(prompt, true);
+            } else if (requestType === 'chat') {
+                streamingResult = await ai.requestChat(prompt, true);
+            } else {
+                throw new Error(`unknown request type: ${requestType}`);
+            }
+        } catch (e) {
+            const totalResponse = {
+                text: () => e.message,
+                candidates: [{
+                    content: {
+                        parts: [{
+                            text: e.message
+                        }]
+                    }
+                }]
+            };
+            ai.setLastPartialResponse(totalResponse);
+            this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+            ai.setLastResponse(totalResponse);
+            return totalResponse.text();
         }
         const {stream: partialResponseStream, response: totalResponseReceived} = streamingResult;
         for await (const partialResponse of partialResponseStream) {
@@ -995,12 +1012,27 @@ class GeminiBlocks {
     async requestContent (prompt, target, requestType) {
         const ai = this.getAI(target);
         let result;
-        if (requestType === 'generate') {
-            result = await ai.requestGenerate(prompt, false);
-        } else if (requestType === 'chat') {
-            result = await ai.requestChat(prompt, false);
-        } else {
-            throw new Error(`unknown request type: ${requestType}`);
+        try {
+            if (requestType === 'generate') {
+                result = await ai.requestGenerate(prompt, false);
+            } else if (requestType === 'chat') {
+                result = await ai.requestChat(prompt, false);
+            } else {
+                throw new Error(`unknown request type: ${requestType}`);
+            }
+        } catch (e) {
+            result = {
+                response: {
+                    text: () => e.message,
+                    candidates: [{
+                        content: {
+                            parts: [{
+                                text: e.message
+                            }]
+                        }
+                    }]
+                }
+            };
         }
         const response = result.response;
         ai.setLastResponse(response);
@@ -1018,16 +1050,11 @@ class GeminiBlocks {
         const prompt = interpretContentPartsText(promptText);
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
             return this.requestContentStream(prompt, target, requestType)
-                .catch(error => error.message)
                 .finally(() => {
                     ai.setRequesting(false);
                 });
         }
         return this.requestContent(prompt, target, requestType)
-            .catch(error => {
-                log.error(`requestToAI: ${error.message}`);
-                return error.message;
-            })
             .finally(() => {
                 ai.setRequesting(false);
             });
