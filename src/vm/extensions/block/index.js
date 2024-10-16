@@ -1747,6 +1747,18 @@ class GeminiBlocks {
         });
         confirmButton.style.margin = '8px';
         dialogFace.appendChild(confirmButton);
+        dialogFace.appendChild(document.createElement('br'));
+        dialogFace.appendChild(document.createTextNode(' ('));
+        const getApiKeyLink = document.createElement('a');
+        getApiKeyLink.textContent = formatMessage({
+            id: 'gai.apiKeyDialog.howToGetApiKey',
+            default: 'get API key',
+            description: 'link to get API key for gemini'
+        });
+        getApiKeyLink.setAttribute('href', 'https://ai.google.dev/gemini-api/docs/api-key');
+        getApiKeyLink.setAttribute('target', '_blank');
+        dialogFace.appendChild(getApiKeyLink);
+        dialogFace.appendChild(document.createTextNode(')'));
         return new Promise(
             resolve => {
                 // Add onClick action

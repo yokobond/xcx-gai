@@ -57,6 +57,7 @@
     "gai.setApiKey": "set API key to [KEY]",
     "gai.apiKey": "API key",
     "gai.apiKeyDialog.message": "set API key",
+    "gai.apiKeyDialog.howToGetApiKey": "get API key",
     "gai.apiKeyDialog.cancel": "cancel",
     "gai.apiKeyDialog.set": "set"
   },
@@ -118,6 +119,7 @@
     "gai.setApiKey": "APIキーを[KEY]にする",
     "gai.apiKey": "APIキー",
     "gai.apiKeyDialog.message": "APIキーを設定してください",
+    "gai.apiKeyDialog.howToGetApiKey": "APIキーを取得",
     "gai.apiKeyDialog.cancel": "キャンセル",
     "gai.apiKeyDialog.set": "設定"
   },
@@ -179,6 +181,7 @@
     "gai.setApiKey": "APIキー を[KEY]に する",
     "gai.apiKey": "APIキー",
     "gai.apiKeyDialog.message": "APIキー を せってい してください",
+    "gai.apiKeyDialog.howToGetApiKey": "APIキー を しゅとく",
     "gai.apiKeyDialog.cancel": "キャンセル",
     "gai.apiKeyDialog.set": "せってい"
   }
