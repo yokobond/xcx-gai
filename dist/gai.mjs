@@ -1659,6 +1659,9 @@ var en = {
 	"gai.backdropData": "backdrop data [BACKDROP]",
 	"gai.snapshotData": "snapshot data",
 	"gai.soundData": "sound data [SOUND]",
+	"gai.startListening": "start listening",
+	"gai.stopListening": "stop listening",
+	"gai.listenedData": "listened data",
 	"gai.chat": "chat [PROMPT]",
 	"gai.chatDefault": "Hello Gemini!",
 	"gai.chatHistory": "chat history",
@@ -1717,6 +1720,9 @@ var ja = {
 	"gai.backdropData": "背景[BACKDROP]のデータ",
 	"gai.snapshotData": "スナップショットのデータ",
 	"gai.soundData": "音[SOUND]のデータ",
+	"gai.startListening": "聞き取り開始",
+	"gai.stopListening": "聞き取り終了",
+	"gai.listenedData": "聞き取ったデータ",
 	"gai.chat": "対話[PROMPT]",
 	"gai.chatDefault": "こんにちはジェミニ！",
 	"gai.chatHistory": "対話履歴",
@@ -1778,6 +1784,9 @@ var translations = {
 	"gai.backdropData": "はいけい[BACKDROP]の データ",
 	"gai.snapshotData": "スナップショット の データ",
 	"gai.soundData": "おと[SOUND]の データ",
+	"gai.startListening": "ききとり かいし",
+	"gai.stopListening": "ききとり しゅうりょう",
+	"gai.listenedData": "ききとった データ",
 	"gai.chat": "たいわ[PROMPT]",
 	"gai.chatDefault": "こんにちはジェミニ！",
 	"gai.chatHistory": "たいわ の きろく",
@@ -2814,6 +2823,37 @@ var GeminiBlocks = /*#__PURE__*/function () {
             }
           }
         }, {
+          opcode: 'startListening',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.startListening',
+            default: 'start listening',
+            description: 'startListening block text for Gemini'
+          }),
+          func: 'startListening',
+          arguments: {}
+        }, {
+          opcode: 'stopListening',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.stopListening',
+            default: 'stop listening',
+            description: 'stopListening block text for Gemini'
+          }),
+          func: 'stopListening',
+          arguments: {}
+        }, {
+          opcode: 'listenedData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.listenedData',
+            default: 'listened data',
+            description: 'listenedData block text for Gemini'
+          }),
+          func: 'listenedData',
+          arguments: {}
+        }, '---', {
           opcode: 'chat',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
@@ -3867,6 +3907,81 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }
       return " ".concat(sound.asset.encodeDataURI(), " ");
     }
+  }, {
+    key: "convertRecordedSoundToDataURL",
+    value: function convertRecordedSoundToDataURL(callback) {
+      var _this2 = this;
+      var audioBlob = new Blob(this.soundRecorderChunks, {
+        type: 'audio/wav'
+      });
+      var reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = function () {
+        var dataURL = reader.result;
+        _this2.recordedSoundData = dataURL;
+        _this2.isListening = false;
+        _this2.soundRecorder = null;
+        if (callback) callback(dataURL);
+      };
+    }
+  }, {
+    key: "startListening",
+    value: function startListening() {
+      var _this3 = this;
+      if (this.isListening) {
+        return;
+      }
+      this.isListening = true;
+      return navigator.mediaDevices.getUserMedia({
+        audio: true
+      }).then(function (stream) {
+        _this3.runtime.emitMicListening(true);
+        var mediaRecorder = new MediaRecorder(stream);
+        _this3.soundRecorder = mediaRecorder;
+        _this3.soundRecorderChunks = [];
+        mediaRecorder.ondataavailable = function (event) {
+          _this3.soundRecorderChunks.push(event.data);
+        };
+        mediaRecorder.start();
+        _this3.listeningTimeout = setTimeout(function () {
+          _this3.listeningTimeout = null;
+          mediaRecorder.onstop = function () {
+            _this3.runtime.emitMicListening(false);
+            _this3.convertRecordedSoundToDataURL();
+          };
+          mediaRecorder.stop();
+        }, 60 * 1000);
+      });
+    }
+  }, {
+    key: "stopListening",
+    value: function stopListening() {
+      var _this4 = this;
+      if (!this.isListening) {
+        return;
+      }
+      if (this.listeningTimeout) {
+        clearTimeout(this.listeningTimeout);
+        this.listeningTimeout = null;
+      }
+      if (this.soundRecorder) {
+        return new Promise(function (resolve) {
+          _this4.soundRecorder.onstop = function () {
+            _this4.runtime.emitMicListening(false);
+            _this4.convertRecordedSoundToDataURL(resolve);
+          };
+          _this4.soundRecorder.stop();
+        });
+      }
+    }
+  }, {
+    key: "listenedData",
+    value: function listenedData() {
+      if (this.recordedSoundData) {
+        return " ".concat(this.recordedSoundData, " ");
+      }
+      return '';
+    }
 
     /**
      * Chat history.
@@ -4330,7 +4445,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this2 = this;
+      var _this5 = this;
       var defaultApiKey = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       if (this.apiKeyDialogOpened) {
         // prevent to open multiple dialogs
@@ -4404,7 +4519,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this2.apiKeyDialogOpened = false;
+        _this5.apiKeyDialogOpened = false;
       });
     }
 

@@ -210,6 +210,44 @@ class GeminiBlocks {
                     }
                 },
                 {
+                    opcode: 'startListening',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.startListening',
+                        default: 'start listening',
+                        description: 'startListening block text for Gemini'
+                    }),
+                    func: 'startListening',
+                    arguments: {
+                    }
+                },
+                {
+                    opcode: 'stopListening',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.stopListening',
+                        default: 'stop listening',
+                        description: 'stopListening block text for Gemini'
+                    }),
+                    func: 'stopListening',
+                    arguments: {
+                    }
+                },
+                {
+                    opcode: 'listenedData',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.listenedData',
+                        default: 'listened data',
+                        description: 'listenedData block text for Gemini'
+                    }),
+                    func: 'listenedData',
+                    arguments: {
+                    }
+                },
+                '---',
+                {
                     opcode: 'chat',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
@@ -1171,6 +1209,71 @@ class GeminiBlocks {
             return '';
         }
         return ` ${sound.asset.encodeDataURI()} `;
+    }
+
+    convertRecordedSoundToDataURL (callback) {
+        const audioBlob = new Blob(this.soundRecorderChunks, {type: 'audio/wav'});
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+            const dataURL = reader.result;
+            this.recordedSoundData = dataURL;
+            this.isListening = false;
+            this.soundRecorder = null;
+            if (callback) callback(dataURL);
+        };
+    }
+
+    startListening () {
+        if (this.isListening) {
+            return;
+        }
+        this.isListening = true;
+        return navigator.mediaDevices.getUserMedia({audio: true})
+            .then(stream => {
+                this.runtime.emitMicListening(true);
+                const mediaRecorder = new MediaRecorder(stream);
+                this.soundRecorder = mediaRecorder;
+                this.soundRecorderChunks = [];
+                mediaRecorder.ondataavailable = event => {
+                    this.soundRecorderChunks.push(event.data);
+                };
+                mediaRecorder.start();
+                this.listeningTimeout = setTimeout(() => {
+                    this.listeningTimeout = null;
+                    mediaRecorder.onstop = () => {
+                        this.runtime.emitMicListening(false);
+                        this.convertRecordedSoundToDataURL();
+                    };
+                    mediaRecorder.stop();
+                }, 60 * 1000);
+            });
+    }
+
+    stopListening () {
+        if (!this.isListening) {
+            return;
+        }
+        if (this.listeningTimeout) {
+            clearTimeout(this.listeningTimeout);
+            this.listeningTimeout = null;
+        }
+        if (this.soundRecorder) {
+            return new Promise(resolve => {
+                this.soundRecorder.onstop = () => {
+                    this.runtime.emitMicListening(false);
+                    this.convertRecordedSoundToDataURL(resolve);
+                };
+                this.soundRecorder.stop();
+            });
+        }
+    }
+
+    listenedData () {
+        if (this.recordedSoundData) {
+            return ` ${this.recordedSoundData} `;
+        }
+        return '';
     }
 
     /**
