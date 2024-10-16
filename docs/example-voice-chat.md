@@ -10,4 +10,4 @@ Here is an example of a spoken dialogue project using Gemini.
 
 -> Click on the “input mode” sprite to put Gemini in voice response mode. When in voice response mode, you can simply talk to the cat and it will input your voice.
 
-<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/ja/GAI-Voice-Chat.sb3" width="540px" height="460px" allow="microphone"></iframe>
+<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/GAI-Voice-Chat.sb3" width="540px" height="460px" allow="microphone"></iframe>
