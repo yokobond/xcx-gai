@@ -2766,94 +2766,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
             }
           }
         }, {
-          opcode: 'costumeData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.costumeData',
-            default: 'costume data [COSTUME]'
-          }),
-          func: 'costumeData',
-          arguments: {
-            COSTUME: {
-              type: ArgumentType$1.STRING,
-              menu: 'costumeMenu'
-            }
-          }
-        }, {
-          opcode: 'backdropData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.backdropData',
-            default: 'backdrop data [BACKDROP]'
-          }),
-          func: 'backdropData',
-          arguments: {
-            BACKDROP: {
-              type: ArgumentType$1.STRING,
-              menu: 'backdropMenu'
-            }
-          }
-        }, {
-          opcode: 'snapshotData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.snapshotData',
-            default: 'snapshot data',
-            description: 'snapshotData block text for Gemini'
-          }),
-          func: 'snapshotData',
-          arguments: {}
-        }, {
-          opcode: 'soundData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.soundData',
-            default: 'sound data [SOUND]',
-            description: 'soundData block text for Gemini'
-          }),
-          func: 'soundData',
-          arguments: {
-            SOUND: {
-              type: ArgumentType$1.STRING,
-              menu: 'soundMenu'
-            }
-          }
-        }, {
-          opcode: 'startListening',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.startListening',
-            default: 'start listening',
-            description: 'startListening block text for Gemini'
-          }),
-          func: 'startListening',
-          arguments: {}
-        }, {
-          opcode: 'stopListening',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.stopListening',
-            default: 'stop listening',
-            description: 'stopListening block text for Gemini'
-          }),
-          func: 'stopListening',
-          arguments: {}
-        }, {
-          opcode: 'listenedData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.listenedData',
-            default: 'listened data',
-            description: 'listenedData block text for Gemini'
-          }),
-          func: 'listenedData',
-          arguments: {}
-        }, '---', {
           opcode: 'chat',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
@@ -2954,6 +2866,94 @@ var GeminiBlocks = /*#__PURE__*/function () {
           }),
           disableMonitor: true,
           func: 'partialResponseText',
+          arguments: {}
+        }, '---', {
+          opcode: 'costumeData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.costumeData',
+            default: 'costume data [COSTUME]'
+          }),
+          func: 'costumeData',
+          arguments: {
+            COSTUME: {
+              type: ArgumentType$1.STRING,
+              menu: 'costumeMenu'
+            }
+          }
+        }, {
+          opcode: 'backdropData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.backdropData',
+            default: 'backdrop data [BACKDROP]'
+          }),
+          func: 'backdropData',
+          arguments: {
+            BACKDROP: {
+              type: ArgumentType$1.STRING,
+              menu: 'backdropMenu'
+            }
+          }
+        }, {
+          opcode: 'snapshotData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.snapshotData',
+            default: 'snapshot data',
+            description: 'snapshotData block text for Gemini'
+          }),
+          func: 'snapshotData',
+          arguments: {}
+        }, {
+          opcode: 'soundData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.soundData',
+            default: 'sound data [SOUND]',
+            description: 'soundData block text for Gemini'
+          }),
+          func: 'soundData',
+          arguments: {
+            SOUND: {
+              type: ArgumentType$1.STRING,
+              menu: 'soundMenu'
+            }
+          }
+        }, {
+          opcode: 'startListening',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.startListening',
+            default: 'start listening',
+            description: 'startListening block text for Gemini'
+          }),
+          func: 'startListening',
+          arguments: {}
+        }, {
+          opcode: 'stopListening',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.stopListening',
+            default: 'stop listening',
+            description: 'stopListening block text for Gemini'
+          }),
+          func: 'stopListening',
+          arguments: {}
+        }, {
+          opcode: 'listenedData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.listenedData',
+            default: 'listened data',
+            description: 'listenedData block text for Gemini'
+          }),
+          func: 'listenedData',
           arguments: {}
         }, '---', {
           opcode: 'setSafetyRating',
