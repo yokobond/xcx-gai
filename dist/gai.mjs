@@ -33,7 +33,7 @@ var translations$1 = {
 var formatMessage$1 = function formatMessage(messageData) {
   return messageData.defaultMessage;
 };
-var version = 'v0.3.0';
+var version = 'v0.4.0';
 var entry = {
   get name() {
     return formatMessage$1({
