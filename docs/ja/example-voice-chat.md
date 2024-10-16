@@ -10,4 +10,4 @@ Geminiを使った音声対話のプロジェクトの例です。
 
 ※ "input mode" スプライトをクリックすると、Geminiが音声反応モードになります。音声反応モードのときは、話しかけるだけて音声が入力されます。
 
-<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/ja/GAI-音声対話.sb3" width="540px" height="460px"></iframe>
+<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/ja/GAI-音声対話.sb3" width="540px" height="460px" allow="microphone"></iframe>
