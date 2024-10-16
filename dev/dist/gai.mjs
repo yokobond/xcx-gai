@@ -1659,6 +1659,9 @@ var en = {
 	"gai.backdropData": "backdrop data [BACKDROP]",
 	"gai.snapshotData": "snapshot data",
 	"gai.soundData": "sound data [SOUND]",
+	"gai.startListening": "start listening",
+	"gai.stopListening": "stop listening",
+	"gai.listenedData": "listened data",
 	"gai.chat": "chat [PROMPT]",
 	"gai.chatDefault": "Hello Gemini!",
 	"gai.chatHistory": "chat history",
@@ -1717,6 +1720,9 @@ var ja = {
 	"gai.backdropData": "背景[BACKDROP]のデータ",
 	"gai.snapshotData": "スナップショットのデータ",
 	"gai.soundData": "音[SOUND]のデータ",
+	"gai.startListening": "聞き取り開始",
+	"gai.stopListening": "聞き取り終了",
+	"gai.listenedData": "聞き取ったデータ",
 	"gai.chat": "対話[PROMPT]",
 	"gai.chatDefault": "こんにちはジェミニ！",
 	"gai.chatHistory": "対話履歴",
@@ -1778,6 +1784,9 @@ var translations = {
 	"gai.backdropData": "はいけい[BACKDROP]の データ",
 	"gai.snapshotData": "スナップショット の データ",
 	"gai.soundData": "おと[SOUND]の データ",
+	"gai.startListening": "ききとり かいし",
+	"gai.stopListening": "ききとり しゅうりょう",
+	"gai.listenedData": "ききとった データ",
 	"gai.chat": "たいわ[PROMPT]",
 	"gai.chatDefault": "こんにちはジェミニ！",
 	"gai.chatHistory": "たいわ の きろく",
@@ -2757,84 +2766,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
             }
           }
         }, {
-          opcode: 'costumeData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.costumeData',
-            default: 'costume data [COSTUME]'
-          }),
-          func: 'costumeData',
-          arguments: {
-            COSTUME: {
-              type: ArgumentType$1.STRING,
-              menu: 'costumeMenu'
-            }
-          }
-        }, {
-          opcode: 'backdropData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.backdropData',
-            default: 'backdrop data [BACKDROP]'
-          }),
-          func: 'backdropData',
-          arguments: {
-            BACKDROP: {
-              type: ArgumentType$1.STRING,
-              menu: 'backdropMenu'
-            }
-          }
-        }, {
-          opcode: 'snapshotData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.snapshotData',
-            default: 'snapshot data',
-            description: 'snapshotData block text for Gemini'
-          }),
-          func: 'snapshotData',
-          arguments: {}
-        }, {
-          opcode: 'soundData',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.soundData',
-            default: 'sound data [SOUND]',
-            description: 'soundData block text for Gemini'
-          }),
-          func: 'soundData',
-          arguments: {
-            SOUND: {
-              type: ArgumentType$1.STRING,
-              menu: 'soundMenu'
-            }
-          }
-        }, {
-          opcode: 'listenUntilClicked',
-          blockType: BlockType$1.COMMAND,
-          text: formatMessage({
-            id: 'gai.listenUntilClicked',
-            default: 'listen until clicked',
-            description: 'listen until clicked block text for Gemini'
-          }),
-          func: 'listenUntilClicked',
-          arguments: {}
-        }, {
-          opcode: 'recordedSound',
-          blockType: BlockType$1.REPORTER,
-          disableMonitor: true,
-          text: formatMessage({
-            id: 'gai.recordedSound',
-            default: 'recorded sound',
-            description: 'recordedSound block text for Gemini'
-          }),
-          func: 'recordedSound',
-          arguments: {}
-        }, {
           opcode: 'chat',
           blockType: BlockType$1.COMMAND,
           text: formatMessage({
@@ -2935,6 +2866,94 @@ var GeminiBlocks = /*#__PURE__*/function () {
           }),
           disableMonitor: true,
           func: 'partialResponseText',
+          arguments: {}
+        }, '---', {
+          opcode: 'costumeData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.costumeData',
+            default: 'costume data [COSTUME]'
+          }),
+          func: 'costumeData',
+          arguments: {
+            COSTUME: {
+              type: ArgumentType$1.STRING,
+              menu: 'costumeMenu'
+            }
+          }
+        }, {
+          opcode: 'backdropData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.backdropData',
+            default: 'backdrop data [BACKDROP]'
+          }),
+          func: 'backdropData',
+          arguments: {
+            BACKDROP: {
+              type: ArgumentType$1.STRING,
+              menu: 'backdropMenu'
+            }
+          }
+        }, {
+          opcode: 'snapshotData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.snapshotData',
+            default: 'snapshot data',
+            description: 'snapshotData block text for Gemini'
+          }),
+          func: 'snapshotData',
+          arguments: {}
+        }, {
+          opcode: 'soundData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.soundData',
+            default: 'sound data [SOUND]',
+            description: 'soundData block text for Gemini'
+          }),
+          func: 'soundData',
+          arguments: {
+            SOUND: {
+              type: ArgumentType$1.STRING,
+              menu: 'soundMenu'
+            }
+          }
+        }, {
+          opcode: 'startListening',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.startListening',
+            default: 'start listening',
+            description: 'startListening block text for Gemini'
+          }),
+          func: 'startListening',
+          arguments: {}
+        }, {
+          opcode: 'stopListening',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.stopListening',
+            default: 'stop listening',
+            description: 'stopListening block text for Gemini'
+          }),
+          func: 'stopListening',
+          arguments: {}
+        }, {
+          opcode: 'listenedData',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.listenedData',
+            default: 'listened data',
+            description: 'listenedData block text for Gemini'
+          }),
+          func: 'listenedData',
           arguments: {}
         }, '---', {
           opcode: 'setSafetyRating',
@@ -3889,101 +3908,77 @@ var GeminiBlocks = /*#__PURE__*/function () {
       return " ".concat(sound.asset.encodeDataURI(), " ");
     }
   }, {
-    key: "recordAudioAndConvertToDataURL",
-    value: function () {
-      var _recordAudioAndConvertToDataURL = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3() {
-        var _this2 = this;
-        var stream, mediaRecorder, audioChunks;
-        return _regeneratorRuntime.wrap(function _callee3$(_context3) {
-          while (1) switch (_context3.prev = _context3.next) {
-            case 0:
-              _context3.next = 2;
-              return navigator.mediaDevices.getUserMedia({
-                audio: true
-              });
-            case 2:
-              stream = _context3.sent;
-              // Create a MediaRecorder instance
-              mediaRecorder = new MediaRecorder(stream);
-              this.soundRecorder = mediaRecorder;
-
-              // Create an array to store audio chunks
-              audioChunks = []; // Event listener for when data is available
-              mediaRecorder.ondataavailable = function (event) {
-                audioChunks.push(event.data);
-              };
-
-              // Event listener for when recording stops
-              mediaRecorder.onstop = function () {
-                _this2.runtime.emitMicListening(false);
-                // Combine audio chunks into a single Blob
-                var audioBlob = new Blob(audioChunks, {
-                  type: 'audio/wav'
-                });
-
-                // Convert Blob to Data URL
-                var reader = new FileReader();
-                reader.readAsDataURL(audioBlob);
-                reader.onloadend = function () {
-                  var dataURL = reader.result;
-                  _this2.recordedSoundData = dataURL;
-                };
-              };
-
-              // Start recording
-              mediaRecorder.start();
-
-              // Stop recording after 5 seconds (adjust as needed)
-              this.listeningTimeout = setTimeout(function () {
-                mediaRecorder.stop();
-              }, 60 * 1000);
-            case 10:
-            case "end":
-              return _context3.stop();
-          }
-        }, _callee3, this);
-      }));
-      function recordAudioAndConvertToDataURL() {
-        return _recordAudioAndConvertToDataURL.apply(this, arguments);
-      }
-      return recordAudioAndConvertToDataURL;
-    }()
-  }, {
-    key: "listenUntilClicked",
-    value: function listenUntilClicked(args, util) {
-      var _this3 = this;
-      if (!this.isListening) {
-        util.yield();
-        this.isListening = true;
-        this.recordAudioAndConvertToDataURL().then(function () {
-          _this3.runtime.emitMicListening(true);
-        }).catch(function (error) {
-          log$1.error(error);
-          return error.message;
-        });
-        return;
-      }
-      if (util.ioQuery('mouse', 'getIsDown')) {
-        if (this.listeningTimeout) {
-          clearTimeout(this.listeningTimeout);
-          this.listeningTimeout = null;
-        }
-        this.isListening = false;
-        this.runtime.emitMicListening(false);
-        this.soundRecorder.stop();
-        return new Promise(function (resolve) {
-          setTimeout(function () {
-            resolve('recorded');
-          }, 500); // wait to convert sound to dataURL
-        });
-      }
-      util.yield(); // re-try this call after a while.
+    key: "convertRecordedSoundToDataURL",
+    value: function convertRecordedSoundToDataURL(callback) {
+      var _this2 = this;
+      var audioBlob = new Blob(this.soundRecorderChunks, {
+        type: 'audio/wav'
+      });
+      var reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = function () {
+        var dataURL = reader.result;
+        _this2.recordedSoundData = dataURL;
+        _this2.isListening = false;
+        _this2.soundRecorder = null;
+        if (callback) callback(dataURL);
+      };
     }
   }, {
-    key: "recordedSound",
-    value: function recordedSound() {
+    key: "startListening",
+    value: function startListening() {
+      var _this3 = this;
+      if (this.isListening) {
+        return;
+      }
+      this.isListening = true;
+      return navigator.mediaDevices.getUserMedia({
+        audio: true
+      }).then(function (stream) {
+        _this3.runtime.emitMicListening(true);
+        var mediaRecorder = new MediaRecorder(stream);
+        _this3.soundRecorder = mediaRecorder;
+        _this3.soundRecorderChunks = [];
+        mediaRecorder.ondataavailable = function (event) {
+          _this3.soundRecorderChunks.push(event.data);
+        };
+        mediaRecorder.start();
+        _this3.listeningTimeout = setTimeout(function () {
+          _this3.listeningTimeout = null;
+          mediaRecorder.onstop = function () {
+            _this3.runtime.emitMicListening(false);
+            _this3.convertRecordedSoundToDataURL();
+          };
+          mediaRecorder.stop();
+        }, 60 * 1000);
+      });
+    }
+  }, {
+    key: "stopListening",
+    value: function stopListening() {
+      var _this4 = this;
+      if (!this.isListening) {
+        return;
+      }
+      if (this.listeningTimeout) {
+        clearTimeout(this.listeningTimeout);
+        this.listeningTimeout = null;
+      }
+      if (this.soundRecorder) {
+        return new Promise(function (resolve) {
+          _this4.soundRecorder.onstop = function () {
+            _this4.runtime.emitMicListening(false);
+            _this4.convertRecordedSoundToDataURL(resolve);
+          };
+          _this4.soundRecorder.stop();
+        });
+      }
+    }
+  }, {
+    key: "listenedData",
+    value: function listenedData() {
       if (this.recordedSoundData) {
-        return this.recordedSoundData;
+        return " ".concat(this.recordedSoundData, " ");
       }
       return '';
     }
@@ -4450,7 +4445,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this4 = this;
+      var _this5 = this;
       var defaultApiKey = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       if (this.apiKeyDialogOpened) {
         // prevent to open multiple dialogs
@@ -4524,7 +4519,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this4.apiKeyDialogOpened = false;
+        _this5.apiKeyDialogOpened = false;
       });
     }
 
