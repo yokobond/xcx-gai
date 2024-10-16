@@ -4,8 +4,10 @@
 
 
 * Examples
-  * [Generateing Example](example-generating "Generating Example")
-  * [Chat Example](example-chat "Chat Example")
-  * [Embedding Example](example-embedding "Embedding Example")
+  * [Generating Example](example-generating "Generate sentences")
+  * [Chat Example](example-chat "Have a series of conversations with AI")
+  * [Voice Interaction](example-voice-chat "Interacting with AI by voice")
+  * [Embedding Example](example-embedding "Search with AI")
+
 ----
 <a href="./ja/" target="_self">日本語</a>
