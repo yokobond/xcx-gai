@@ -1709,6 +1709,7 @@ var en = {
 	"gai.setApiKey": "set API key to [KEY]",
 	"gai.apiKey": "API key",
 	"gai.apiKeyDialog.message": "set API key",
+	"gai.apiKeyDialog.howToGetApiKey": "get API key",
 	"gai.apiKeyDialog.cancel": "cancel",
 	"gai.apiKeyDialog.set": "set"
 };
@@ -1770,6 +1771,7 @@ var ja = {
 	"gai.setApiKey": "APIキーを[KEY]にする",
 	"gai.apiKey": "APIキー",
 	"gai.apiKeyDialog.message": "APIキーを設定してください",
+	"gai.apiKeyDialog.howToGetApiKey": "APIキーを取得",
 	"gai.apiKeyDialog.cancel": "キャンセル",
 	"gai.apiKeyDialog.set": "設定"
 };
@@ -1834,6 +1836,7 @@ var translations = {
 	"gai.setApiKey": "APIキー を[KEY]に する",
 	"gai.apiKey": "APIキー",
 	"gai.apiKeyDialog.message": "APIキー を せってい してください",
+	"gai.apiKeyDialog.howToGetApiKey": "APIキー を しゅとく",
 	"gai.apiKeyDialog.cancel": "キャンセル",
 	"gai.apiKeyDialog.set": "せってい"
 }
@@ -4496,6 +4499,18 @@ var GeminiBlocks = /*#__PURE__*/function () {
       });
       confirmButton.style.margin = '8px';
       dialogFace.appendChild(confirmButton);
+      dialogFace.appendChild(document.createElement('br'));
+      dialogFace.appendChild(document.createTextNode(' ('));
+      var getApiKeyLink = document.createElement('a');
+      getApiKeyLink.textContent = formatMessage({
+        id: 'gai.apiKeyDialog.howToGetApiKey',
+        default: 'get API key',
+        description: 'link to get API key for gemini'
+      });
+      getApiKeyLink.setAttribute('href', 'https://ai.google.dev/gemini-api/docs/api-key');
+      getApiKeyLink.setAttribute('target', '_blank');
+      dialogFace.appendChild(getApiKeyLink);
+      dialogFace.appendChild(document.createTextNode(')'));
       return new Promise(function (resolve) {
         // Add onClick action
         var confirmed = function confirmed() {
