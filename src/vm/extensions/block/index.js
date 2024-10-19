@@ -6,7 +6,11 @@ import translations from './translations.json';
 import blockIcon from './block-icon.png';
 
 import {DEBUG, checkDebugMode} from './dev-util.js';
-import {GeminiAdapter, HarmCategory, HarmBlockThreshold, EmbeddingTaskType} from './gemini-adapter.js';
+import {
+    GeminiAdapter,
+    HarmCategory, HarmBlockThreshold, EmbeddingTaskType,
+    getTextFromResponse
+} from './gemini-adapter.js';
 import {getCostumeByNameOrNumber, costumeToDataURL, addImageAsCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
 import {dotProduct, euclideanDistance} from './math-util.js';
@@ -973,7 +977,7 @@ class GeminiBlocks {
         if (!response) {
             return '';
         }
-        return response.text();
+        return getTextFromResponse(response);
     }
 
     /**
@@ -1012,31 +1016,22 @@ class GeminiBlocks {
                 throw new Error(`unknown request type: ${requestType}`);
             }
         } catch (e) {
-            const totalResponse = {
-                text: () => e.message,
-                candidates: [{
-                    content: {
-                        parts: [{
-                            text: e.message
-                        }]
-                    }
-                }]
-            };
+            const totalResponse = e.message;
             ai.setLastPartialResponse(totalResponse);
             this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
             ai.setLastResponse(totalResponse);
-            return totalResponse.text();
+            return getTextFromResponse(totalResponse);
         }
         const {stream: partialResponseStream, response: totalResponseReceived} = streamingResult;
         for await (const partialResponse of partialResponseStream) {
-            if (DEBUG) log.log(`partial response for ${requestType}:${partialResponse.text()}`);
+            if (DEBUG) log.log(partialResponse);
             ai.setLastPartialResponse(partialResponse);
             this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
         }
         const totalResponse = await totalResponseReceived;
-        if (DEBUG) log.log(`response for ${requestType}:${totalResponse.text()}`);
+        if (DEBUG) log.log(totalResponse);
         ai.setLastResponse(totalResponse);
-        return totalResponse.text();
+        return getTextFromResponse(totalResponse);
     }
 
     /**
@@ -1060,22 +1055,13 @@ class GeminiBlocks {
             }
         } catch (e) {
             result = {
-                response: {
-                    text: () => e.message,
-                    candidates: [{
-                        content: {
-                            parts: [{
-                                text: e.message
-                            }]
-                        }
-                    }]
-                }
+                response: e.message
             };
         }
         const response = result.response;
         ai.setLastResponse(response);
-        if (DEBUG) log.log(`response for ${requestType}:${response.text()}`);
-        return response.text();
+        if (DEBUG) log.log(response);
+        return getTextFromResponse(response);
     }
 
     requestToAI (promptText, target, requestType, util) {
@@ -1332,6 +1318,9 @@ class GeminiBlocks {
         const response = ai.getLastResponse(target);
         if (!response) {
             return '';
+        }
+        if (typeof response === 'string') {
+            return response;
         }
         try {
             const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);

@@ -1871,27 +1871,27 @@ var checkDebugMode = function checkDebugMode() {
   return DEBUG;
 };
 
-function _arrayLikeToArray$1(arr, len) {
+function _arrayLikeToArray$2(arr, len) {
   if (len == null || len > arr.length) len = arr.length;
   for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
   return arr2;
 }
 
 function _arrayWithoutHoles(arr) {
-  if (Array.isArray(arr)) return _arrayLikeToArray$1(arr);
+  if (Array.isArray(arr)) return _arrayLikeToArray$2(arr);
 }
 
 function _iterableToArray(iter) {
   if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
 }
 
-function _unsupportedIterableToArray$1(o, minLen) {
+function _unsupportedIterableToArray$2(o, minLen) {
   if (!o) return;
-  if (typeof o === "string") return _arrayLikeToArray$1(o, minLen);
+  if (typeof o === "string") return _arrayLikeToArray$2(o, minLen);
   var n = Object.prototype.toString.call(o).slice(8, -1);
   if (n === "Object" && o.constructor) n = o.constructor.name;
   if (n === "Map" || n === "Set") return Array.from(o);
-  if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$1(o, minLen);
+  if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$2(o, minLen);
 }
 
 function _nonIterableSpread() {
@@ -1899,7 +1899,7 @@ function _nonIterableSpread() {
 }
 
 function _toConsumableArray(arr) {
-  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray$1(arr) || _nonIterableSpread();
+  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray$2(arr) || _nonIterableSpread();
 }
 
 function _defineProperty(obj, key, value) {
@@ -1919,6 +1919,9 @@ function _defineProperty(obj, key, value) {
 
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _createForOfIteratorHelper$1(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$1(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+function _unsupportedIterableToArray$1(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$1(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$1(o, minLen); }
+function _arrayLikeToArray$1(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
 // dynamic import
 var GoogleGenerativeAI;
 _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
@@ -1959,6 +1962,47 @@ var EmbeddingTaskType = {
   SEMANTIC_SIMILARITY: 'SEMANTIC_SIMILARITY',
   CLASSIFICATION: 'CLASSIFICATION',
   CLUSTERING: 'CLUSTERING'
+};
+
+/**
+ * Get text of the first candidate from response.
+ * @param {Object} response
+ * @return {string}
+ */
+var getTextFromResponse = function getTextFromResponse(response) {
+  if (!response) {
+    return '';
+  }
+  if (typeof response === 'string') {
+    return response;
+  }
+  var textStrings = [];
+  if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
+    var _iterator = _createForOfIteratorHelper$1(response.candidates[0].content.parts),
+      _step;
+    try {
+      for (_iterator.s(); !(_step = _iterator.n()).done;) {
+        var part = _step.value;
+        if (part.text) {
+          textStrings.push(part.text);
+        }
+        if (part.executableCode) {
+          textStrings.push("\n```python\n".concat(part.executableCode.code, "\n```\n"));
+        }
+        if (part.codeExecutionResult) {
+          textStrings.push("\n```\n".concat(part.codeExecutionResult.output, "\n```\n"));
+        }
+      }
+    } catch (err) {
+      _iterator.e(err);
+    } finally {
+      _iterator.f();
+    }
+  }
+  if (textStrings.length > 0) {
+    return textStrings.join('');
+  }
+  return '';
 };
 var GEMINI_ADAPTERS = {};
 var GeminiAdapter = /*#__PURE__*/function () {
@@ -3539,7 +3583,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
       if (!response) {
         return '';
       }
-      return response.text();
+      return getTextFromResponse(response);
     }
 
     /**
@@ -3607,22 +3651,11 @@ var GeminiBlocks = /*#__PURE__*/function () {
             case 17:
               _context.prev = 17;
               _context.t0 = _context["catch"](1);
-              _totalResponse = {
-                text: function text() {
-                  return _context.t0.message;
-                },
-                candidates: [{
-                  content: {
-                    parts: [{
-                      text: _context.t0.message
-                    }]
-                  }
-                }]
-              };
+              _totalResponse = _context.t0.message;
               ai.setLastPartialResponse(_totalResponse);
               this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
               ai.setLastResponse(_totalResponse);
-              return _context.abrupt("return", _totalResponse.text());
+              return _context.abrupt("return", getTextFromResponse(_totalResponse));
             case 24:
               _streamingResult = streamingResult, partialResponseStream = _streamingResult.stream, totalResponseReceived = _streamingResult.response;
               _iteratorAbruptCompletion = false;
@@ -3638,7 +3671,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
                 break;
               }
               partialResponse = _step.value;
-              if (DEBUG) log$1.log("partial response for ".concat(requestType, ":").concat(partialResponse.text()));
+              if (DEBUG) log$1.log(partialResponse);
               ai.setLastPartialResponse(partialResponse);
               this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
             case 36:
@@ -3678,9 +3711,9 @@ var GeminiBlocks = /*#__PURE__*/function () {
               return totalResponseReceived;
             case 57:
               totalResponse = _context.sent;
-              if (DEBUG) log$1.log("response for ".concat(requestType, ":").concat(totalResponse.text()));
+              if (DEBUG) log$1.log(totalResponse);
               ai.setLastResponse(totalResponse);
-              return _context.abrupt("return", totalResponse.text());
+              return _context.abrupt("return", getTextFromResponse(totalResponse));
             case 61:
             case "end":
               return _context.stop();
@@ -3741,24 +3774,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
               _context2.prev = 17;
               _context2.t0 = _context2["catch"](1);
               result = {
-                response: {
-                  text: function text() {
-                    return _context2.t0.message;
-                  },
-                  candidates: [{
-                    content: {
-                      parts: [{
-                        text: _context2.t0.message
-                      }]
-                    }
-                  }]
-                }
+                response: _context2.t0.message
               };
             case 20:
               response = result.response;
               ai.setLastResponse(response);
-              if (DEBUG) log$1.log("response for ".concat(requestType, ":").concat(response.text()));
-              return _context2.abrupt("return", response.text());
+              if (DEBUG) log$1.log(response);
+              return _context2.abrupt("return", getTextFromResponse(response));
             case 24:
             case "end":
               return _context2.stop();
@@ -4047,6 +4069,9 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var response = ai.getLastResponse(target);
       if (!response) {
         return '';
+      }
+      if (typeof response === 'string') {
+        return response;
       }
       try {
         var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);

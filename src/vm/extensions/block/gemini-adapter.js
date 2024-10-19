@@ -32,6 +32,43 @@ export const EmbeddingTaskType = {
     CLUSTERING: 'CLUSTERING'
 };
 
+/**
+ * Get text of the first candidate from response.
+ * @param {Object} response
+ * @return {string}
+ */
+export const getTextFromResponse = function (response) {
+    if (!response) {
+        return '';
+    }
+    if (typeof response === 'string') {
+        return response;
+    }
+    const textStrings = [];
+    if (response.candidates && response.candidates[0] &&
+        response.candidates[0].content && response.candidates[0].content.parts) {
+        for (const part of response.candidates[0].content.parts) {
+            if (part.text) {
+                textStrings.push(part.text);
+            }
+            if (part.executableCode) {
+                textStrings.push(
+                    `\n\`\`\`python\n${part.executableCode.code}\n\`\`\`\n`
+                );
+            }
+            if (part.codeExecutionResult) {
+                textStrings.push(
+                    `\n\`\`\`\n${part.codeExecutionResult.output}\n\`\`\`\n`
+                );
+            }
+        }
+    }
+    if (textStrings.length > 0) {
+        return textStrings.join('');
+    }
+    return '';
+};
+
 const GEMINI_ADAPTERS = {};
 
 export class GeminiAdapter {
