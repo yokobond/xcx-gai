@@ -2760,6 +2760,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
    * @param {Runtime} runtime - the Scratch 3.0 runtime.
    */
   function GeminiBlocks(runtime) {
+    var _this = this;
     _classCallCheck$1(this, GeminiBlocks);
     /**
      * The Scratch 3.0 runtime.
@@ -2771,6 +2772,9 @@ var GeminiBlocks = /*#__PURE__*/function () {
       formatMessage = runtime.formatMessage;
     }
     runtime.on('EXTENSION_ADDED', this.onExtensionAdded.bind(this));
+    this.runtime.on('PROJECT_STOP_ALL', function () {
+      _this.stopListening();
+    });
   }
   _createClass$1(GeminiBlocks, [{
     key: "onExtensionAdded",
@@ -3900,11 +3904,11 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "snapshotData",
     value: function snapshotData(args, util) {
-      var _this = this;
+      var _this2 = this;
       var runtime = this.runtime;
       var requester = util.target;
       return new Promise(function (resolve) {
-        _this.runtime.renderer.requestSnapshot(function (imageDataURL) {
+        _this2.runtime.renderer.requestSnapshot(function (imageDataURL) {
           if (DEBUG) {
             addImageAsCostume(requester, imageDataURL, runtime, 'snapshot', runtime.vm).catch(function (e) {
               console.error(e);
@@ -3914,6 +3918,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
         });
       });
     }
+
+    /**
+     * Return sound data directive.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - sound data URL
+     */
   }, {
     key: "soundData",
     value: function soundData(args, util) {
@@ -3932,31 +3943,16 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }
       return " ".concat(sound.asset.encodeDataURI(), " ");
     }
+
+    /**
+     * Start sound recorder.
+     * @returns {Promise} - a Promise that resolves when recorder is started
+     * or rejects if user denies access to microphone.
+     */
   }, {
-    key: "convertRecordedSoundToDataURL",
-    value: function convertRecordedSoundToDataURL(callback) {
-      var _this2 = this;
-      var audioBlob = new Blob(this.soundRecorderChunks, {
-        type: 'audio/wav'
-      });
-      var reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = function () {
-        var dataURL = reader.result;
-        _this2.recordedSoundData = dataURL;
-        _this2.isListening = false;
-        _this2.soundRecorder = null;
-        if (callback) callback(dataURL);
-      };
-    }
-  }, {
-    key: "startListening",
-    value: function startListening() {
+    key: "startSoundRecorder",
+    value: function startSoundRecorder() {
       var _this3 = this;
-      if (this.isListening) {
-        return;
-      }
-      this.isListening = true;
       return navigator.mediaDevices.getUserMedia({
         audio: true
       }).then(function (stream) {
@@ -3969,22 +3965,20 @@ var GeminiBlocks = /*#__PURE__*/function () {
         };
         mediaRecorder.start();
         _this3.listeningTimeout = setTimeout(function () {
-          _this3.listeningTimeout = null;
-          mediaRecorder.onstop = function () {
-            _this3.runtime.emitMicListening(false);
-            _this3.convertRecordedSoundToDataURL();
-          };
-          mediaRecorder.stop();
+          _this3.stopSoundRecorder();
         }, 60 * 1000);
       });
     }
+
+    /**
+     * Stop sound recorder.
+     * @returns {?Promise<string>} - a Promise that resolves when recorder is stopped
+     * and recorded sound data URL is returned
+     */
   }, {
-    key: "stopListening",
-    value: function stopListening() {
+    key: "stopSoundRecorder",
+    value: function stopSoundRecorder() {
       var _this4 = this;
-      if (!this.isListening) {
-        return;
-      }
       if (this.listeningTimeout) {
         clearTimeout(this.listeningTimeout);
         this.listeningTimeout = null;
@@ -3993,12 +3987,62 @@ var GeminiBlocks = /*#__PURE__*/function () {
         return new Promise(function (resolve) {
           _this4.soundRecorder.onstop = function () {
             _this4.runtime.emitMicListening(false);
-            _this4.convertRecordedSoundToDataURL(resolve);
+            var audioBlob = new Blob(_this4.soundRecorderChunks, {
+              type: 'audio/wav'
+            });
+            var reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = function () {
+              var dataURL = reader.result;
+              _this4.recordedSoundData = dataURL;
+              _this4.isListening = false;
+              _this4.soundRecorder = null;
+              resolve(dataURL);
+            };
           };
           _this4.soundRecorder.stop();
         });
       }
+      return null;
     }
+
+    /**
+     * Start listening from microphone.
+     * @returns {Promise} - a Promise that resolves when recorder is started
+     */
+  }, {
+    key: "startListening",
+    value: function startListening() {
+      var _this5 = this;
+      if (this.isListening) {
+        return;
+      }
+      this.isListening = true;
+      return this.startSoundRecorder().catch(function (e) {
+        log$1.warn('Failed to start listening', e);
+        _this5.isListening = false;
+      });
+    }
+
+    /**
+     * Stop listening from microphone.
+     * @returns {?Promise<string>} - a Promise that resolves when recorder is stopped
+     */
+  }, {
+    key: "stopListening",
+    value: function stopListening() {
+      if (!this.isListening) {
+        return;
+      }
+      if (this.soundRecorder) {
+        return this.stopSoundRecorder();
+      }
+    }
+
+    /**
+     * Listened data.
+     * @returns {string} - recorded sound data URL
+     */
   }, {
     key: "listenedData",
     value: function listenedData() {
@@ -4473,7 +4517,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this5 = this;
+      var _this6 = this;
       var defaultApiKey = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       if (this.apiKeyDialogOpened) {
         // prevent to open multiple dialogs
@@ -4559,7 +4603,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this5.apiKeyDialogOpened = false;
+        _this6.apiKeyDialogOpened = false;
       });
     }
 

@@ -111,6 +111,10 @@ class GeminiBlocks {
         }
 
         runtime.on('EXTENSION_ADDED', this.onExtensionAdded.bind(this));
+
+        this.runtime.on('PROJECT_STOP_ALL', () => {
+            this.stopListening();
+        });
     }
 
     onExtensionAdded (extensionInfo) {
