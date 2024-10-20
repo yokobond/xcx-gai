@@ -1180,6 +1180,12 @@ class GeminiBlocks {
         });
     }
 
+    /**
+     * Return sound data directive.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - sound data URL
+     */
     soundData (args, util) {
         const soundName = Cast.toString(args.SOUND);
         const target = util.target;
@@ -1197,24 +1203,12 @@ class GeminiBlocks {
         return ` ${sound.asset.encodeDataURI()} `;
     }
 
-    convertRecordedSoundToDataURL (callback) {
-        const audioBlob = new Blob(this.soundRecorderChunks, {type: 'audio/wav'});
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = () => {
-            const dataURL = reader.result;
-            this.recordedSoundData = dataURL;
-            this.isListening = false;
-            this.soundRecorder = null;
-            if (callback) callback(dataURL);
-        };
-    }
-
-    startListening () {
-        if (this.isListening) {
-            return;
-        }
-        this.isListening = true;
+    /**
+     * Start sound recorder.
+     * @returns {Promise} - a Promise that resolves when recorder is started
+     * or rejects if user denies access to microphone.
+     */
+    startSoundRecorder () {
         return navigator.mediaDevices.getUserMedia({audio: true})
             .then(stream => {
                 this.runtime.emitMicListening(true);
@@ -1226,20 +1220,17 @@ class GeminiBlocks {
                 };
                 mediaRecorder.start();
                 this.listeningTimeout = setTimeout(() => {
-                    this.listeningTimeout = null;
-                    mediaRecorder.onstop = () => {
-                        this.runtime.emitMicListening(false);
-                        this.convertRecordedSoundToDataURL();
-                    };
-                    mediaRecorder.stop();
+                    this.stopSoundRecorder();
                 }, 60 * 1000);
             });
     }
 
-    stopListening () {
-        if (!this.isListening) {
-            return;
-        }
+    /**
+     * Stop sound recorder.
+     * @returns {?Promise<string>} - a Promise that resolves when recorder is stopped
+     * and recorded sound data URL is returned
+     */
+    stopSoundRecorder () {
         if (this.listeningTimeout) {
             clearTimeout(this.listeningTimeout);
             this.listeningTimeout = null;
@@ -1248,13 +1239,56 @@ class GeminiBlocks {
             return new Promise(resolve => {
                 this.soundRecorder.onstop = () => {
                     this.runtime.emitMicListening(false);
-                    this.convertRecordedSoundToDataURL(resolve);
+                    const audioBlob = new Blob(this.soundRecorderChunks, {type: 'audio/wav'});
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        const dataURL = reader.result;
+                        this.recordedSoundData = dataURL;
+                        this.isListening = false;
+                        this.soundRecorder = null;
+                        resolve(dataURL);
+                    };
                 };
                 this.soundRecorder.stop();
             });
         }
+        return null;
     }
 
+    /**
+     * Start listening from microphone.
+     * @returns {Promise} - a Promise that resolves when recorder is started
+     */
+    startListening () {
+        if (this.isListening) {
+            return;
+        }
+        this.isListening = true;
+        return this.startSoundRecorder()
+            .catch(e => {
+                log.warn('Failed to start listening', e);
+                this.isListening = false;
+            });
+    }
+
+    /**
+     * Stop listening from microphone.
+     * @returns {?Promise<string>} - a Promise that resolves when recorder is stopped
+     */
+    stopListening () {
+        if (!this.isListening) {
+            return;
+        }
+        if (this.soundRecorder) {
+            return this.stopSoundRecorder();
+        }
+    }
+
+    /**
+     * Listened data.
+     * @returns {string} - recorded sound data URL
+     */
     listenedData () {
         if (this.recordedSoundData) {
             return ` ${this.recordedSoundData} `;
