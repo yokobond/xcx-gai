@@ -1966,8 +1966,8 @@ var EmbeddingTaskType = {
 
 /**
  * Get text of the first candidate from response.
- * @param {Object} response
- * @return {string}
+ * @param {object} response - response from generative ai
+ * @return {string} response text
  */
 var getTextFromResponse = function getTextFromResponse(response) {
   if (!response) {
@@ -2425,7 +2425,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   return GeminiAdapter;
 }();
 _defineProperty(GeminiAdapter, "MODEL_CODE", {
-  generative: 'gemini-1.5-flash',
+  generative: 'gemini-1.5-flash-8b',
   embedding: 'text-embedding-004'
 });
 
