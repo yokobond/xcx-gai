@@ -34,8 +34,8 @@ export const EmbeddingTaskType = {
 
 /**
  * Get text of the first candidate from response.
- * @param {Object} response
- * @return {string}
+ * @param {object} response - response from generative ai
+ * @return {string} response text
  */
 export const getTextFromResponse = function (response) {
     if (!response) {
