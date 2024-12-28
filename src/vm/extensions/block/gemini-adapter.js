@@ -87,7 +87,7 @@ export class GeminiAdapter {
      * @returns {object} model code for data type
      */
     static MODEL_CODE = {
-        generative: 'gemini-1.5-flash-8b',
+        generative: 'gemini-1.5-flash',
         embedding: 'text-embedding-004'
     };
 
