@@ -76,4 +76,8 @@ Open this page from [https://yokobond.github.io/xcx-gai/](https://yokobond.githu
 
 ## 🤝 Contributing
 
-Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/yokobond/xcx-gai/issues). 
+Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/yokobond/xcx-gai/issues).
+
+## 📝 License
+
+This software is licensed under the [GNU Affero General Public License Version 3](LICENSE).
