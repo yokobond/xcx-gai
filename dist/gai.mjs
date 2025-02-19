@@ -33,7 +33,7 @@ var translations$1 = {
 var formatMessage$1 = function formatMessage(messageData) {
   return messageData.defaultMessage;
 };
-var version = 'v0.5.0';
+var version = 'v0.6.0';
 var entry = {
   get name() {
     return formatMessage$1({
@@ -54,7 +54,7 @@ var entry = {
       id: 'gai.entry.description'
     }), " (").concat(version, ")");
   },
-  tags: ['function', 'image', 'sound', 'ai'],
+  tags: ['function', 'image', 'sound', 'text', 'ai'],
   featured: true,
   disabled: false,
   bluetoothRequired: false,
@@ -1704,7 +1704,9 @@ var en = {
 	"gai.apiKeyDialog.message": "set API key",
 	"gai.apiKeyDialog.howToGetApiKey": "get API key",
 	"gai.apiKeyDialog.cancel": "cancel",
-	"gai.apiKeyDialog.set": "set"
+	"gai.apiKeyDialog.set": "set",
+	"gai.setBaseUrl": "set base URL to [URL]",
+	"gai.baseUrl": "base URL"
 };
 var ja = {
 	"gai.name": "GAI",
@@ -1766,7 +1768,9 @@ var ja = {
 	"gai.apiKeyDialog.message": "APIキーを設定してください",
 	"gai.apiKeyDialog.howToGetApiKey": "APIキーを取得",
 	"gai.apiKeyDialog.cancel": "キャンセル",
-	"gai.apiKeyDialog.set": "設定"
+	"gai.apiKeyDialog.set": "設定",
+	"gai.setBaseUrl": "ベースURLを[URL]にする",
+	"gai.baseUrl": "ベースURL"
 };
 var translations = {
 	en: en,
@@ -1831,7 +1835,9 @@ var translations = {
 	"gai.apiKeyDialog.message": "APIキー を せってい してください",
 	"gai.apiKeyDialog.howToGetApiKey": "APIキー を しゅとく",
 	"gai.apiKeyDialog.cancel": "キャンセル",
-	"gai.apiKeyDialog.set": "せってい"
+	"gai.apiKeyDialog.set": "せってい",
+	"gai.setBaseUrl": "ベースURL を[URL]に する",
+	"gai.baseUrl": "ベースURL"
 }
 };
 
@@ -2038,11 +2044,15 @@ var GeminiAdapter = /*#__PURE__*/function () {
     key: "getModelFor",
     value: function getModelFor(type) {
       var modelParams = this.getModelParams();
+      var requestOptions = {};
+      if (GeminiAdapter.baseUrl) {
+        requestOptions.baseUrl = GeminiAdapter.baseUrl;
+      }
       var model = this.getSDK().getGenerativeModel({
         model: this.modelCode[type],
         generationConfig: modelParams.generationConfig,
         safetySettings: modelParams.safetySettings
-      });
+      }, requestOptions);
       return model;
     }
 
@@ -2414,6 +2424,11 @@ var GeminiAdapter = /*#__PURE__*/function () {
     value: function setApiKey(key) {
       GoogleGenerativeAI.apiKey = key;
     }
+
+    /**
+     * Base URL for Gemini AI.
+     * @type {string}
+     */
   }]);
   return GeminiAdapter;
 }();
@@ -2421,6 +2436,7 @@ _defineProperty(GeminiAdapter, "MODEL_CODE", {
   generative: 'gemini-1.5-flash',
   embedding: 'text-embedding-004'
 });
+_defineProperty(GeminiAdapter, "baseUrl", 'https://generativelanguage.googleapis.com');
 
 /**
  * This module provides a set of utility functions for working with costumes.
@@ -3180,6 +3196,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'apiKey',
+          hideFromPalette: true,
           blockType: BlockType$1.REPORTER,
           disableMonitor: true,
           text: formatMessage({
@@ -3205,6 +3222,33 @@ var GeminiBlocks = /*#__PURE__*/function () {
               description: 'API key for Gemini'
             }
           }
+        }, {
+          opcode: 'setBaseUrl',
+          blockType: BlockType$1.COMMAND,
+          text: formatMessage({
+            id: 'gai.setBaseUrl',
+            default: 'set base URL to [URL]',
+            description: 'set base URL for Gemini'
+          }),
+          func: 'setBaseUrl',
+          arguments: {
+            URL: {
+              type: ArgumentType$1.STRING,
+              defaultValue: GeminiAdapter.baseUrl,
+              description: 'default base URL for Gemini'
+            }
+          }
+        }, {
+          opcode: 'baseUrl',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.baseUrl',
+            default: 'base URL',
+            description: 'base URL for Gemini'
+          }),
+          func: 'baseUrl',
+          arguments: {}
         }],
         menus: {
           costumeMenu: {
@@ -4407,11 +4451,40 @@ var GeminiBlocks = /*#__PURE__*/function () {
     /**
      * Get API key.
      * @returns {string} - API key
+     * @deprecated
      */
   }, {
     key: "apiKey",
     value: function apiKey() {
-      return GeminiAdapter.getApiKey() ? GeminiAdapter.getApiKey() : '';
+      return '';
+    }
+
+    /**
+     * Set base URL and reset AI.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.URL - base URL
+     * @returns {string} - message
+     */
+  }, {
+    key: "setBaseUrl",
+    value: function setBaseUrl(args) {
+      var baseUrl = Cast$1.toString(args.URL).trim();
+      if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+        return 'error: invalid URL';
+      }
+      GeminiAdapter.baseUrl = baseUrl;
+      GeminiAdapter.removeAllAdapter();
+      return "set base URL: ".concat(baseUrl);
+    }
+
+    /**
+     * Get base URL.
+     * @returns {string} - base URL
+     */
+  }, {
+    key: "baseUrl",
+    value: function baseUrl() {
+      return GeminiAdapter.baseUrl;
     }
 
     /**
