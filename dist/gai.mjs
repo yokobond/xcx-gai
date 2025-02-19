@@ -1704,7 +1704,9 @@ var en = {
 	"gai.apiKeyDialog.message": "set API key",
 	"gai.apiKeyDialog.howToGetApiKey": "get API key",
 	"gai.apiKeyDialog.cancel": "cancel",
-	"gai.apiKeyDialog.set": "set"
+	"gai.apiKeyDialog.set": "set",
+	"gai.setBaseUrl": "set base URL to [URL]",
+	"gai.baseUrl": "base URL"
 };
 var ja = {
 	"gai.name": "GAI",
@@ -1766,7 +1768,9 @@ var ja = {
 	"gai.apiKeyDialog.message": "APIキーを設定してください",
 	"gai.apiKeyDialog.howToGetApiKey": "APIキーを取得",
 	"gai.apiKeyDialog.cancel": "キャンセル",
-	"gai.apiKeyDialog.set": "設定"
+	"gai.apiKeyDialog.set": "設定",
+	"gai.setBaseUrl": "ベースURLを[URL]にする",
+	"gai.baseUrl": "ベースURL"
 };
 var translations = {
 	en: en,
@@ -1831,7 +1835,9 @@ var translations = {
 	"gai.apiKeyDialog.message": "APIキー を せってい してください",
 	"gai.apiKeyDialog.howToGetApiKey": "APIキー を しゅとく",
 	"gai.apiKeyDialog.cancel": "キャンセル",
-	"gai.apiKeyDialog.set": "せってい"
+	"gai.apiKeyDialog.set": "せってい",
+	"gai.setBaseUrl": "ベースURL を[URL]に する",
+	"gai.baseUrl": "ベースURL"
 }
 };
 
