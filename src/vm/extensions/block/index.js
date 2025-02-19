@@ -566,6 +566,7 @@ class GeminiBlocks {
                 },
                 {
                     opcode: 'apiKey',
+                    hideFromPalette: true,
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
@@ -592,6 +593,36 @@ class GeminiBlocks {
                             defaultValue: ' ',
                             description: 'API key for Gemini'
                         }
+                    }
+                },
+                {
+                    opcode: 'setBaseUrl',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setBaseUrl',
+                        default: 'set base URL to [URL]',
+                        description: 'set base URL for Gemini'
+                    }),
+                    func: 'setBaseUrl',
+                    arguments: {
+                        URL: {
+                            type: ArgumentType.STRING,
+                            defaultValue: GeminiAdapter.baseUrl,
+                            description: 'default base URL for Gemini'
+                        }
+                    }
+                },
+                {
+                    opcode: 'baseUrl',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.baseUrl',
+                        default: 'base URL',
+                        description: 'base URL for Gemini'
+                    }),
+                    func: 'baseUrl',
+                    arguments: {
                     }
                 }
             ],
@@ -1634,9 +1665,34 @@ class GeminiBlocks {
     /**
      * Get API key.
      * @returns {string} - API key
+     * @deprecated
      */
     apiKey () {
-        return GeminiAdapter.getApiKey() ? GeminiAdapter.getApiKey() : '';
+        return '';
+    }
+
+    /**
+     * Set base URL and reset AI.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.URL - base URL
+     * @returns {string} - message
+     */
+    setBaseUrl (args) {
+        const baseUrl = Cast.toString(args.URL).trim();
+        if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+            return 'error: invalid URL';
+        }
+        GeminiAdapter.baseUrl = baseUrl;
+        GeminiAdapter.removeAllAdapter();
+        return `set base URL: ${baseUrl}`;
+    }
+
+    /**
+     * Get base URL.
+     * @returns {string} - base URL
+     */
+    baseUrl () {
+        return GeminiAdapter.baseUrl;
     }
 
     /**

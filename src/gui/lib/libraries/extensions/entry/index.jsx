@@ -14,7 +14,7 @@ import translations from './translations.json';
  */
 let formatMessage = messageData => messageData.defaultMessage;
 
-const version = 'v0.5.0';
+const version = 'v0.6.0';
 
 const entry = {
     get name () {
@@ -36,6 +36,7 @@ const entry = {
             id: 'gai.entry.description'
         })} (${version})`;
     },
+    tags: ['function', 'image', 'sound', 'text', 'ai'],
     featured: true,
     disabled: false,
     bluetoothRequired: false,

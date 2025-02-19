@@ -9,7 +9,7 @@ import {FormattedMessage} from 'react-intl';
 import iconURL from './entry-icon.png';
 import insetIconURL from './inset-icon.svg';
 
-const version = 'v0.5.0';
+const version = 'v0.6.0';
 
 const translations =
 {
@@ -46,6 +46,7 @@ const entry = {
             id="gai.entry.description"
         />
     ),
+    tags: ['function', 'image', 'sound', 'text', 'ai'],
     featured: true,
     disabled: false,
     bluetoothRequired: false,

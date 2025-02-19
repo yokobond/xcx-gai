@@ -150,6 +150,11 @@ export class GeminiAdapter {
         GoogleGenerativeAI.apiKey = key;
     }
 
+    /**
+     * Base URL for Gemini AI.
+     * @type {string}
+     */
+    static baseUrl = 'https://generativelanguage.googleapis.com';
 
     constructor (target) {
         this.target = target;
@@ -185,11 +190,18 @@ export class GeminiAdapter {
      */
     getModelFor (type) {
         const modelParams = this.getModelParams();
-        const model = this.getSDK().getGenerativeModel({
-            model: this.modelCode[type],
-            generationConfig: modelParams.generationConfig,
-            safetySettings: modelParams.safetySettings
-        });
+        const requestOptions = {};
+        if (GeminiAdapter.baseUrl) {
+            requestOptions.baseUrl = GeminiAdapter.baseUrl;
+        }
+        const model = this.getSDK().getGenerativeModel(
+            {
+                model: this.modelCode[type],
+                generationConfig: modelParams.generationConfig,
+                safetySettings: modelParams.safetySettings
+            },
+            requestOptions
+        );
         return model;
     }
 
