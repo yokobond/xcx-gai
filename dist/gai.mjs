@@ -33,7 +33,7 @@ var translations$1 = {
 var formatMessage$1 = function formatMessage(messageData) {
   return messageData.defaultMessage;
 };
-var version = 'v0.6.0';
+var version = 'v0.7.0';
 var entry = {
   get name() {
     return formatMessage$1({
@@ -1068,11 +1068,11 @@ var _typeof = {exports: {}};
   function _typeof(o) {
     "@babel/helpers - typeof";
 
-    return (module.exports = _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
+    return module.exports = _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
       return typeof o;
     } : function (o) {
       return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
-    }, module.exports.__esModule = true, module.exports["default"] = module.exports), _typeof(o);
+    }, module.exports.__esModule = true, module.exports["default"] = module.exports, _typeof(o);
   }
   module.exports = _typeof, module.exports.__esModule = true, module.exports["default"] = module.exports;
 })(_typeof);
@@ -1555,11 +1555,11 @@ function _slicedToArray(arr, i) {
   return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray$3(arr, i) || _nonIterableRest();
 }
 
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-function _createForOfIteratorHelper$2(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$2(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e2) { throw _e2; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e3) { didErr = true; err = _e3; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-function _unsupportedIterableToArray$2(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$2(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$2(o, minLen); }
-function _arrayLikeToArray$2(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
+function _createSuper(t) { var r = _isNativeReflectConstruct(); return function () { var e, o = _getPrototypeOf(t); if (r) { var s = _getPrototypeOf(this).constructor; e = Reflect.construct(o, arguments, s); } else e = o.apply(this, arguments); return _possibleConstructorReturn(this, e); }; }
+function _isNativeReflectConstruct() { try { var t = !Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); } catch (t) {} return (_isNativeReflectConstruct = function _isNativeReflectConstruct() { return !!t; })(); }
+function _createForOfIteratorHelper$2(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray$2(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray$2(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$2(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$2(r, a) : void 0; } }
+function _arrayLikeToArray$2(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 /**
  * @license
  * Copyright 2025 Google LLC
@@ -2841,7 +2841,7 @@ var PagedItem;
 /**
  * Pager class for iterating through paginated results.
  */
-var Pager = /*#__PURE__*/function (_Symbol$asyncIterator) {
+var Pager = /*#__PURE__*/function () {
   function Pager(name, request, response, params) {
     _classCallCheck$1(this, Pager);
     this.pageInternal = [];
@@ -2957,12 +2957,12 @@ var Pager = /*#__PURE__*/function (_Symbol$asyncIterator) {
      * ```
      */
   }, {
-    key: _Symbol$asyncIterator,
+    key: Symbol.asyncIterator,
     value: function value() {
       var _this = this;
       return {
         next: function () {
-          var _next = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
+          var _next = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
             var item;
             return _regeneratorRuntime.wrap(function _callee$(_context) {
               while (1) switch (_context.prev = _context.next) {
@@ -3004,7 +3004,7 @@ var Pager = /*#__PURE__*/function (_Symbol$asyncIterator) {
           return next;
         }(),
         return: function () {
-          var _return2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2() {
+          var _return2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee2() {
             return _regeneratorRuntime.wrap(function _callee2$(_context2) {
               while (1) switch (_context2.prev = _context2.next) {
                 case 0:
@@ -3049,7 +3049,7 @@ var Pager = /*#__PURE__*/function (_Symbol$asyncIterator) {
   }, {
     key: "nextPage",
     value: (function () {
-      var _nextPage = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3() {
+      var _nextPage = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee3() {
         var response;
         return _regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) switch (_context3.prev = _context3.next) {
@@ -3092,7 +3092,7 @@ var Pager = /*#__PURE__*/function (_Symbol$asyncIterator) {
     }
   }]);
   return Pager;
-}(Symbol.asyncIterator);
+}();
 /**
  * @license
  * Copyright 2025 Google LLC
@@ -3934,7 +3934,7 @@ var Caches = /*#__PURE__*/function (_BaseModule) {
      * }
      * ```
      */
-    _this2.list = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee4() {
+    _this2.list = /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4() {
       var params,
         _args4 = arguments;
       return _regeneratorRuntime.wrap(function _callee4$(_context4) {
@@ -3989,7 +3989,7 @@ var Caches = /*#__PURE__*/function (_BaseModule) {
   _createClass$1(Caches, [{
     key: "create",
     value: (function () {
-      var _create = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee5(params) {
+      var _create = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee5(params) {
         var _this3 = this;
         var _a, _b, _c, _d, response, path, queryParams, body, _body;
         return _regeneratorRuntime.wrap(function _callee5$(_context5) {
@@ -4068,7 +4068,7 @@ var Caches = /*#__PURE__*/function (_BaseModule) {
   }, {
     key: "get",
     value: (function () {
-      var _get = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee6(params) {
+      var _get = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee6(params) {
         var _this4 = this;
         var _a, _b, _c, _d, response, path, queryParams, body, _body2;
         return _regeneratorRuntime.wrap(function _callee6$(_context6) {
@@ -4147,7 +4147,7 @@ var Caches = /*#__PURE__*/function (_BaseModule) {
   }, {
     key: "delete",
     value: (function () {
-      var _delete2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee7(params) {
+      var _delete2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee7(params) {
         var _a, _b, _c, _d, response, path, queryParams, body, _body3;
         return _regeneratorRuntime.wrap(function _callee7$(_context7) {
           while (1) switch (_context7.prev = _context7.next) {
@@ -4232,7 +4232,7 @@ var Caches = /*#__PURE__*/function (_BaseModule) {
   }, {
     key: "update",
     value: (function () {
-      var _update = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee8(params) {
+      var _update = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee8(params) {
         var _this5 = this;
         var _a, _b, _c, _d, response, path, queryParams, body, _body4;
         return _regeneratorRuntime.wrap(function _callee8$(_context8) {
@@ -4299,7 +4299,7 @@ var Caches = /*#__PURE__*/function (_BaseModule) {
   }, {
     key: "listInternal",
     value: function () {
-      var _listInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee9(params) {
+      var _listInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee9(params) {
         var _this6 = this;
         var _a, _b, _c, _d, response, path, queryParams, body, _body5;
         return _regeneratorRuntime.wrap(function _callee9$(_context9) {
@@ -4535,19 +4535,19 @@ function validateHistory(history) {
   if (history[0].role !== 'user') {
     throw new Error('History must start with a user turn.');
   }
-  var _iterator10 = _createForOfIteratorHelper$2(history),
-    _step10;
+  var _iterator0 = _createForOfIteratorHelper$2(history),
+    _step0;
   try {
-    for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
-      var content = _step10.value;
+    for (_iterator0.s(); !(_step0 = _iterator0.n()).done;) {
+      var content = _step0.value;
       if (content.role !== 'user' && content.role !== 'model') {
         throw new Error("Role must be user or model, but got ".concat(content.role, "."));
       }
     }
   } catch (err) {
-    _iterator10.e(err);
+    _iterator0.e(err);
   } finally {
-    _iterator10.f();
+    _iterator0.f();
   }
 }
 /**
@@ -4672,13 +4672,13 @@ var Chat = /*#__PURE__*/function () {
   _createClass$1(Chat, [{
     key: "sendMessage",
     value: (function () {
-      var _sendMessage = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee11(params) {
+      var _sendMessage = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee1(params) {
         var _this7 = this;
         var _a, inputContent, responsePromise;
-        return _regeneratorRuntime.wrap(function _callee11$(_context11) {
-          while (1) switch (_context11.prev = _context11.next) {
+        return _regeneratorRuntime.wrap(function _callee1$(_context1) {
+          while (1) switch (_context1.prev = _context1.next) {
             case 0:
-              _context11.next = 2;
+              _context1.next = 2;
               return this.sendPromise;
             case 2:
               inputContent = tContent(this.apiClient, params.message);
@@ -4687,34 +4687,34 @@ var Chat = /*#__PURE__*/function () {
                 contents: this.getHistory(true).concat(inputContent),
                 config: (_a = params.config) !== null && _a !== void 0 ? _a : this.config
               });
-              this.sendPromise = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee10() {
+              this.sendPromise = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee0() {
                 var _a, _b, response, outputContent, modelOutput;
-                return _regeneratorRuntime.wrap(function _callee10$(_context10) {
-                  while (1) switch (_context10.prev = _context10.next) {
+                return _regeneratorRuntime.wrap(function _callee0$(_context0) {
+                  while (1) switch (_context0.prev = _context0.next) {
                     case 0:
-                      _context10.next = 2;
+                      _context0.next = 2;
                       return responsePromise;
                     case 2:
-                      response = _context10.sent;
+                      response = _context0.sent;
                       outputContent = (_b = (_a = response.candidates) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.content;
                       modelOutput = outputContent ? [outputContent] : [];
                       _this7.recordHistory(inputContent, modelOutput);
-                      return _context10.abrupt("return");
+                      return _context0.abrupt("return");
                     case 7:
                     case "end":
-                      return _context10.stop();
+                      return _context0.stop();
                   }
-                }, _callee10);
+                }, _callee0);
               }))();
-              _context11.next = 7;
+              _context1.next = 7;
               return this.sendPromise;
             case 7:
-              return _context11.abrupt("return", responsePromise);
+              return _context1.abrupt("return", responsePromise);
             case 8:
             case "end":
-              return _context11.stop();
+              return _context1.stop();
           }
-        }, _callee11, this);
+        }, _callee1, this);
       }));
       function sendMessage(_x6) {
         return _sendMessage.apply(this, arguments);
@@ -4747,12 +4747,12 @@ var Chat = /*#__PURE__*/function () {
   }, {
     key: "sendMessageStream",
     value: (function () {
-      var _sendMessageStream = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee12(params) {
+      var _sendMessageStream = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee10(params) {
         var _a, inputContent, streamResponse, response, result;
-        return _regeneratorRuntime.wrap(function _callee12$(_context12) {
-          while (1) switch (_context12.prev = _context12.next) {
+        return _regeneratorRuntime.wrap(function _callee10$(_context10) {
+          while (1) switch (_context10.prev = _context10.next) {
             case 0:
-              _context12.next = 2;
+              _context10.next = 2;
               return this.sendPromise;
             case 2:
               inputContent = tContent(this.apiClient, params.message);
@@ -4768,17 +4768,17 @@ var Chat = /*#__PURE__*/function () {
               }).catch(function () {
                 return undefined;
               });
-              _context12.next = 7;
+              _context10.next = 7;
               return streamResponse;
             case 7:
-              response = _context12.sent;
+              response = _context10.sent;
               result = this.processStreamResponse(response, inputContent);
-              return _context12.abrupt("return", result);
+              return _context10.abrupt("return", result);
             case 10:
             case "end":
-              return _context12.stop();
+              return _context10.stop();
           }
-        }, _callee12, this);
+        }, _callee10, this);
       }));
       function sendMessageStream(_x7) {
         return _sendMessageStream.apply(this, arguments);
@@ -4821,20 +4821,20 @@ var Chat = /*#__PURE__*/function () {
       var _a, _b;
       return __asyncGenerator(this, arguments, /*#__PURE__*/_regeneratorRuntime.mark(function processStreamResponse_1() {
         var _c, e_1, _d, _e, outputContent, _f, streamResponse_1, streamResponse_1_1, chunk, content;
-        return _regeneratorRuntime.wrap(function processStreamResponse_1$(_context13) {
-          while (1) switch (_context13.prev = _context13.next) {
+        return _regeneratorRuntime.wrap(function processStreamResponse_1$(_context11) {
+          while (1) switch (_context11.prev = _context11.next) {
             case 0:
               outputContent = [];
-              _context13.prev = 1;
+              _context11.prev = 1;
               _f = true, streamResponse_1 = __asyncValues(streamResponse);
             case 3:
-              _context13.next = 5;
+              _context11.next = 5;
               return __await(streamResponse_1.next());
             case 5:
-              streamResponse_1_1 = _context13.sent;
+              streamResponse_1_1 = _context11.sent;
               _c = streamResponse_1_1.done;
               if (_c) {
-                _context13.next = 19;
+                _context11.next = 19;
                 break;
               }
               _e = streamResponse_1_1.value;
@@ -4846,49 +4846,49 @@ var Chat = /*#__PURE__*/function () {
                   outputContent.push(content);
                 }
               }
-              _context13.next = 14;
+              _context11.next = 14;
               return __await(chunk);
             case 14:
-              _context13.next = 16;
-              return _context13.sent;
+              _context11.next = 16;
+              return _context11.sent;
             case 16:
               _f = true;
-              _context13.next = 3;
+              _context11.next = 3;
               break;
             case 19:
-              _context13.next = 24;
+              _context11.next = 24;
               break;
             case 21:
-              _context13.prev = 21;
-              _context13.t0 = _context13["catch"](1);
+              _context11.prev = 21;
+              _context11.t0 = _context11["catch"](1);
               e_1 = {
-                error: _context13.t0
+                error: _context11.t0
               };
             case 24:
-              _context13.prev = 24;
-              _context13.prev = 25;
+              _context11.prev = 24;
+              _context11.prev = 25;
               if (!(!_f && !_c && (_d = streamResponse_1.return))) {
-                _context13.next = 29;
+                _context11.next = 29;
                 break;
               }
-              _context13.next = 29;
+              _context11.next = 29;
               return __await(_d.call(streamResponse_1));
             case 29:
-              _context13.prev = 29;
+              _context11.prev = 29;
               if (!e_1) {
-                _context13.next = 32;
+                _context11.next = 32;
                 break;
               }
               throw e_1.error;
             case 32:
-              return _context13.finish(29);
+              return _context11.finish(29);
             case 33:
-              return _context13.finish(24);
+              return _context11.finish(24);
             case 34:
               this.recordHistory(inputContent, outputContent);
             case 35:
             case "end":
-              return _context13.stop();
+              return _context11.stop();
           }
         }, processStreamResponse_1, this, [[1, 21, 24, 34], [25,, 29, 33]]);
       }));
@@ -5186,29 +5186,29 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
      * }
      * ```
      */
-    _this8.list = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee13() {
+    _this8.list = /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee11() {
       var params,
-        _args14 = arguments;
-      return _regeneratorRuntime.wrap(function _callee13$(_context14) {
-        while (1) switch (_context14.prev = _context14.next) {
+        _args12 = arguments;
+      return _regeneratorRuntime.wrap(function _callee11$(_context12) {
+        while (1) switch (_context12.prev = _context12.next) {
           case 0:
-            params = _args14.length > 0 && _args14[0] !== undefined ? _args14[0] : {};
-            _context14.t0 = Pager;
-            _context14.t1 = PagedItem.PAGED_ITEM_FILES;
-            _context14.t2 = function (x) {
+            params = _args12.length > 0 && _args12[0] !== undefined ? _args12[0] : {};
+            _context12.t0 = Pager;
+            _context12.t1 = PagedItem.PAGED_ITEM_FILES;
+            _context12.t2 = function (x) {
               return _this8.listInternal(x);
             };
-            _context14.next = 6;
+            _context12.next = 6;
             return _this8.listInternal(params);
           case 6:
-            _context14.t3 = _context14.sent;
-            _context14.t4 = params;
-            return _context14.abrupt("return", new _context14.t0(_context14.t1, _context14.t2, _context14.t3, _context14.t4));
+            _context12.t3 = _context12.sent;
+            _context12.t4 = params;
+            return _context12.abrupt("return", new _context12.t0(_context12.t1, _context12.t2, _context12.t3, _context12.t4));
           case 9:
           case "end":
-            return _context14.stop();
+            return _context12.stop();
         }
-      }, _callee13);
+      }, _callee11);
     }));
     return _this8;
   }
@@ -5258,26 +5258,26 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
   _createClass$1(Files, [{
     key: "upload",
     value: (function () {
-      var _upload = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee14(params) {
+      var _upload = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee12(params) {
         var _this9 = this;
-        return _regeneratorRuntime.wrap(function _callee14$(_context15) {
-          while (1) switch (_context15.prev = _context15.next) {
+        return _regeneratorRuntime.wrap(function _callee12$(_context13) {
+          while (1) switch (_context13.prev = _context13.next) {
             case 0:
               if (!this.apiClient.isVertexAI()) {
-                _context15.next = 2;
+                _context13.next = 2;
                 break;
               }
               throw new Error('Vertex AI does not support uploading files. You can share files through a GCS bucket.');
             case 2:
-              return _context15.abrupt("return", this.apiClient.uploadFile(params.file, params.config).then(function (response) {
+              return _context13.abrupt("return", this.apiClient.uploadFile(params.file, params.config).then(function (response) {
                 var file = fileFromMldev(_this9.apiClient, response);
                 return file;
               }));
             case 3:
             case "end":
-              return _context15.stop();
+              return _context13.stop();
           }
-        }, _callee14, this);
+        }, _callee12, this);
       }));
       function upload(_x8) {
         return _upload.apply(this, arguments);
@@ -5304,17 +5304,17 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
   }, {
     key: "download",
     value: (function () {
-      var _download = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee15(params) {
-        return _regeneratorRuntime.wrap(function _callee15$(_context16) {
-          while (1) switch (_context16.prev = _context16.next) {
+      var _download = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee13(params) {
+        return _regeneratorRuntime.wrap(function _callee13$(_context14) {
+          while (1) switch (_context14.prev = _context14.next) {
             case 0:
-              _context16.next = 2;
+              _context14.next = 2;
               return this.apiClient.downloadFile(params);
             case 2:
             case "end":
-              return _context16.stop();
+              return _context14.stop();
           }
-        }, _callee15, this);
+        }, _callee13, this);
       }));
       function download(_x9) {
         return _download.apply(this, arguments);
@@ -5324,16 +5324,16 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
   }, {
     key: "listInternal",
     value: function () {
-      var _listInternal2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee16(params) {
-        var _this10 = this;
+      var _listInternal2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee14(params) {
+        var _this0 = this;
         var _a, _b, response, path, queryParams, body;
-        return _regeneratorRuntime.wrap(function _callee16$(_context17) {
-          while (1) switch (_context17.prev = _context17.next) {
+        return _regeneratorRuntime.wrap(function _callee14$(_context15) {
+          while (1) switch (_context15.prev = _context15.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context17.next = 6;
+                _context15.next = 6;
                 break;
               }
               throw new Error('This method is only supported by the Gemini Developer API.');
@@ -5354,19 +5354,19 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context17.abrupt("return", response.then(function (apiResponse) {
-                var resp = listFilesResponseFromMldev(_this10.apiClient, apiResponse);
+              return _context15.abrupt("return", response.then(function (apiResponse) {
+                var resp = listFilesResponseFromMldev(_this0.apiClient, apiResponse);
                 var typedResp = new ListFilesResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 14:
             case "end":
-              return _context17.stop();
+              return _context15.stop();
           }
-        }, _callee16, this);
+        }, _callee14, this);
       }));
-      function listInternal(_x10) {
+      function listInternal(_x0) {
         return _listInternal2.apply(this, arguments);
       }
       return listInternal;
@@ -5374,15 +5374,15 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
   }, {
     key: "createInternal",
     value: function () {
-      var _createInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee17(params) {
+      var _createInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee15(params) {
         var _a, _b, response, path, queryParams, body;
-        return _regeneratorRuntime.wrap(function _callee17$(_context18) {
-          while (1) switch (_context18.prev = _context18.next) {
+        return _regeneratorRuntime.wrap(function _callee15$(_context16) {
+          while (1) switch (_context16.prev = _context16.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context18.next = 6;
+                _context16.next = 6;
                 break;
               }
               throw new Error('This method is only supported by the Gemini Developer API.');
@@ -5403,7 +5403,7 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context18.abrupt("return", response.then(function () {
+              return _context16.abrupt("return", response.then(function () {
                 var resp = createFileResponseFromMldev();
                 var typedResp = new CreateFileResponse();
                 Object.assign(typedResp, resp);
@@ -5411,11 +5411,11 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
               }));
             case 14:
             case "end":
-              return _context18.stop();
+              return _context16.stop();
           }
-        }, _callee17, this);
+        }, _callee15, this);
       }));
-      function createInternal(_x11) {
+      function createInternal(_x1) {
         return _createInternal.apply(this, arguments);
       }
       return createInternal;
@@ -5438,16 +5438,16 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
   }, {
     key: "get",
     value: (function () {
-      var _get2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee18(params) {
-        var _this11 = this;
+      var _get2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee16(params) {
+        var _this1 = this;
         var _a, _b, response, path, queryParams, body;
-        return _regeneratorRuntime.wrap(function _callee18$(_context19) {
-          while (1) switch (_context19.prev = _context19.next) {
+        return _regeneratorRuntime.wrap(function _callee16$(_context17) {
+          while (1) switch (_context17.prev = _context17.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context19.next = 6;
+                _context17.next = 6;
                 break;
               }
               throw new Error('This method is only supported by the Gemini Developer API.');
@@ -5468,17 +5468,17 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context19.abrupt("return", response.then(function (apiResponse) {
-                var resp = fileFromMldev(_this11.apiClient, apiResponse);
+              return _context17.abrupt("return", response.then(function (apiResponse) {
+                var resp = fileFromMldev(_this1.apiClient, apiResponse);
                 return resp;
               }));
             case 14:
             case "end":
-              return _context19.stop();
+              return _context17.stop();
           }
-        }, _callee18, this);
+        }, _callee16, this);
       }));
-      function get(_x12) {
+      function get(_x10) {
         return _get2.apply(this, arguments);
       }
       return get;
@@ -5500,15 +5500,15 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
   }, {
     key: "delete",
     value: (function () {
-      var _delete3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee19(params) {
+      var _delete3 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee17(params) {
         var _a, _b, response, path, queryParams, body;
-        return _regeneratorRuntime.wrap(function _callee19$(_context20) {
-          while (1) switch (_context20.prev = _context20.next) {
+        return _regeneratorRuntime.wrap(function _callee17$(_context18) {
+          while (1) switch (_context18.prev = _context18.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context20.next = 6;
+                _context18.next = 6;
                 break;
               }
               throw new Error('This method is only supported by the Gemini Developer API.');
@@ -5529,7 +5529,7 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context20.abrupt("return", response.then(function () {
+              return _context18.abrupt("return", response.then(function () {
                 var resp = deleteFileResponseFromMldev();
                 var typedResp = new DeleteFileResponse();
                 Object.assign(typedResp, resp);
@@ -5537,11 +5537,11 @@ var Files = /*#__PURE__*/function (_BaseModule2) {
               }));
             case 14:
             case "end":
-              return _context20.stop();
+              return _context18.stop();
           }
-        }, _callee19, this);
+        }, _callee17, this);
       }));
-      function _delete(_x13) {
+      function _delete(_x11) {
         return _delete3.apply(this, arguments);
       }
       return _delete;
@@ -7767,13 +7767,13 @@ function generateContentConfigToVertex(apiClient, fromObject, parentObject) {
   }
   var fromTools = getValueByPath(fromObject, ['tools']);
   if (parentObject !== undefined && fromTools != null) {
-    var _transformedList10 = tTools(apiClient, fromTools);
-    if (Array.isArray(_transformedList10)) {
-      _transformedList10 = _transformedList10.map(function (item) {
+    var _transformedList0 = tTools(apiClient, fromTools);
+    if (Array.isArray(_transformedList0)) {
+      _transformedList0 = _transformedList0.map(function (item) {
         return toolToVertex(apiClient, tTool(apiClient, item));
       });
     }
-    setValueByPath(parentObject, ['tools'], _transformedList10);
+    setValueByPath(parentObject, ['tools'], _transformedList0);
   }
   var fromToolConfig = getValueByPath(fromObject, ['toolConfig']);
   if (parentObject !== undefined && fromToolConfig != null) {
@@ -9007,7 +9007,7 @@ var FUNCTION_RESPONSE_REQUIRES_ID = 'FunctionResponse request must have an `id` 
  * @param onmessage The user-provided onmessage callback (if any).
  * @param event The MessageEvent from the WebSocket.
  */
-function handleWebSocketMessage(_x14, _x15, _x16) {
+function handleWebSocketMessage(_x12, _x13, _x14) {
   return _handleWebSocketMessage.apply(this, arguments);
 }
 /**
@@ -9017,23 +9017,23 @@ function handleWebSocketMessage(_x14, _x15, _x16) {
    @experimental
   */
 function _handleWebSocketMessage() {
-  _handleWebSocketMessage = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee64(apiClient, onmessage, event) {
+  _handleWebSocketMessage = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee62(apiClient, onmessage, event) {
     var serverMessage, data, resp, _resp;
-    return _regeneratorRuntime.wrap(function _callee64$(_context66) {
-      while (1) switch (_context66.prev = _context66.next) {
+    return _regeneratorRuntime.wrap(function _callee62$(_context64) {
+      while (1) switch (_context64.prev = _context64.next) {
         case 0:
           serverMessage = new LiveServerMessage();
           if (!(event.data instanceof Blob)) {
-            _context66.next = 9;
+            _context64.next = 9;
             break;
           }
-          _context66.t0 = JSON;
-          _context66.next = 5;
+          _context64.t0 = JSON;
+          _context64.next = 5;
           return event.data.text();
         case 5:
-          _context66.t1 = _context66.sent;
-          data = _context66.t0.parse.call(_context66.t0, _context66.t1);
-          _context66.next = 10;
+          _context64.t1 = _context64.sent;
+          data = _context64.t0.parse.call(_context64.t0, _context64.t1);
+          _context64.next = 10;
           break;
         case 9:
           data = JSON.parse(event.data);
@@ -9048,9 +9048,9 @@ function _handleWebSocketMessage() {
           onmessage(serverMessage);
         case 12:
         case "end":
-          return _context66.stop();
+          return _context64.stop();
       }
-    }, _callee64);
+    }, _callee62);
   }));
   return _handleWebSocketMessage.apply(this, arguments);
 }
@@ -9101,23 +9101,23 @@ var Live = /*#__PURE__*/function () {
   _createClass$1(Live, [{
     key: "connect",
     value: (function () {
-      var _connect = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee20(params) {
+      var _connect = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee18(params) {
         var _a, _b, _c, _d, websocketBaseUrl, apiVersion, url, headers, apiKey, onopenResolve, onopenPromise, callbacks, onopenAwaitedCallback, apiClient, websocketCallbacks, conn, transformedModel, project, location, clientMessage, liveConnectParameters;
-        return _regeneratorRuntime.wrap(function _callee20$(_context21) {
-          while (1) switch (_context21.prev = _context21.next) {
+        return _regeneratorRuntime.wrap(function _callee18$(_context19) {
+          while (1) switch (_context19.prev = _context19.next) {
             case 0:
               websocketBaseUrl = this.apiClient.getWebsocketBaseUrl();
               apiVersion = this.apiClient.getApiVersion();
               headers = mapToHeaders(this.apiClient.getDefaultHeaders());
               if (!this.apiClient.isVertexAI()) {
-                _context21.next = 9;
+                _context19.next = 9;
                 break;
               }
               url = "".concat(websocketBaseUrl, "/ws/google.cloud.aiplatform.").concat(apiVersion, ".LlmBidiService/BidiGenerateContent");
-              _context21.next = 7;
+              _context19.next = 7;
               return this.auth.addAuthHeaders(headers);
             case 7:
-              _context21.next = 11;
+              _context19.next = 11;
               break;
             case 9:
               apiKey = this.apiClient.getApiKey();
@@ -9145,7 +9145,7 @@ var Live = /*#__PURE__*/function () {
               conn = this.webSocketFactory.create(url, headersToMap(headers), websocketCallbacks);
               conn.connect();
               // Wait for the websocket to open before sending requests.
-              _context21.next = 21;
+              _context19.next = 21;
               return onopenPromise;
             case 21:
               transformedModel = tModel(this.apiClient, params.model);
@@ -9181,14 +9181,14 @@ var Live = /*#__PURE__*/function () {
               }
               delete clientMessage['config'];
               conn.send(JSON.stringify(clientMessage));
-              return _context21.abrupt("return", new Session(conn, this.apiClient));
+              return _context19.abrupt("return", new Session(conn, this.apiClient));
             case 31:
             case "end":
-              return _context21.stop();
+              return _context19.stop();
           }
-        }, _callee20, this);
+        }, _callee18, this);
       }));
-      function connect(_x17) {
+      function connect(_x15) {
         return _connect.apply(this, arguments);
       }
       return connect;
@@ -9257,11 +9257,11 @@ var Session = /*#__PURE__*/function () {
       if (functionResponses.length === 0) {
         throw new Error('functionResponses is required.');
       }
-      var _iterator11 = _createForOfIteratorHelper$2(functionResponses),
-        _step11;
+      var _iterator1 = _createForOfIteratorHelper$2(functionResponses),
+        _step1;
       try {
-        for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
-          var functionResponse = _step11.value;
+        for (_iterator1.s(); !(_step1 = _iterator1.n()).done;) {
+          var functionResponse = _step1.value;
           if (_typeof$2(functionResponse) !== 'object' || functionResponse === null || !('name' in functionResponse) || !('response' in functionResponse)) {
             throw new Error("Could not parse function response, type '".concat(_typeof$2(functionResponse), "'."));
           }
@@ -9270,9 +9270,9 @@ var Session = /*#__PURE__*/function () {
           }
         }
       } catch (err) {
-        _iterator11.e(err);
+        _iterator1.e(err);
       } finally {
-        _iterator11.f();
+        _iterator1.f();
       }
       var clientMessage = {
         toolResponse: {
@@ -9436,10 +9436,10 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   _inherits(Models, _BaseModule3);
   var _super3 = _createSuper(Models);
   function Models(apiClient) {
-    var _this12;
+    var _this10;
     _classCallCheck$1(this, Models);
-    _this12 = _super3.call(this);
-    _this12.apiClient = apiClient;
+    _this10 = _super3.call(this);
+    _this10.apiClient = apiClient;
     /**
      * Makes an API request to generate content with a given model.
      *
@@ -9478,22 +9478,22 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
      * console.log(response);
      * ```
      */
-    _this12.generateContent = /*#__PURE__*/function () {
-      var _ref4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee21(params) {
-        return _regeneratorRuntime.wrap(function _callee21$(_context22) {
-          while (1) switch (_context22.prev = _context22.next) {
+    _this10.generateContent = /*#__PURE__*/function () {
+      var _ref4 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee19(params) {
+        return _regeneratorRuntime.wrap(function _callee19$(_context20) {
+          while (1) switch (_context20.prev = _context20.next) {
             case 0:
-              _context22.next = 2;
-              return _this12.generateContentInternal(params);
+              _context20.next = 2;
+              return _this10.generateContentInternal(params);
             case 2:
-              return _context22.abrupt("return", _context22.sent);
+              return _context20.abrupt("return", _context20.sent);
             case 3:
             case "end":
-              return _context22.stop();
+              return _context20.stop();
           }
-        }, _callee21);
+        }, _callee19);
       }));
-      return function (_x18) {
+      return function (_x16) {
         return _ref4.apply(this, arguments);
       };
     }();
@@ -9538,22 +9538,22 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
      * }
      * ```
      */
-    _this12.generateContentStream = /*#__PURE__*/function () {
-      var _ref5 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee22(params) {
-        return _regeneratorRuntime.wrap(function _callee22$(_context23) {
-          while (1) switch (_context23.prev = _context23.next) {
+    _this10.generateContentStream = /*#__PURE__*/function () {
+      var _ref5 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee20(params) {
+        return _regeneratorRuntime.wrap(function _callee20$(_context21) {
+          while (1) switch (_context21.prev = _context21.next) {
             case 0:
-              _context23.next = 2;
-              return _this12.generateContentStreamInternal(params);
+              _context21.next = 2;
+              return _this10.generateContentStreamInternal(params);
             case 2:
-              return _context23.abrupt("return", _context23.sent);
+              return _context21.abrupt("return", _context21.sent);
             case 3:
             case "end":
-              return _context23.stop();
+              return _context21.stop();
           }
-        }, _callee22);
+        }, _callee20);
       }));
-      return function (_x19) {
+      return function (_x17) {
         return _ref5.apply(this, arguments);
       };
     }();
@@ -9578,22 +9578,22 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
      * console.log(response?.generatedImages?.[0]?.image?.imageBytes);
      * ```
      */
-    _this12.generateImages = /*#__PURE__*/function () {
-      var _ref6 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee23(params) {
-        return _regeneratorRuntime.wrap(function _callee23$(_context24) {
-          while (1) switch (_context24.prev = _context24.next) {
+    _this10.generateImages = /*#__PURE__*/function () {
+      var _ref6 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee21(params) {
+        return _regeneratorRuntime.wrap(function _callee21$(_context22) {
+          while (1) switch (_context22.prev = _context22.next) {
             case 0:
-              _context24.next = 2;
-              return _this12.generateImagesInternal(params).then(function (apiResponse) {
+              _context22.next = 2;
+              return _this10.generateImagesInternal(params).then(function (apiResponse) {
                 var _a;
                 var positivePromptSafetyAttributes;
                 var generatedImages = [];
                 if (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.generatedImages) {
-                  var _iterator12 = _createForOfIteratorHelper$2(apiResponse.generatedImages),
-                    _step12;
+                  var _iterator10 = _createForOfIteratorHelper$2(apiResponse.generatedImages),
+                    _step10;
                   try {
-                    for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
-                      var generatedImage = _step12.value;
+                    for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
+                      var generatedImage = _step10.value;
                       if (generatedImage && (generatedImage === null || generatedImage === void 0 ? void 0 : generatedImage.safetyAttributes) && ((_a = generatedImage === null || generatedImage === void 0 ? void 0 : generatedImage.safetyAttributes) === null || _a === void 0 ? void 0 : _a.contentType) === 'Positive Prompt') {
                         positivePromptSafetyAttributes = generatedImage === null || generatedImage === void 0 ? void 0 : generatedImage.safetyAttributes;
                       } else {
@@ -9601,9 +9601,9 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
                       }
                     }
                   } catch (err) {
-                    _iterator12.e(err);
+                    _iterator10.e(err);
                   } finally {
-                    _iterator12.f();
+                    _iterator10.f();
                   }
                 }
                 var response;
@@ -9620,22 +9620,22 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
                 return response;
               });
             case 2:
-              return _context24.abrupt("return", _context24.sent);
+              return _context22.abrupt("return", _context22.sent);
             case 3:
             case "end":
-              return _context24.stop();
+              return _context22.stop();
           }
-        }, _callee23);
+        }, _callee21);
       }));
-      return function (_x20) {
+      return function (_x18) {
         return _ref6.apply(this, arguments);
       };
     }();
-    _this12.list = /*#__PURE__*/function () {
-      var _ref7 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee24(params) {
+    _this10.list = /*#__PURE__*/function () {
+      var _ref7 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee22(params) {
         var _a, defaultConfig, actualConfig, actualParams;
-        return _regeneratorRuntime.wrap(function _callee24$(_context25) {
-          while (1) switch (_context25.prev = _context25.next) {
+        return _regeneratorRuntime.wrap(function _callee22$(_context23) {
+          while (1) switch (_context23.prev = _context23.next) {
             case 0:
               defaultConfig = {
                 queryBase: true
@@ -9644,58 +9644,58 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               actualParams = {
                 config: actualConfig
               };
-              if (!_this12.apiClient.isVertexAI()) {
-                _context25.next = 10;
+              if (!_this10.apiClient.isVertexAI()) {
+                _context23.next = 10;
                 break;
               }
               if (actualParams.config.queryBase) {
-                _context25.next = 10;
+                _context23.next = 10;
                 break;
               }
               if (!((_a = actualParams.config) === null || _a === void 0 ? void 0 : _a.filter)) {
-                _context25.next = 9;
+                _context23.next = 9;
                 break;
               }
               throw new Error('Filtering tuned models list for Vertex AI is not currently supported');
             case 9:
               actualParams.config.filter = 'labels.tune-type:*';
             case 10:
-              _context25.t0 = Pager;
-              _context25.t1 = PagedItem.PAGED_ITEM_MODELS;
-              _context25.t2 = function (x) {
-                return _this12.listInternal(x);
+              _context23.t0 = Pager;
+              _context23.t1 = PagedItem.PAGED_ITEM_MODELS;
+              _context23.t2 = function (x) {
+                return _this10.listInternal(x);
               };
-              _context25.next = 15;
-              return _this12.listInternal(actualParams);
+              _context23.next = 15;
+              return _this10.listInternal(actualParams);
             case 15:
-              _context25.t3 = _context25.sent;
-              _context25.t4 = actualParams;
-              return _context25.abrupt("return", new _context25.t0(_context25.t1, _context25.t2, _context25.t3, _context25.t4));
+              _context23.t3 = _context23.sent;
+              _context23.t4 = actualParams;
+              return _context23.abrupt("return", new _context23.t0(_context23.t1, _context23.t2, _context23.t3, _context23.t4));
             case 18:
             case "end":
-              return _context25.stop();
+              return _context23.stop();
           }
-        }, _callee24);
+        }, _callee22);
       }));
-      return function (_x21) {
+      return function (_x19) {
         return _ref7.apply(this, arguments);
       };
     }();
-    return _this12;
+    return _this10;
   }
   _createClass$1(Models, [{
     key: "generateContentInternal",
     value: function () {
-      var _generateContentInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee25(params) {
-        var _this13 = this;
+      var _generateContentInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee23(params) {
+        var _this11 = this;
         var _a, _b, _c, _d, response, path, queryParams, body, _body6;
-        return _regeneratorRuntime.wrap(function _callee25$(_context26) {
-          while (1) switch (_context26.prev = _context26.next) {
+        return _regeneratorRuntime.wrap(function _callee23$(_context24) {
+          while (1) switch (_context24.prev = _context24.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context26.next = 13;
+                _context24.next = 13;
                 break;
               }
               body = generateContentParametersToVertex(this.apiClient, params);
@@ -9714,8 +9714,8 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context26.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateContentResponseFromVertex(_this13.apiClient, apiResponse);
+              return _context24.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateContentResponseFromVertex(_this11.apiClient, apiResponse);
                 var typedResp = new GenerateContentResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
@@ -9737,19 +9737,19 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context26.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateContentResponseFromMldev(_this13.apiClient, apiResponse);
+              return _context24.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateContentResponseFromMldev(_this11.apiClient, apiResponse);
                 var typedResp = new GenerateContentResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 21:
             case "end":
-              return _context26.stop();
+              return _context24.stop();
           }
-        }, _callee25, this);
+        }, _callee23, this);
       }));
-      function generateContentInternal(_x22) {
+      function generateContentInternal(_x20) {
         return _generateContentInternal.apply(this, arguments);
       }
       return generateContentInternal;
@@ -9757,15 +9757,15 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "generateContentStreamInternal",
     value: function () {
-      var _generateContentStreamInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee28(params) {
+      var _generateContentStreamInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee26(params) {
         var _a, _b, _c, _d, response, path, queryParams, body, apiClient, _body7, _apiClient2;
-        return _regeneratorRuntime.wrap(function _callee28$(_context29) {
-          while (1) switch (_context29.prev = _context29.next) {
+        return _regeneratorRuntime.wrap(function _callee26$(_context27) {
+          while (1) switch (_context27.prev = _context27.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context29.next = 14;
+                _context27.next = 14;
                 break;
               }
               body = generateContentParametersToVertex(this.apiClient, params);
@@ -9783,79 +9783,79 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
                 httpOptions: (_a = params.config) === null || _a === void 0 ? void 0 : _a.httpOptions,
                 abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
               });
-              return _context29.abrupt("return", response.then(function (apiResponse) {
-                return __asyncGenerator(this, arguments, /*#__PURE__*/_regeneratorRuntime.mark(function _callee26() {
+              return _context27.abrupt("return", response.then(function (apiResponse) {
+                return __asyncGenerator(this, arguments, /*#__PURE__*/_regeneratorRuntime.mark(function _callee24() {
                   var _a, e_1, _b, _c, _d, apiResponse_1, apiResponse_1_1, chunk, resp, typedResp;
-                  return _regeneratorRuntime.wrap(function _callee26$(_context27) {
-                    while (1) switch (_context27.prev = _context27.next) {
+                  return _regeneratorRuntime.wrap(function _callee24$(_context25) {
+                    while (1) switch (_context25.prev = _context25.next) {
                       case 0:
-                        _context27.prev = 0;
+                        _context25.prev = 0;
                         _d = true, apiResponse_1 = __asyncValues(apiResponse);
                       case 2:
-                        _context27.next = 4;
+                        _context25.next = 4;
                         return __await(apiResponse_1.next());
                       case 4:
-                        apiResponse_1_1 = _context27.sent;
+                        apiResponse_1_1 = _context25.sent;
                         _a = apiResponse_1_1.done;
                         if (_a) {
-                          _context27.next = 25;
+                          _context25.next = 25;
                           break;
                         }
                         _c = apiResponse_1_1.value;
                         _d = false;
                         chunk = _c;
-                        _context27.t0 = generateContentResponseFromVertex;
-                        _context27.t1 = apiClient;
-                        _context27.next = 14;
+                        _context25.t0 = generateContentResponseFromVertex;
+                        _context25.t1 = apiClient;
+                        _context25.next = 14;
                         return __await(chunk.json());
                       case 14:
-                        _context27.t2 = _context27.sent;
-                        resp = (0, _context27.t0)(_context27.t1, _context27.t2);
+                        _context25.t2 = _context25.sent;
+                        resp = (0, _context25.t0)(_context25.t1, _context25.t2);
                         typedResp = new GenerateContentResponse();
                         Object.assign(typedResp, resp);
-                        _context27.next = 20;
+                        _context25.next = 20;
                         return __await(typedResp);
                       case 20:
-                        _context27.next = 22;
-                        return _context27.sent;
+                        _context25.next = 22;
+                        return _context25.sent;
                       case 22:
                         _d = true;
-                        _context27.next = 2;
+                        _context25.next = 2;
                         break;
                       case 25:
-                        _context27.next = 30;
+                        _context25.next = 30;
                         break;
                       case 27:
-                        _context27.prev = 27;
-                        _context27.t3 = _context27["catch"](0);
+                        _context25.prev = 27;
+                        _context25.t3 = _context25["catch"](0);
                         e_1 = {
-                          error: _context27.t3
+                          error: _context25.t3
                         };
                       case 30:
-                        _context27.prev = 30;
-                        _context27.prev = 31;
+                        _context25.prev = 30;
+                        _context25.prev = 31;
                         if (!(!_d && !_a && (_b = apiResponse_1.return))) {
-                          _context27.next = 35;
+                          _context25.next = 35;
                           break;
                         }
-                        _context27.next = 35;
+                        _context25.next = 35;
                         return __await(_b.call(apiResponse_1));
                       case 35:
-                        _context27.prev = 35;
+                        _context25.prev = 35;
                         if (!e_1) {
-                          _context27.next = 38;
+                          _context25.next = 38;
                           break;
                         }
                         throw e_1.error;
                       case 38:
-                        return _context27.finish(35);
+                        return _context25.finish(35);
                       case 39:
-                        return _context27.finish(30);
+                        return _context25.finish(30);
                       case 40:
                       case "end":
-                        return _context27.stop();
+                        return _context25.stop();
                     }
-                  }, _callee26, null, [[0, 27, 30, 40], [31,, 35, 39]]);
+                  }, _callee24, null, [[0, 27, 30, 40], [31,, 35, 39]]);
                 }));
               }));
             case 14:
@@ -9874,88 +9874,88 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               });
-              return _context29.abrupt("return", response.then(function (apiResponse) {
-                return __asyncGenerator(this, arguments, /*#__PURE__*/_regeneratorRuntime.mark(function _callee27() {
+              return _context27.abrupt("return", response.then(function (apiResponse) {
+                return __asyncGenerator(this, arguments, /*#__PURE__*/_regeneratorRuntime.mark(function _callee25() {
                   var _a, e_2, _b, _c, _d, apiResponse_2, apiResponse_2_1, chunk, resp, typedResp;
-                  return _regeneratorRuntime.wrap(function _callee27$(_context28) {
-                    while (1) switch (_context28.prev = _context28.next) {
+                  return _regeneratorRuntime.wrap(function _callee25$(_context26) {
+                    while (1) switch (_context26.prev = _context26.next) {
                       case 0:
-                        _context28.prev = 0;
+                        _context26.prev = 0;
                         _d = true, apiResponse_2 = __asyncValues(apiResponse);
                       case 2:
-                        _context28.next = 4;
+                        _context26.next = 4;
                         return __await(apiResponse_2.next());
                       case 4:
-                        apiResponse_2_1 = _context28.sent;
+                        apiResponse_2_1 = _context26.sent;
                         _a = apiResponse_2_1.done;
                         if (_a) {
-                          _context28.next = 25;
+                          _context26.next = 25;
                           break;
                         }
                         _c = apiResponse_2_1.value;
                         _d = false;
                         chunk = _c;
-                        _context28.t0 = generateContentResponseFromMldev;
-                        _context28.t1 = _apiClient2;
-                        _context28.next = 14;
+                        _context26.t0 = generateContentResponseFromMldev;
+                        _context26.t1 = _apiClient2;
+                        _context26.next = 14;
                         return __await(chunk.json());
                       case 14:
-                        _context28.t2 = _context28.sent;
-                        resp = (0, _context28.t0)(_context28.t1, _context28.t2);
+                        _context26.t2 = _context26.sent;
+                        resp = (0, _context26.t0)(_context26.t1, _context26.t2);
                         typedResp = new GenerateContentResponse();
                         Object.assign(typedResp, resp);
-                        _context28.next = 20;
+                        _context26.next = 20;
                         return __await(typedResp);
                       case 20:
-                        _context28.next = 22;
-                        return _context28.sent;
+                        _context26.next = 22;
+                        return _context26.sent;
                       case 22:
                         _d = true;
-                        _context28.next = 2;
+                        _context26.next = 2;
                         break;
                       case 25:
-                        _context28.next = 30;
+                        _context26.next = 30;
                         break;
                       case 27:
-                        _context28.prev = 27;
-                        _context28.t3 = _context28["catch"](0);
+                        _context26.prev = 27;
+                        _context26.t3 = _context26["catch"](0);
                         e_2 = {
-                          error: _context28.t3
+                          error: _context26.t3
                         };
                       case 30:
-                        _context28.prev = 30;
-                        _context28.prev = 31;
+                        _context26.prev = 30;
+                        _context26.prev = 31;
                         if (!(!_d && !_a && (_b = apiResponse_2.return))) {
-                          _context28.next = 35;
+                          _context26.next = 35;
                           break;
                         }
-                        _context28.next = 35;
+                        _context26.next = 35;
                         return __await(_b.call(apiResponse_2));
                       case 35:
-                        _context28.prev = 35;
+                        _context26.prev = 35;
                         if (!e_2) {
-                          _context28.next = 38;
+                          _context26.next = 38;
                           break;
                         }
                         throw e_2.error;
                       case 38:
-                        return _context28.finish(35);
+                        return _context26.finish(35);
                       case 39:
-                        return _context28.finish(30);
+                        return _context26.finish(30);
                       case 40:
                       case "end":
-                        return _context28.stop();
+                        return _context26.stop();
                     }
-                  }, _callee27, null, [[0, 27, 30, 40], [31,, 35, 39]]);
+                  }, _callee25, null, [[0, 27, 30, 40], [31,, 35, 39]]);
                 }));
               }));
             case 23:
             case "end":
-              return _context29.stop();
+              return _context27.stop();
           }
-        }, _callee28, this);
+        }, _callee26, this);
       }));
-      function generateContentStreamInternal(_x23) {
+      function generateContentStreamInternal(_x21) {
         return _generateContentStreamInternal.apply(this, arguments);
       }
       return generateContentStreamInternal;
@@ -9984,16 +9984,16 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "embedContent",
     value: (function () {
-      var _embedContent = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee29(params) {
-        var _this14 = this;
+      var _embedContent = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee27(params) {
+        var _this12 = this;
         var _a, _b, _c, _d, response, path, queryParams, body, _body8;
-        return _regeneratorRuntime.wrap(function _callee29$(_context30) {
-          while (1) switch (_context30.prev = _context30.next) {
+        return _regeneratorRuntime.wrap(function _callee27$(_context28) {
+          while (1) switch (_context28.prev = _context28.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context30.next = 13;
+                _context28.next = 13;
                 break;
               }
               body = embedContentParametersToVertex(this.apiClient, params);
@@ -10012,8 +10012,8 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context30.abrupt("return", response.then(function (apiResponse) {
-                var resp = embedContentResponseFromVertex(_this14.apiClient, apiResponse);
+              return _context28.abrupt("return", response.then(function (apiResponse) {
+                var resp = embedContentResponseFromVertex(_this12.apiClient, apiResponse);
                 var typedResp = new EmbedContentResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
@@ -10035,19 +10035,19 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context30.abrupt("return", response.then(function (apiResponse) {
-                var resp = embedContentResponseFromMldev(_this14.apiClient, apiResponse);
+              return _context28.abrupt("return", response.then(function (apiResponse) {
+                var resp = embedContentResponseFromMldev(_this12.apiClient, apiResponse);
                 var typedResp = new EmbedContentResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 21:
             case "end":
-              return _context30.stop();
+              return _context28.stop();
           }
-        }, _callee29, this);
+        }, _callee27, this);
       }));
-      function embedContent(_x24) {
+      function embedContent(_x22) {
         return _embedContent.apply(this, arguments);
       }
       return embedContent;
@@ -10075,16 +10075,16 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "generateImagesInternal",
     value: (function () {
-      var _generateImagesInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee30(params) {
-        var _this15 = this;
+      var _generateImagesInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee28(params) {
+        var _this13 = this;
         var _a, _b, _c, _d, response, path, queryParams, body, _body9;
-        return _regeneratorRuntime.wrap(function _callee30$(_context31) {
-          while (1) switch (_context31.prev = _context31.next) {
+        return _regeneratorRuntime.wrap(function _callee28$(_context29) {
+          while (1) switch (_context29.prev = _context29.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context31.next = 13;
+                _context29.next = 13;
                 break;
               }
               body = generateImagesParametersToVertex(this.apiClient, params);
@@ -10103,8 +10103,8 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context31.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateImagesResponseFromVertex(_this15.apiClient, apiResponse);
+              return _context29.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateImagesResponseFromVertex(_this13.apiClient, apiResponse);
                 var typedResp = new GenerateImagesResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
@@ -10126,19 +10126,19 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context31.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateImagesResponseFromMldev(_this15.apiClient, apiResponse);
+              return _context29.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateImagesResponseFromMldev(_this13.apiClient, apiResponse);
                 var typedResp = new GenerateImagesResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 21:
             case "end":
-              return _context31.stop();
+              return _context29.stop();
           }
-        }, _callee30, this);
+        }, _callee28, this);
       }));
-      function generateImagesInternal(_x25) {
+      function generateImagesInternal(_x23) {
         return _generateImagesInternal.apply(this, arguments);
       }
       return generateImagesInternal;
@@ -10155,16 +10155,16 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "get",
     value: (function () {
-      var _get3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee31(params) {
-        var _this16 = this;
-        var _a, _b, _c, _d, response, path, queryParams, body, _body10;
-        return _regeneratorRuntime.wrap(function _callee31$(_context32) {
-          while (1) switch (_context32.prev = _context32.next) {
+      var _get3 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee29(params) {
+        var _this14 = this;
+        var _a, _b, _c, _d, response, path, queryParams, body, _body0;
+        return _regeneratorRuntime.wrap(function _callee29$(_context30) {
+          while (1) switch (_context30.prev = _context30.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context32.next = 13;
+                _context30.next = 13;
                 break;
               }
               body = getModelParametersToVertex(this.apiClient, params);
@@ -10183,38 +10183,38 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context32.abrupt("return", response.then(function (apiResponse) {
-                var resp = modelFromVertex(_this16.apiClient, apiResponse);
+              return _context30.abrupt("return", response.then(function (apiResponse) {
+                var resp = modelFromVertex(_this14.apiClient, apiResponse);
                 return resp;
               }));
             case 13:
-              _body10 = getModelParametersToMldev(this.apiClient, params);
-              path = formatMap('{name}', _body10['_url']);
-              queryParams = _body10['_query'];
-              delete _body10['config'];
-              delete _body10['_url'];
-              delete _body10['_query'];
+              _body0 = getModelParametersToMldev(this.apiClient, params);
+              path = formatMap('{name}', _body0['_url']);
+              queryParams = _body0['_query'];
+              delete _body0['config'];
+              delete _body0['_url'];
+              delete _body0['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body10),
+                body: JSON.stringify(_body0),
                 httpMethod: 'GET',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context32.abrupt("return", response.then(function (apiResponse) {
-                var resp = modelFromMldev(_this16.apiClient, apiResponse);
+              return _context30.abrupt("return", response.then(function (apiResponse) {
+                var resp = modelFromMldev(_this14.apiClient, apiResponse);
                 return resp;
               }));
             case 21:
             case "end":
-              return _context32.stop();
+              return _context30.stop();
           }
-        }, _callee31, this);
+        }, _callee29, this);
       }));
-      function get(_x26) {
+      function get(_x24) {
         return _get3.apply(this, arguments);
       }
       return get;
@@ -10222,16 +10222,16 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "listInternal",
     value: function () {
-      var _listInternal3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee32(params) {
-        var _this17 = this;
-        var _a, _b, _c, _d, response, path, queryParams, body, _body11;
-        return _regeneratorRuntime.wrap(function _callee32$(_context33) {
-          while (1) switch (_context33.prev = _context33.next) {
+      var _listInternal3 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee30(params) {
+        var _this15 = this;
+        var _a, _b, _c, _d, response, path, queryParams, body, _body1;
+        return _regeneratorRuntime.wrap(function _callee30$(_context31) {
+          while (1) switch (_context31.prev = _context31.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context33.next = 13;
+                _context31.next = 13;
                 break;
               }
               body = listModelsParametersToVertex(this.apiClient, params);
@@ -10250,42 +10250,42 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context33.abrupt("return", response.then(function (apiResponse) {
-                var resp = listModelsResponseFromVertex(_this17.apiClient, apiResponse);
+              return _context31.abrupt("return", response.then(function (apiResponse) {
+                var resp = listModelsResponseFromVertex(_this15.apiClient, apiResponse);
                 var typedResp = new ListModelsResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 13:
-              _body11 = listModelsParametersToMldev(this.apiClient, params);
-              path = formatMap('{models_url}', _body11['_url']);
-              queryParams = _body11['_query'];
-              delete _body11['config'];
-              delete _body11['_url'];
-              delete _body11['_query'];
+              _body1 = listModelsParametersToMldev(this.apiClient, params);
+              path = formatMap('{models_url}', _body1['_url']);
+              queryParams = _body1['_query'];
+              delete _body1['config'];
+              delete _body1['_url'];
+              delete _body1['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body11),
+                body: JSON.stringify(_body1),
                 httpMethod: 'GET',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context33.abrupt("return", response.then(function (apiResponse) {
-                var resp = listModelsResponseFromMldev(_this17.apiClient, apiResponse);
+              return _context31.abrupt("return", response.then(function (apiResponse) {
+                var resp = listModelsResponseFromMldev(_this15.apiClient, apiResponse);
                 var typedResp = new ListModelsResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 21:
             case "end":
-              return _context33.stop();
+              return _context31.stop();
           }
-        }, _callee32, this);
+        }, _callee30, this);
       }));
-      function listInternal(_x27) {
+      function listInternal(_x25) {
         return _listInternal3.apply(this, arguments);
       }
       return listInternal;
@@ -10310,16 +10310,16 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "update",
     value: (function () {
-      var _update2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee33(params) {
-        var _this18 = this;
-        var _a, _b, _c, _d, response, path, queryParams, body, _body12;
-        return _regeneratorRuntime.wrap(function _callee33$(_context34) {
-          while (1) switch (_context34.prev = _context34.next) {
+      var _update2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee31(params) {
+        var _this16 = this;
+        var _a, _b, _c, _d, response, path, queryParams, body, _body10;
+        return _regeneratorRuntime.wrap(function _callee31$(_context32) {
+          while (1) switch (_context32.prev = _context32.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context34.next = 13;
+                _context32.next = 13;
                 break;
               }
               body = updateModelParametersToVertex(this.apiClient, params);
@@ -10338,38 +10338,38 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context34.abrupt("return", response.then(function (apiResponse) {
-                var resp = modelFromVertex(_this18.apiClient, apiResponse);
+              return _context32.abrupt("return", response.then(function (apiResponse) {
+                var resp = modelFromVertex(_this16.apiClient, apiResponse);
                 return resp;
               }));
             case 13:
-              _body12 = updateModelParametersToMldev(this.apiClient, params);
-              path = formatMap('{name}', _body12['_url']);
-              queryParams = _body12['_query'];
-              delete _body12['config'];
-              delete _body12['_url'];
-              delete _body12['_query'];
+              _body10 = updateModelParametersToMldev(this.apiClient, params);
+              path = formatMap('{name}', _body10['_url']);
+              queryParams = _body10['_query'];
+              delete _body10['config'];
+              delete _body10['_url'];
+              delete _body10['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body12),
+                body: JSON.stringify(_body10),
                 httpMethod: 'PATCH',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context34.abrupt("return", response.then(function (apiResponse) {
-                var resp = modelFromMldev(_this18.apiClient, apiResponse);
+              return _context32.abrupt("return", response.then(function (apiResponse) {
+                var resp = modelFromMldev(_this16.apiClient, apiResponse);
                 return resp;
               }));
             case 21:
             case "end":
-              return _context34.stop();
+              return _context32.stop();
           }
-        }, _callee33, this);
+        }, _callee31, this);
       }));
-      function update(_x28) {
+      function update(_x26) {
         return _update2.apply(this, arguments);
       }
       return update;
@@ -10389,15 +10389,15 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "delete",
     value: (function () {
-      var _delete4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee34(params) {
-        var _a, _b, _c, _d, response, path, queryParams, body, _body13;
-        return _regeneratorRuntime.wrap(function _callee34$(_context35) {
-          while (1) switch (_context35.prev = _context35.next) {
+      var _delete4 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee32(params) {
+        var _a, _b, _c, _d, response, path, queryParams, body, _body11;
+        return _regeneratorRuntime.wrap(function _callee32$(_context33) {
+          while (1) switch (_context33.prev = _context33.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context35.next = 13;
+                _context33.next = 13;
                 break;
               }
               body = deleteModelParametersToVertex(this.apiClient, params);
@@ -10416,30 +10416,30 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context35.abrupt("return", response.then(function () {
+              return _context33.abrupt("return", response.then(function () {
                 var resp = deleteModelResponseFromVertex();
                 var typedResp = new DeleteModelResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 13:
-              _body13 = deleteModelParametersToMldev(this.apiClient, params);
-              path = formatMap('{name}', _body13['_url']);
-              queryParams = _body13['_query'];
-              delete _body13['config'];
-              delete _body13['_url'];
-              delete _body13['_query'];
+              _body11 = deleteModelParametersToMldev(this.apiClient, params);
+              path = formatMap('{name}', _body11['_url']);
+              queryParams = _body11['_query'];
+              delete _body11['config'];
+              delete _body11['_url'];
+              delete _body11['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body13),
+                body: JSON.stringify(_body11),
                 httpMethod: 'DELETE',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context35.abrupt("return", response.then(function () {
+              return _context33.abrupt("return", response.then(function () {
                 var resp = deleteModelResponseFromMldev();
                 var typedResp = new DeleteModelResponse();
                 Object.assign(typedResp, resp);
@@ -10447,11 +10447,11 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }));
             case 21:
             case "end":
-              return _context35.stop();
+              return _context33.stop();
           }
-        }, _callee34, this);
+        }, _callee32, this);
       }));
-      function _delete(_x29) {
+      function _delete(_x27) {
         return _delete4.apply(this, arguments);
       }
       return _delete;
@@ -10476,16 +10476,16 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "countTokens",
     value: (function () {
-      var _countTokens = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee35(params) {
-        var _this19 = this;
-        var _a, _b, _c, _d, response, path, queryParams, body, _body14;
-        return _regeneratorRuntime.wrap(function _callee35$(_context36) {
-          while (1) switch (_context36.prev = _context36.next) {
+      var _countTokens = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee33(params) {
+        var _this17 = this;
+        var _a, _b, _c, _d, response, path, queryParams, body, _body12;
+        return _regeneratorRuntime.wrap(function _callee33$(_context34) {
+          while (1) switch (_context34.prev = _context34.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context36.next = 13;
+                _context34.next = 13;
                 break;
               }
               body = countTokensParametersToVertex(this.apiClient, params);
@@ -10504,42 +10504,42 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context36.abrupt("return", response.then(function (apiResponse) {
-                var resp = countTokensResponseFromVertex(_this19.apiClient, apiResponse);
+              return _context34.abrupt("return", response.then(function (apiResponse) {
+                var resp = countTokensResponseFromVertex(_this17.apiClient, apiResponse);
                 var typedResp = new CountTokensResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 13:
-              _body14 = countTokensParametersToMldev(this.apiClient, params);
-              path = formatMap('{model}:countTokens', _body14['_url']);
-              queryParams = _body14['_query'];
-              delete _body14['config'];
-              delete _body14['_url'];
-              delete _body14['_query'];
+              _body12 = countTokensParametersToMldev(this.apiClient, params);
+              path = formatMap('{model}:countTokens', _body12['_url']);
+              queryParams = _body12['_query'];
+              delete _body12['config'];
+              delete _body12['_url'];
+              delete _body12['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body14),
+                body: JSON.stringify(_body12),
                 httpMethod: 'POST',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context36.abrupt("return", response.then(function (apiResponse) {
-                var resp = countTokensResponseFromMldev(_this19.apiClient, apiResponse);
+              return _context34.abrupt("return", response.then(function (apiResponse) {
+                var resp = countTokensResponseFromMldev(_this17.apiClient, apiResponse);
                 var typedResp = new CountTokensResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 21:
             case "end":
-              return _context36.stop();
+              return _context34.stop();
           }
-        }, _callee35, this);
+        }, _callee33, this);
       }));
-      function countTokens(_x30) {
+      function countTokens(_x28) {
         return _countTokens.apply(this, arguments);
       }
       return countTokens;
@@ -10566,16 +10566,16 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "computeTokens",
     value: (function () {
-      var _computeTokens = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee36(params) {
-        var _this20 = this;
+      var _computeTokens = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee34(params) {
+        var _this18 = this;
         var _a, _b, response, path, queryParams, body;
-        return _regeneratorRuntime.wrap(function _callee36$(_context37) {
-          while (1) switch (_context37.prev = _context37.next) {
+        return _regeneratorRuntime.wrap(function _callee34$(_context35) {
+          while (1) switch (_context35.prev = _context35.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context37.next = 13;
+                _context35.next = 13;
                 break;
               }
               body = computeTokensParametersToVertex(this.apiClient, params);
@@ -10594,8 +10594,8 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context37.abrupt("return", response.then(function (apiResponse) {
-                var resp = computeTokensResponseFromVertex(_this20.apiClient, apiResponse);
+              return _context35.abrupt("return", response.then(function (apiResponse) {
+                var resp = computeTokensResponseFromVertex(_this18.apiClient, apiResponse);
                 var typedResp = new ComputeTokensResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
@@ -10604,11 +10604,11 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               throw new Error('This method is only supported by the Vertex AI.');
             case 14:
             case "end":
-              return _context37.stop();
+              return _context35.stop();
           }
-        }, _callee36, this);
+        }, _callee34, this);
       }));
-      function computeTokens(_x31) {
+      function computeTokens(_x29) {
         return _computeTokens.apply(this, arguments);
       }
       return computeTokens;
@@ -10640,16 +10640,16 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
   }, {
     key: "generateVideos",
     value: (function () {
-      var _generateVideos = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee37(params) {
-        var _this21 = this;
-        var _a, _b, _c, _d, response, path, queryParams, body, _body15;
-        return _regeneratorRuntime.wrap(function _callee37$(_context38) {
-          while (1) switch (_context38.prev = _context38.next) {
+      var _generateVideos = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee35(params) {
+        var _this19 = this;
+        var _a, _b, _c, _d, response, path, queryParams, body, _body13;
+        return _regeneratorRuntime.wrap(function _callee35$(_context36) {
+          while (1) switch (_context36.prev = _context36.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context38.next = 13;
+                _context36.next = 13;
                 break;
               }
               body = generateVideosParametersToVertex(this.apiClient, params);
@@ -10668,38 +10668,38 @@ var Models = /*#__PURE__*/function (_BaseModule3) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context38.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateVideosOperationFromVertex$1(_this21.apiClient, apiResponse);
+              return _context36.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateVideosOperationFromVertex$1(_this19.apiClient, apiResponse);
                 return resp;
               }));
             case 13:
-              _body15 = generateVideosParametersToMldev(this.apiClient, params);
-              path = formatMap('{model}:predictLongRunning', _body15['_url']);
-              queryParams = _body15['_query'];
-              delete _body15['config'];
-              delete _body15['_url'];
-              delete _body15['_query'];
+              _body13 = generateVideosParametersToMldev(this.apiClient, params);
+              path = formatMap('{model}:predictLongRunning', _body13['_url']);
+              queryParams = _body13['_query'];
+              delete _body13['config'];
+              delete _body13['_url'];
+              delete _body13['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body15),
+                body: JSON.stringify(_body13),
                 httpMethod: 'POST',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context38.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateVideosOperationFromMldev$1(_this21.apiClient, apiResponse);
+              return _context36.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateVideosOperationFromMldev$1(_this19.apiClient, apiResponse);
                 return resp;
               }));
             case 21:
             case "end":
-              return _context38.stop();
+              return _context36.stop();
           }
-        }, _callee37, this);
+        }, _callee35, this);
       }));
-      function generateVideos(_x32) {
+      function generateVideos(_x30) {
         return _generateVideos.apply(this, arguments);
       }
       return generateVideos;
@@ -10902,11 +10902,11 @@ var Operations = /*#__PURE__*/function (_BaseModule4) {
   _inherits(Operations, _BaseModule4);
   var _super4 = _createSuper(Operations);
   function Operations(apiClient) {
-    var _this22;
+    var _this20;
     _classCallCheck$1(this, Operations);
-    _this22 = _super4.call(this);
-    _this22.apiClient = apiClient;
-    return _this22;
+    _this20 = _super4.call(this);
+    _this20.apiClient = apiClient;
+    return _this20;
   }
   /**
    * Gets the status of a long-running operation.
@@ -10917,21 +10917,21 @@ var Operations = /*#__PURE__*/function (_BaseModule4) {
   _createClass$1(Operations, [{
     key: "getVideosOperation",
     value: (function () {
-      var _getVideosOperation = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee38(parameters) {
+      var _getVideosOperation = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee36(parameters) {
         var operation, config, _resourceName, httpOptions;
-        return _regeneratorRuntime.wrap(function _callee38$(_context39) {
-          while (1) switch (_context39.prev = _context39.next) {
+        return _regeneratorRuntime.wrap(function _callee36$(_context37) {
+          while (1) switch (_context37.prev = _context37.next) {
             case 0:
               operation = parameters.operation;
               config = parameters.config;
               if (!(operation.name === undefined || operation.name === '')) {
-                _context39.next = 4;
+                _context37.next = 4;
                 break;
               }
               throw new Error('Operation name is required.');
             case 4:
               if (!this.apiClient.isVertexAI()) {
-                _context39.next = 11;
+                _context37.next = 11;
                 break;
               }
               _resourceName = operation.name.split('/operations/')[0];
@@ -10939,7 +10939,7 @@ var Operations = /*#__PURE__*/function (_BaseModule4) {
               if (config && 'httpOptions' in config) {
                 httpOptions = config.httpOptions;
               }
-              return _context39.abrupt("return", this.fetchPredictVideosOperationInternal({
+              return _context37.abrupt("return", this.fetchPredictVideosOperationInternal({
                 operationName: operation.name,
                 resourceName: _resourceName,
                 config: {
@@ -10947,17 +10947,17 @@ var Operations = /*#__PURE__*/function (_BaseModule4) {
                 }
               }));
             case 11:
-              return _context39.abrupt("return", this.getVideosOperationInternal({
+              return _context37.abrupt("return", this.getVideosOperationInternal({
                 operationName: operation.name,
                 config: config
               }));
             case 12:
             case "end":
-              return _context39.stop();
+              return _context37.stop();
           }
-        }, _callee38, this);
+        }, _callee36, this);
       }));
-      function getVideosOperation(_x33) {
+      function getVideosOperation(_x31) {
         return _getVideosOperation.apply(this, arguments);
       }
       return getVideosOperation;
@@ -10965,16 +10965,16 @@ var Operations = /*#__PURE__*/function (_BaseModule4) {
   }, {
     key: "getVideosOperationInternal",
     value: function () {
-      var _getVideosOperationInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee39(params) {
-        var _this23 = this;
-        var _a, _b, _c, _d, response, path, queryParams, body, _body16;
-        return _regeneratorRuntime.wrap(function _callee39$(_context40) {
-          while (1) switch (_context40.prev = _context40.next) {
+      var _getVideosOperationInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee37(params) {
+        var _this21 = this;
+        var _a, _b, _c, _d, response, path, queryParams, body, _body14;
+        return _regeneratorRuntime.wrap(function _callee37$(_context38) {
+          while (1) switch (_context38.prev = _context38.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context40.next = 13;
+                _context38.next = 13;
                 break;
               }
               body = getOperationParametersToVertex(this.apiClient, params);
@@ -10993,38 +10993,38 @@ var Operations = /*#__PURE__*/function (_BaseModule4) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context40.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateVideosOperationFromVertex(_this23.apiClient, apiResponse);
+              return _context38.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateVideosOperationFromVertex(_this21.apiClient, apiResponse);
                 return resp;
               }));
             case 13:
-              _body16 = getOperationParametersToMldev(this.apiClient, params);
-              path = formatMap('{operationName}', _body16['_url']);
-              queryParams = _body16['_query'];
-              delete _body16['config'];
-              delete _body16['_url'];
-              delete _body16['_query'];
+              _body14 = getOperationParametersToMldev(this.apiClient, params);
+              path = formatMap('{operationName}', _body14['_url']);
+              queryParams = _body14['_query'];
+              delete _body14['config'];
+              delete _body14['_url'];
+              delete _body14['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body16),
+                body: JSON.stringify(_body14),
                 httpMethod: 'GET',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context40.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateVideosOperationFromMldev(_this23.apiClient, apiResponse);
+              return _context38.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateVideosOperationFromMldev(_this21.apiClient, apiResponse);
                 return resp;
               }));
             case 21:
             case "end":
-              return _context40.stop();
+              return _context38.stop();
           }
-        }, _callee39, this);
+        }, _callee37, this);
       }));
-      function getVideosOperationInternal(_x34) {
+      function getVideosOperationInternal(_x32) {
         return _getVideosOperationInternal.apply(this, arguments);
       }
       return getVideosOperationInternal;
@@ -11032,16 +11032,16 @@ var Operations = /*#__PURE__*/function (_BaseModule4) {
   }, {
     key: "fetchPredictVideosOperationInternal",
     value: function () {
-      var _fetchPredictVideosOperationInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee40(params) {
-        var _this24 = this;
+      var _fetchPredictVideosOperationInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee38(params) {
+        var _this22 = this;
         var _a, _b, response, path, queryParams, body;
-        return _regeneratorRuntime.wrap(function _callee40$(_context41) {
-          while (1) switch (_context41.prev = _context41.next) {
+        return _regeneratorRuntime.wrap(function _callee38$(_context39) {
+          while (1) switch (_context39.prev = _context39.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context41.next = 13;
+                _context39.next = 13;
                 break;
               }
               body = fetchPredictOperationParametersToVertex(this.apiClient, params);
@@ -11060,19 +11060,19 @@ var Operations = /*#__PURE__*/function (_BaseModule4) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context41.abrupt("return", response.then(function (apiResponse) {
-                var resp = generateVideosOperationFromVertex(_this24.apiClient, apiResponse);
+              return _context39.abrupt("return", response.then(function (apiResponse) {
+                var resp = generateVideosOperationFromVertex(_this22.apiClient, apiResponse);
                 return resp;
               }));
             case 13:
               throw new Error('This method is only supported by the Vertex AI.');
             case 14:
             case "end":
-              return _context41.stop();
+              return _context39.stop();
           }
-        }, _callee40, this);
+        }, _callee38, this);
       }));
-      function fetchPredictVideosOperationInternal(_x35) {
+      function fetchPredictVideosOperationInternal(_x33) {
         return _fetchPredictVideosOperationInternal.apply(this, arguments);
       }
       return fetchPredictVideosOperationInternal;
@@ -11101,23 +11101,23 @@ var ClientError = /*#__PURE__*/function (_Error) {
   _inherits(ClientError, _Error);
   var _super5 = _createSuper(ClientError);
   function ClientError(message, stackTrace) {
-    var _this25;
+    var _this23;
     _classCallCheck$1(this, ClientError);
     if (stackTrace) {
-      _this25 = _super5.call(this, message, {
+      _this23 = _super5.call(this, message, {
         cause: stackTrace
       });
     } else {
-      _this25 = _super5.call(this, message, {
+      _this23 = _super5.call(this, message, {
         cause: new Error().stack
       });
     }
-    _this25.message = message;
-    _this25.name = 'ClientError';
-    return _possibleConstructorReturn(_this25);
+    _this23.message = message;
+    _this23.name = 'ClientError';
+    return _possibleConstructorReturn(_this23);
   }
   return _createClass$1(ClientError);
-}( /*#__PURE__*/_wrapNativeSuper(Error));
+}(/*#__PURE__*/_wrapNativeSuper(Error));
 /**
  * Server errors raised by the GenAI API.
  */
@@ -11125,23 +11125,23 @@ var ServerError = /*#__PURE__*/function (_Error2) {
   _inherits(ServerError, _Error2);
   var _super6 = _createSuper(ServerError);
   function ServerError(message, stackTrace) {
-    var _this26;
+    var _this24;
     _classCallCheck$1(this, ServerError);
     if (stackTrace) {
-      _this26 = _super6.call(this, message, {
+      _this24 = _super6.call(this, message, {
         cause: stackTrace
       });
     } else {
-      _this26 = _super6.call(this, message, {
+      _this24 = _super6.call(this, message, {
         cause: new Error().stack
       });
     }
-    _this26.message = message;
-    _this26.name = 'ServerError';
-    return _possibleConstructorReturn(_this26);
+    _this24.message = message;
+    _this24.name = 'ServerError';
+    return _possibleConstructorReturn(_this24);
   }
   return _createClass$1(ServerError);
-}( /*#__PURE__*/_wrapNativeSuper(Error));
+}(/*#__PURE__*/_wrapNativeSuper(Error));
 /**
  * The ApiClient class is used to send requests to the Gemini API or Vertex AI
  * endpoints.
@@ -11331,10 +11331,10 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "request",
     value: function () {
-      var _request2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee41(_request) {
+      var _request2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee39(_request) {
         var patchedHttpOptions, prependProjectLocation, url, _i7, _Object$entries6, _Object$entries6$_i, key, value, requestInit;
-        return _regeneratorRuntime.wrap(function _callee41$(_context42) {
-          while (1) switch (_context42.prev = _context42.next) {
+        return _regeneratorRuntime.wrap(function _callee39$(_context40) {
+          while (1) switch (_context40.prev = _context40.next) {
             case 0:
               patchedHttpOptions = this.clientOptions.httpOptions;
               if (_request.httpOptions) {
@@ -11350,32 +11350,32 @@ var ApiClient = /*#__PURE__*/function () {
               }
               requestInit = {};
               if (!(_request.httpMethod === 'GET')) {
-                _context42.next = 11;
+                _context40.next = 11;
                 break;
               }
               if (!(_request.body && _request.body !== '{}')) {
-                _context42.next = 9;
+                _context40.next = 9;
                 break;
               }
               throw new Error('Request body should be empty for GET request, but got non empty request body');
             case 9:
-              _context42.next = 12;
+              _context40.next = 12;
               break;
             case 11:
               requestInit.body = _request.body;
             case 12:
-              _context42.next = 14;
+              _context40.next = 14;
               return this.includeExtraHttpOptionsToRequestInit(requestInit, patchedHttpOptions, _request.abortSignal);
             case 14:
-              requestInit = _context42.sent;
-              return _context42.abrupt("return", this.unaryApiCall(url, requestInit, _request.httpMethod));
+              requestInit = _context40.sent;
+              return _context40.abrupt("return", this.unaryApiCall(url, requestInit, _request.httpMethod));
             case 16:
             case "end":
-              return _context42.stop();
+              return _context40.stop();
           }
-        }, _callee41, this);
+        }, _callee39, this);
       }));
-      function request(_x36) {
+      function request(_x34) {
         return _request2.apply(this, arguments);
       }
       return request;
@@ -11406,10 +11406,10 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "requestStream",
     value: function () {
-      var _requestStream = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee42(request) {
+      var _requestStream = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee40(request) {
         var patchedHttpOptions, prependProjectLocation, url, requestInit;
-        return _regeneratorRuntime.wrap(function _callee42$(_context43) {
-          while (1) switch (_context43.prev = _context43.next) {
+        return _regeneratorRuntime.wrap(function _callee40$(_context41) {
+          while (1) switch (_context41.prev = _context41.next) {
             case 0:
               patchedHttpOptions = this.clientOptions.httpOptions;
               if (request.httpOptions) {
@@ -11422,18 +11422,18 @@ var ApiClient = /*#__PURE__*/function () {
               }
               requestInit = {};
               requestInit.body = request.body;
-              _context43.next = 9;
+              _context41.next = 9;
               return this.includeExtraHttpOptionsToRequestInit(requestInit, patchedHttpOptions, request.abortSignal);
             case 9:
-              requestInit = _context43.sent;
-              return _context43.abrupt("return", this.streamApiCall(url, requestInit, request.httpMethod));
+              requestInit = _context41.sent;
+              return _context41.abrupt("return", this.streamApiCall(url, requestInit, request.httpMethod));
             case 11:
             case "end":
-              return _context43.stop();
+              return _context41.stop();
           }
-        }, _callee42, this);
+        }, _callee40, this);
       }));
-      function requestStream(_x37) {
+      function requestStream(_x35) {
         return _requestStream.apply(this, arguments);
       }
       return requestStream;
@@ -11441,10 +11441,10 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "includeExtraHttpOptionsToRequestInit",
     value: function () {
-      var _includeExtraHttpOptionsToRequestInit = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee43(requestInit, httpOptions, abortSignal) {
+      var _includeExtraHttpOptionsToRequestInit = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee41(requestInit, httpOptions, abortSignal) {
         var abortController, signal;
-        return _regeneratorRuntime.wrap(function _callee43$(_context44) {
-          while (1) switch (_context44.prev = _context44.next) {
+        return _regeneratorRuntime.wrap(function _callee41$(_context42) {
+          while (1) switch (_context42.prev = _context42.next) {
             case 0:
               if (httpOptions && httpOptions.timeout || abortSignal) {
                 abortController = new AbortController();
@@ -11461,18 +11461,18 @@ var ApiClient = /*#__PURE__*/function () {
                 }
                 requestInit.signal = signal;
               }
-              _context44.next = 3;
+              _context42.next = 3;
               return this.getHeadersInternal(httpOptions);
             case 3:
-              requestInit.headers = _context44.sent;
-              return _context44.abrupt("return", requestInit);
+              requestInit.headers = _context42.sent;
+              return _context42.abrupt("return", requestInit);
             case 5:
             case "end":
-              return _context44.stop();
+              return _context42.stop();
           }
-        }, _callee43, this);
+        }, _callee41, this);
       }));
-      function includeExtraHttpOptionsToRequestInit(_x38, _x39, _x40) {
+      function includeExtraHttpOptionsToRequestInit(_x36, _x37, _x38) {
         return _includeExtraHttpOptionsToRequestInit.apply(this, arguments);
       }
       return includeExtraHttpOptionsToRequestInit;
@@ -11480,29 +11480,75 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "unaryApiCall",
     value: function () {
-      var _unaryApiCall = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee45(url, requestInit, httpMethod) {
+      var _unaryApiCall = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee43(url, requestInit, httpMethod) {
+        return _regeneratorRuntime.wrap(function _callee43$(_context44) {
+          while (1) switch (_context44.prev = _context44.next) {
+            case 0:
+              return _context44.abrupt("return", this.apiCall(url.toString(), Object.assign(Object.assign({}, requestInit), {
+                method: httpMethod
+              })).then(/*#__PURE__*/function () {
+                var _ref8 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee42(response) {
+                  return _regeneratorRuntime.wrap(function _callee42$(_context43) {
+                    while (1) switch (_context43.prev = _context43.next) {
+                      case 0:
+                        _context43.next = 2;
+                        return throwErrorIfNotOK(response);
+                      case 2:
+                        return _context43.abrupt("return", new HttpResponse(response));
+                      case 3:
+                      case "end":
+                        return _context43.stop();
+                    }
+                  }, _callee42);
+                }));
+                return function (_x42) {
+                  return _ref8.apply(this, arguments);
+                };
+              }()).catch(function (e) {
+                if (e instanceof Error) {
+                  throw e;
+                } else {
+                  throw new Error(JSON.stringify(e));
+                }
+              }));
+            case 1:
+            case "end":
+              return _context44.stop();
+          }
+        }, _callee43, this);
+      }));
+      function unaryApiCall(_x39, _x40, _x41) {
+        return _unaryApiCall.apply(this, arguments);
+      }
+      return unaryApiCall;
+    }()
+  }, {
+    key: "streamApiCall",
+    value: function () {
+      var _streamApiCall = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee45(url, requestInit, httpMethod) {
+        var _this25 = this;
         return _regeneratorRuntime.wrap(function _callee45$(_context46) {
           while (1) switch (_context46.prev = _context46.next) {
             case 0:
               return _context46.abrupt("return", this.apiCall(url.toString(), Object.assign(Object.assign({}, requestInit), {
                 method: httpMethod
-              })).then( /*#__PURE__*/function () {
-                var _ref8 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee44(response) {
+              })).then(/*#__PURE__*/function () {
+                var _ref9 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee44(response) {
                   return _regeneratorRuntime.wrap(function _callee44$(_context45) {
                     while (1) switch (_context45.prev = _context45.next) {
                       case 0:
                         _context45.next = 2;
                         return throwErrorIfNotOK(response);
                       case 2:
-                        return _context45.abrupt("return", new HttpResponse(response));
+                        return _context45.abrupt("return", _this25.processStreamResponse(response));
                       case 3:
                       case "end":
                         return _context45.stop();
                     }
                   }, _callee44);
                 }));
-                return function (_x44) {
-                  return _ref8.apply(this, arguments);
+                return function (_x46) {
+                  return _ref9.apply(this, arguments);
                 };
               }()).catch(function (e) {
                 if (e instanceof Error) {
@@ -11517,53 +11563,7 @@ var ApiClient = /*#__PURE__*/function () {
           }
         }, _callee45, this);
       }));
-      function unaryApiCall(_x41, _x42, _x43) {
-        return _unaryApiCall.apply(this, arguments);
-      }
-      return unaryApiCall;
-    }()
-  }, {
-    key: "streamApiCall",
-    value: function () {
-      var _streamApiCall = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee47(url, requestInit, httpMethod) {
-        var _this27 = this;
-        return _regeneratorRuntime.wrap(function _callee47$(_context48) {
-          while (1) switch (_context48.prev = _context48.next) {
-            case 0:
-              return _context48.abrupt("return", this.apiCall(url.toString(), Object.assign(Object.assign({}, requestInit), {
-                method: httpMethod
-              })).then( /*#__PURE__*/function () {
-                var _ref9 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee46(response) {
-                  return _regeneratorRuntime.wrap(function _callee46$(_context47) {
-                    while (1) switch (_context47.prev = _context47.next) {
-                      case 0:
-                        _context47.next = 2;
-                        return throwErrorIfNotOK(response);
-                      case 2:
-                        return _context47.abrupt("return", _this27.processStreamResponse(response));
-                      case 3:
-                      case "end":
-                        return _context47.stop();
-                    }
-                  }, _callee46);
-                }));
-                return function (_x48) {
-                  return _ref9.apply(this, arguments);
-                };
-              }()).catch(function (e) {
-                if (e instanceof Error) {
-                  throw e;
-                } else {
-                  throw new Error(JSON.stringify(e));
-                }
-              }));
-            case 1:
-            case "end":
-              return _context48.stop();
-          }
-        }, _callee47, this);
-      }));
-      function streamApiCall(_x45, _x46, _x47) {
+      function streamApiCall(_x43, _x44, _x45) {
         return _streamApiCall.apply(this, arguments);
       }
       return streamApiCall;
@@ -11574,43 +11574,43 @@ var ApiClient = /*#__PURE__*/function () {
       var _a;
       return __asyncGenerator(this, arguments, /*#__PURE__*/_regeneratorRuntime.mark(function processStreamResponse_1() {
         var reader, decoder, buffer, _yield$__await, done, value, chunkString, chunkJson, errorJson, status, code, errorMessage, clientError, serverError, error, match, processedChunkString, partialResponse;
-        return _regeneratorRuntime.wrap(function processStreamResponse_1$(_context49) {
-          while (1) switch (_context49.prev = _context49.next) {
+        return _regeneratorRuntime.wrap(function processStreamResponse_1$(_context47) {
+          while (1) switch (_context47.prev = _context47.next) {
             case 0:
               reader = (_a = response === null || response === void 0 ? void 0 : response.body) === null || _a === void 0 ? void 0 : _a.getReader();
               decoder = new TextDecoder('utf-8');
               if (reader) {
-                _context49.next = 4;
+                _context47.next = 4;
                 break;
               }
               throw new Error('Response body is empty');
             case 4:
-              _context49.prev = 4;
+              _context47.prev = 4;
               buffer = '';
             case 6:
-              _context49.next = 9;
+              _context47.next = 9;
               return __await(reader.read());
             case 9:
-              _yield$__await = _context49.sent;
+              _yield$__await = _context47.sent;
               done = _yield$__await.done;
               value = _yield$__await.value;
               if (!done) {
-                _context49.next = 16;
+                _context47.next = 16;
                 break;
               }
               if (!(buffer.trim().length > 0)) {
-                _context49.next = 15;
+                _context47.next = 15;
                 break;
               }
               throw new Error('Incomplete JSON segment at the end');
             case 15:
-              return _context49.abrupt("break", 60);
+              return _context47.abrupt("break", 60);
             case 16:
               chunkString = decoder.decode(value); // Parse and throw an error if the chunk contains an error.
-              _context49.prev = 17;
+              _context47.prev = 17;
               chunkJson = JSON.parse(chunkString);
               if (!('error' in chunkJson)) {
-                _context49.next = 32;
+                _context47.next = 32;
                 break;
               }
               errorJson = JSON.parse(JSON.stringify(chunkJson['error']));
@@ -11618,72 +11618,72 @@ var ApiClient = /*#__PURE__*/function () {
               code = errorJson['code'];
               errorMessage = "got status: ".concat(status, ". ").concat(JSON.stringify(chunkJson));
               if (!(code >= 400 && code < 500)) {
-                _context49.next = 29;
+                _context47.next = 29;
                 break;
               }
               clientError = new ClientError(errorMessage);
               throw clientError;
             case 29:
               if (!(code >= 500 && code < 600)) {
-                _context49.next = 32;
+                _context47.next = 32;
                 break;
               }
               serverError = new ServerError(errorMessage);
               throw serverError;
             case 32:
-              _context49.next = 39;
+              _context47.next = 39;
               break;
             case 34:
-              _context49.prev = 34;
-              _context49.t0 = _context49["catch"](17);
-              error = _context49.t0;
+              _context47.prev = 34;
+              _context47.t0 = _context47["catch"](17);
+              error = _context47.t0;
               if (!(error.name === 'ClientError' || error.name === 'ServerError')) {
-                _context49.next = 39;
+                _context47.next = 39;
                 break;
               }
-              throw _context49.t0;
+              throw _context47.t0;
             case 39:
               buffer += chunkString;
               match = buffer.match(responseLineRE);
             case 41:
               if (!match) {
-                _context49.next = 58;
+                _context47.next = 58;
                 break;
               }
               processedChunkString = match[1];
-              _context49.prev = 43;
+              _context47.prev = 43;
               partialResponse = new Response(processedChunkString, {
                 headers: response === null || response === void 0 ? void 0 : response.headers,
                 status: response === null || response === void 0 ? void 0 : response.status,
                 statusText: response === null || response === void 0 ? void 0 : response.statusText
               });
-              _context49.next = 47;
+              _context47.next = 47;
               return __await(new HttpResponse(partialResponse));
             case 47:
-              _context49.next = 49;
-              return _context49.sent;
+              _context47.next = 49;
+              return _context47.sent;
             case 49:
               buffer = buffer.slice(match[0].length);
               match = buffer.match(responseLineRE);
-              _context49.next = 56;
+              _context47.next = 56;
               break;
             case 53:
-              _context49.prev = 53;
-              _context49.t1 = _context49["catch"](43);
-              throw new Error("exception parsing stream chunk ".concat(processedChunkString, ". ").concat(_context49.t1));
+              _context47.prev = 53;
+              _context47.t1 = _context47["catch"](43);
+              throw new Error("exception parsing stream chunk ".concat(processedChunkString, ". ").concat(_context47.t1));
             case 56:
-              _context49.next = 41;
+              _context47.next = 41;
               break;
             case 58:
-              _context49.next = 6;
+              _context47.next = 6;
               break;
             case 60:
-              _context49.prev = 60;
+              _context47.prev = 60;
               reader.releaseLock();
-              return _context49.finish(60);
+              return _context47.finish(60);
             case 63:
             case "end":
-              return _context49.stop();
+              return _context47.stop();
           }
         }, processStreamResponse_1, null, [[4,, 60, 63], [17, 34], [43, 53]]);
       }));
@@ -11691,20 +11691,20 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "apiCall",
     value: function () {
-      var _apiCall = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee48(url, requestInit) {
-        return _regeneratorRuntime.wrap(function _callee48$(_context50) {
-          while (1) switch (_context50.prev = _context50.next) {
+      var _apiCall = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee46(url, requestInit) {
+        return _regeneratorRuntime.wrap(function _callee46$(_context48) {
+          while (1) switch (_context48.prev = _context48.next) {
             case 0:
-              return _context50.abrupt("return", fetch(url, requestInit).catch(function (e) {
+              return _context48.abrupt("return", fetch(url, requestInit).catch(function (e) {
                 throw new Error("exception ".concat(e, " sending request"));
               }));
             case 1:
             case "end":
-              return _context50.stop();
+              return _context48.stop();
           }
-        }, _callee48);
+        }, _callee46);
       }));
-      function apiCall(_x49, _x50) {
+      function apiCall(_x47, _x48) {
         return _apiCall.apply(this, arguments);
       }
       return apiCall;
@@ -11722,10 +11722,10 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "getHeadersInternal",
     value: function () {
-      var _getHeadersInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee49(httpOptions) {
+      var _getHeadersInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee47(httpOptions) {
         var headers, _i9, _Object$entries8, _Object$entries8$_i, key, value;
-        return _regeneratorRuntime.wrap(function _callee49$(_context51) {
-          while (1) switch (_context51.prev = _context51.next) {
+        return _regeneratorRuntime.wrap(function _callee47$(_context49) {
+          while (1) switch (_context49.prev = _context49.next) {
             case 0:
               headers = new Headers();
               if (httpOptions && httpOptions.headers) {
@@ -11739,17 +11739,17 @@ var ApiClient = /*#__PURE__*/function () {
                   headers.append(SERVER_TIMEOUT_HEADER, String(Math.ceil(httpOptions.timeout / 1000)));
                 }
               }
-              _context51.next = 4;
+              _context49.next = 4;
               return this.clientOptions.auth.addAuthHeaders(headers);
             case 4:
-              return _context51.abrupt("return", headers);
+              return _context49.abrupt("return", headers);
             case 5:
             case "end":
-              return _context51.stop();
+              return _context49.stop();
           }
-        }, _callee49, this);
+        }, _callee47, this);
       }));
-      function getHeadersInternal(_x51) {
+      function getHeadersInternal(_x49) {
         return _getHeadersInternal.apply(this, arguments);
       }
       return getHeadersInternal;
@@ -11768,10 +11768,10 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "uploadFile",
     value: (function () {
-      var _uploadFile = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee50(file, config) {
+      var _uploadFile = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee48(file, config) {
         var _a, fileToUpload, uploader, fileStat, mimeType, uploadUrl;
-        return _regeneratorRuntime.wrap(function _callee50$(_context52) {
-          while (1) switch (_context52.prev = _context52.next) {
+        return _regeneratorRuntime.wrap(function _callee48$(_context50) {
+          while (1) switch (_context50.prev = _context50.next) {
             case 0:
               fileToUpload = {};
               if (config != null) {
@@ -11783,31 +11783,31 @@ var ApiClient = /*#__PURE__*/function () {
                 fileToUpload.name = "files/".concat(fileToUpload.name);
               }
               uploader = this.clientOptions.uploader;
-              _context52.next = 6;
+              _context50.next = 6;
               return uploader.stat(file);
             case 6:
-              fileStat = _context52.sent;
+              fileStat = _context50.sent;
               fileToUpload.sizeBytes = String(fileStat.size);
               mimeType = (_a = config === null || config === void 0 ? void 0 : config.mimeType) !== null && _a !== void 0 ? _a : fileStat.type;
               if (!(mimeType === undefined || mimeType === '')) {
-                _context52.next = 11;
+                _context50.next = 11;
                 break;
               }
               throw new Error('Can not determine mimeType. Please provide mimeType in the config.');
             case 11:
               fileToUpload.mimeType = mimeType;
-              _context52.next = 14;
+              _context50.next = 14;
               return this.fetchUploadUrl(fileToUpload, config);
             case 14:
-              uploadUrl = _context52.sent;
-              return _context52.abrupt("return", uploader.upload(file, uploadUrl, this));
+              uploadUrl = _context50.sent;
+              return _context50.abrupt("return", uploader.upload(file, uploadUrl, this));
             case 16:
             case "end":
-              return _context52.stop();
+              return _context50.stop();
           }
-        }, _callee50, this);
+        }, _callee48, this);
       }));
-      function uploadFile(_x52, _x53) {
+      function uploadFile(_x50, _x51) {
         return _uploadFile.apply(this, arguments);
       }
       return uploadFile;
@@ -11822,21 +11822,21 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "downloadFile",
     value: (function () {
-      var _downloadFile = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee51(params) {
+      var _downloadFile = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee49(params) {
         var downloader;
-        return _regeneratorRuntime.wrap(function _callee51$(_context53) {
-          while (1) switch (_context53.prev = _context53.next) {
+        return _regeneratorRuntime.wrap(function _callee49$(_context51) {
+          while (1) switch (_context51.prev = _context51.next) {
             case 0:
               downloader = this.clientOptions.downloader;
-              _context53.next = 3;
+              _context51.next = 3;
               return downloader.download(params, this);
             case 3:
             case "end":
-              return _context53.stop();
+              return _context51.stop();
           }
-        }, _callee51, this);
+        }, _callee49, this);
       }));
-      function downloadFile(_x54) {
+      function downloadFile(_x52) {
         return _downloadFile.apply(this, arguments);
       }
       return downloadFile;
@@ -11844,10 +11844,10 @@ var ApiClient = /*#__PURE__*/function () {
   }, {
     key: "fetchUploadUrl",
     value: function () {
-      var _fetchUploadUrl = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee52(file, config) {
+      var _fetchUploadUrl = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee50(file, config) {
         var _a, httpOptions, body, httpResponse, uploadUrl;
-        return _regeneratorRuntime.wrap(function _callee52$(_context54) {
-          while (1) switch (_context54.prev = _context54.next) {
+        return _regeneratorRuntime.wrap(function _callee50$(_context52) {
+          while (1) switch (_context52.prev = _context52.next) {
             case 0:
               httpOptions = {};
               if (config === null || config === void 0 ? void 0 : config.httpOptions) {
@@ -11867,7 +11867,7 @@ var ApiClient = /*#__PURE__*/function () {
               body = {
                 'file': file
               };
-              _context54.next = 5;
+              _context52.next = 5;
               return this.request({
                 path: formatMap('upload/v1beta/files', body['_url']),
                 body: JSON.stringify(body),
@@ -11875,28 +11875,28 @@ var ApiClient = /*#__PURE__*/function () {
                 httpOptions: httpOptions
               });
             case 5:
-              httpResponse = _context54.sent;
+              httpResponse = _context52.sent;
               if (!(!httpResponse || !(httpResponse === null || httpResponse === void 0 ? void 0 : httpResponse.headers))) {
-                _context54.next = 8;
+                _context52.next = 8;
                 break;
               }
               throw new Error('Server did not return an HttpResponse or the returned HttpResponse did not have headers.');
             case 8:
               uploadUrl = (_a = httpResponse === null || httpResponse === void 0 ? void 0 : httpResponse.headers) === null || _a === void 0 ? void 0 : _a['x-goog-upload-url'];
               if (!(uploadUrl === undefined)) {
-                _context54.next = 11;
+                _context52.next = 11;
                 break;
               }
               throw new Error('Failed to get upload url. Server did not return the x-google-upload-url in the headers');
             case 11:
-              return _context54.abrupt("return", uploadUrl);
+              return _context52.abrupt("return", uploadUrl);
             case 12:
             case "end":
-              return _context54.stop();
+              return _context52.stop();
           }
-        }, _callee52, this);
+        }, _callee50, this);
       }));
-      function fetchUploadUrl(_x55, _x56) {
+      function fetchUploadUrl(_x53, _x54) {
         return _fetchUploadUrl.apply(this, arguments);
       }
       return fetchUploadUrl;
@@ -11904,7 +11904,7 @@ var ApiClient = /*#__PURE__*/function () {
   }]);
   return ApiClient;
 }();
-function throwErrorIfNotOK(_x57) {
+function throwErrorIfNotOK(_x55) {
   return _throwErrorIfNotOK.apply(this, arguments);
 }
 /**
@@ -11913,59 +11913,59 @@ function throwErrorIfNotOK(_x57) {
  * SPDX-License-Identifier: Apache-2.0
  */
 function _throwErrorIfNotOK() {
-  _throwErrorIfNotOK = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee65(response) {
+  _throwErrorIfNotOK = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee63(response) {
     var _a, status, statusText, errorBody, errorMessage, clientError, serverError;
-    return _regeneratorRuntime.wrap(function _callee65$(_context67) {
-      while (1) switch (_context67.prev = _context67.next) {
+    return _regeneratorRuntime.wrap(function _callee63$(_context65) {
+      while (1) switch (_context65.prev = _context65.next) {
         case 0:
           if (!(response === undefined)) {
-            _context67.next = 2;
+            _context65.next = 2;
             break;
           }
           throw new ServerError('response is undefined');
         case 2:
           if (response.ok) {
-            _context67.next = 28;
+            _context65.next = 28;
             break;
           }
           status = response.status;
           statusText = response.statusText;
           if (!((_a = response.headers.get('content-type')) === null || _a === void 0 ? void 0 : _a.includes('application/json'))) {
-            _context67.next = 11;
+            _context65.next = 11;
             break;
           }
-          _context67.next = 8;
+          _context65.next = 8;
           return response.json();
         case 8:
-          errorBody = _context67.sent;
-          _context67.next = 18;
+          errorBody = _context65.sent;
+          _context65.next = 18;
           break;
         case 11:
-          _context67.next = 13;
+          _context65.next = 13;
           return response.text();
         case 13:
-          _context67.t0 = _context67.sent;
-          _context67.t1 = response.status;
-          _context67.t2 = response.statusText;
-          _context67.t3 = {
-            message: _context67.t0,
-            code: _context67.t1,
-            status: _context67.t2
+          _context65.t0 = _context65.sent;
+          _context65.t1 = response.status;
+          _context65.t2 = response.statusText;
+          _context65.t3 = {
+            message: _context65.t0,
+            code: _context65.t1,
+            status: _context65.t2
           };
           errorBody = {
-            error: _context67.t3
+            error: _context65.t3
           };
         case 18:
           errorMessage = "got status: ".concat(status, " ").concat(statusText, ". ").concat(JSON.stringify(errorBody));
           if (!(status >= 400 && status < 500)) {
-            _context67.next = 24;
+            _context65.next = 24;
             break;
           }
           clientError = new ClientError(errorMessage);
           throw clientError;
         case 24:
           if (!(status >= 500 && status < 600)) {
-            _context67.next = 27;
+            _context65.next = 27;
             break;
           }
           serverError = new ServerError(errorMessage);
@@ -11974,9 +11974,9 @@ function _throwErrorIfNotOK() {
           throw new Error(errorMessage);
         case 28:
         case "end":
-          return _context67.stop();
+          return _context65.stop();
       }
-    }, _callee65);
+    }, _callee63);
   }));
   return _throwErrorIfNotOK.apply(this, arguments);
 }
@@ -12429,10 +12429,10 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
   _inherits(Tunings, _BaseModule5);
   var _super7 = _createSuper(Tunings);
   function Tunings(apiClient) {
-    var _this28;
+    var _this26;
     _classCallCheck$1(this, Tunings);
-    _this28 = _super7.call(this);
-    _this28.apiClient = apiClient;
+    _this26 = _super7.call(this);
+    _this26.apiClient = apiClient;
     /**
      * Gets a TuningJob.
      *
@@ -12442,23 +12442,23 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
      * @experimental - The SDK's tuning implementation is experimental, and may
      * change in future versions.
      */
-    _this28.get = /*#__PURE__*/function () {
-      var _ref10 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee53(params) {
-        return _regeneratorRuntime.wrap(function _callee53$(_context55) {
-          while (1) switch (_context55.prev = _context55.next) {
+    _this26.get = /*#__PURE__*/function () {
+      var _ref0 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee51(params) {
+        return _regeneratorRuntime.wrap(function _callee51$(_context53) {
+          while (1) switch (_context53.prev = _context53.next) {
             case 0:
-              _context55.next = 2;
-              return _this28.getInternal(params);
+              _context53.next = 2;
+              return _this26.getInternal(params);
             case 2:
-              return _context55.abrupt("return", _context55.sent);
+              return _context53.abrupt("return", _context53.sent);
             case 3:
             case "end":
-              return _context55.stop();
+              return _context53.stop();
           }
-        }, _callee53);
+        }, _callee51);
       }));
-      return function (_x58) {
-        return _ref10.apply(this, arguments);
+      return function (_x56) {
+        return _ref0.apply(this, arguments);
       };
     }();
     /**
@@ -12470,29 +12470,29 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
      * @experimental - The SDK's tuning implementation is experimental, and may
      * change in future versions.
      */
-    _this28.list = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee54() {
+    _this26.list = /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee52() {
       var params,
-        _args56 = arguments;
-      return _regeneratorRuntime.wrap(function _callee54$(_context56) {
-        while (1) switch (_context56.prev = _context56.next) {
+        _args54 = arguments;
+      return _regeneratorRuntime.wrap(function _callee52$(_context54) {
+        while (1) switch (_context54.prev = _context54.next) {
           case 0:
-            params = _args56.length > 0 && _args56[0] !== undefined ? _args56[0] : {};
-            _context56.t0 = Pager;
-            _context56.t1 = PagedItem.PAGED_ITEM_TUNING_JOBS;
-            _context56.t2 = function (x) {
-              return _this28.listInternal(x);
+            params = _args54.length > 0 && _args54[0] !== undefined ? _args54[0] : {};
+            _context54.t0 = Pager;
+            _context54.t1 = PagedItem.PAGED_ITEM_TUNING_JOBS;
+            _context54.t2 = function (x) {
+              return _this26.listInternal(x);
             };
-            _context56.next = 6;
-            return _this28.listInternal(params);
+            _context54.next = 6;
+            return _this26.listInternal(params);
           case 6:
-            _context56.t3 = _context56.sent;
-            _context56.t4 = params;
-            return _context56.abrupt("return", new _context56.t0(_context56.t1, _context56.t2, _context56.t3, _context56.t4));
+            _context54.t3 = _context54.sent;
+            _context54.t4 = params;
+            return _context54.abrupt("return", new _context54.t0(_context54.t1, _context54.t2, _context54.t3, _context54.t4));
           case 9:
           case "end":
-            return _context56.stop();
+            return _context54.stop();
         }
-      }, _callee54);
+      }, _callee52);
     }));
     /**
      * Creates a supervised fine-tuning job.
@@ -12503,25 +12503,25 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
      * @experimental - The SDK's tuning implementation is experimental, and may
      * change in future versions.
      */
-    _this28.tune = /*#__PURE__*/function () {
-      var _ref12 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee55(params) {
+    _this26.tune = /*#__PURE__*/function () {
+      var _ref10 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee53(params) {
         var operation, tunedModelName, tuningJob;
-        return _regeneratorRuntime.wrap(function _callee55$(_context57) {
-          while (1) switch (_context57.prev = _context57.next) {
+        return _regeneratorRuntime.wrap(function _callee53$(_context55) {
+          while (1) switch (_context55.prev = _context55.next) {
             case 0:
-              if (!_this28.apiClient.isVertexAI()) {
-                _context57.next = 6;
+              if (!_this26.apiClient.isVertexAI()) {
+                _context55.next = 6;
                 break;
               }
-              _context57.next = 3;
-              return _this28.tuneInternal(params);
+              _context55.next = 3;
+              return _this26.tuneInternal(params);
             case 3:
-              return _context57.abrupt("return", _context57.sent);
+              return _context55.abrupt("return", _context55.sent);
             case 6:
-              _context57.next = 8;
-              return _this28.tuneMldevInternal(params);
+              _context55.next = 8;
+              return _this26.tuneMldevInternal(params);
             case 8:
-              operation = _context57.sent;
+              operation = _context55.sent;
               tunedModelName = '';
               if (operation['metadata'] !== undefined && operation['metadata']['tunedModel'] !== undefined) {
                 tunedModelName = operation['metadata']['tunedModel'];
@@ -12532,32 +12532,32 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
                 name: tunedModelName,
                 state: JobState.JOB_STATE_QUEUED
               };
-              return _context57.abrupt("return", tuningJob);
+              return _context55.abrupt("return", tuningJob);
             case 13:
             case "end":
-              return _context57.stop();
+              return _context55.stop();
           }
-        }, _callee55);
+        }, _callee53);
       }));
-      return function (_x59) {
-        return _ref12.apply(this, arguments);
+      return function (_x57) {
+        return _ref10.apply(this, arguments);
       };
     }();
-    return _this28;
+    return _this26;
   }
   _createClass$1(Tunings, [{
     key: "getInternal",
     value: function () {
-      var _getInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee56(params) {
-        var _this29 = this;
-        var _a, _b, _c, _d, response, path, queryParams, body, _body17;
-        return _regeneratorRuntime.wrap(function _callee56$(_context58) {
-          while (1) switch (_context58.prev = _context58.next) {
+      var _getInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee54(params) {
+        var _this27 = this;
+        var _a, _b, _c, _d, response, path, queryParams, body, _body15;
+        return _regeneratorRuntime.wrap(function _callee54$(_context56) {
+          while (1) switch (_context56.prev = _context56.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context58.next = 13;
+                _context56.next = 13;
                 break;
               }
               body = getTuningJobParametersToVertex(this.apiClient, params);
@@ -12576,38 +12576,38 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context58.abrupt("return", response.then(function (apiResponse) {
-                var resp = tuningJobFromVertex(_this29.apiClient, apiResponse);
+              return _context56.abrupt("return", response.then(function (apiResponse) {
+                var resp = tuningJobFromVertex(_this27.apiClient, apiResponse);
                 return resp;
               }));
             case 13:
-              _body17 = getTuningJobParametersToMldev(this.apiClient, params);
-              path = formatMap('{name}', _body17['_url']);
-              queryParams = _body17['_query'];
-              delete _body17['config'];
-              delete _body17['_url'];
-              delete _body17['_query'];
+              _body15 = getTuningJobParametersToMldev(this.apiClient, params);
+              path = formatMap('{name}', _body15['_url']);
+              queryParams = _body15['_query'];
+              delete _body15['config'];
+              delete _body15['_url'];
+              delete _body15['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body17),
+                body: JSON.stringify(_body15),
                 httpMethod: 'GET',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context58.abrupt("return", response.then(function (apiResponse) {
-                var resp = tuningJobFromMldev(_this29.apiClient, apiResponse);
+              return _context56.abrupt("return", response.then(function (apiResponse) {
+                var resp = tuningJobFromMldev(_this27.apiClient, apiResponse);
                 return resp;
               }));
             case 21:
             case "end":
-              return _context58.stop();
+              return _context56.stop();
           }
-        }, _callee56, this);
+        }, _callee54, this);
       }));
-      function getInternal(_x60) {
+      function getInternal(_x58) {
         return _getInternal.apply(this, arguments);
       }
       return getInternal;
@@ -12615,16 +12615,16 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
   }, {
     key: "listInternal",
     value: function () {
-      var _listInternal4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee57(params) {
-        var _this30 = this;
-        var _a, _b, _c, _d, response, path, queryParams, body, _body18;
-        return _regeneratorRuntime.wrap(function _callee57$(_context59) {
-          while (1) switch (_context59.prev = _context59.next) {
+      var _listInternal4 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee55(params) {
+        var _this28 = this;
+        var _a, _b, _c, _d, response, path, queryParams, body, _body16;
+        return _regeneratorRuntime.wrap(function _callee55$(_context57) {
+          while (1) switch (_context57.prev = _context57.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context59.next = 13;
+                _context57.next = 13;
                 break;
               }
               body = listTuningJobsParametersToVertex(this.apiClient, params);
@@ -12643,42 +12643,42 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context59.abrupt("return", response.then(function (apiResponse) {
-                var resp = listTuningJobsResponseFromVertex(_this30.apiClient, apiResponse);
+              return _context57.abrupt("return", response.then(function (apiResponse) {
+                var resp = listTuningJobsResponseFromVertex(_this28.apiClient, apiResponse);
                 var typedResp = new ListTuningJobsResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 13:
-              _body18 = listTuningJobsParametersToMldev(this.apiClient, params);
-              path = formatMap('tunedModels', _body18['_url']);
-              queryParams = _body18['_query'];
-              delete _body18['config'];
-              delete _body18['_url'];
-              delete _body18['_query'];
+              _body16 = listTuningJobsParametersToMldev(this.apiClient, params);
+              path = formatMap('tunedModels', _body16['_url']);
+              queryParams = _body16['_query'];
+              delete _body16['config'];
+              delete _body16['_url'];
+              delete _body16['_query'];
               response = this.apiClient.request({
                 path: path,
                 queryParams: queryParams,
-                body: JSON.stringify(_body18),
+                body: JSON.stringify(_body16),
                 httpMethod: 'GET',
                 httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
                 abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context59.abrupt("return", response.then(function (apiResponse) {
-                var resp = listTuningJobsResponseFromMldev(_this30.apiClient, apiResponse);
+              return _context57.abrupt("return", response.then(function (apiResponse) {
+                var resp = listTuningJobsResponseFromMldev(_this28.apiClient, apiResponse);
                 var typedResp = new ListTuningJobsResponse();
                 Object.assign(typedResp, resp);
                 return typedResp;
               }));
             case 21:
             case "end":
-              return _context59.stop();
+              return _context57.stop();
           }
-        }, _callee57, this);
+        }, _callee55, this);
       }));
-      function listInternal(_x61) {
+      function listInternal(_x59) {
         return _listInternal4.apply(this, arguments);
       }
       return listInternal;
@@ -12686,16 +12686,16 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
   }, {
     key: "tuneInternal",
     value: function () {
-      var _tuneInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee58(params) {
-        var _this31 = this;
+      var _tuneInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee56(params) {
+        var _this29 = this;
         var _a, _b, response, path, queryParams, body;
-        return _regeneratorRuntime.wrap(function _callee58$(_context60) {
-          while (1) switch (_context60.prev = _context60.next) {
+        return _regeneratorRuntime.wrap(function _callee56$(_context58) {
+          while (1) switch (_context58.prev = _context58.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context60.next = 13;
+                _context58.next = 13;
                 break;
               }
               body = createTuningJobParametersToVertex(this.apiClient, params);
@@ -12714,19 +12714,19 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context60.abrupt("return", response.then(function (apiResponse) {
-                var resp = tuningJobFromVertex(_this31.apiClient, apiResponse);
+              return _context58.abrupt("return", response.then(function (apiResponse) {
+                var resp = tuningJobFromVertex(_this29.apiClient, apiResponse);
                 return resp;
               }));
             case 13:
               throw new Error('This method is only supported by the Vertex AI.');
             case 14:
             case "end":
-              return _context60.stop();
+              return _context58.stop();
           }
-        }, _callee58, this);
+        }, _callee56, this);
       }));
-      function tuneInternal(_x62) {
+      function tuneInternal(_x60) {
         return _tuneInternal.apply(this, arguments);
       }
       return tuneInternal;
@@ -12734,16 +12734,16 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
   }, {
     key: "tuneMldevInternal",
     value: function () {
-      var _tuneMldevInternal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee59(params) {
-        var _this32 = this;
+      var _tuneMldevInternal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee57(params) {
+        var _this30 = this;
         var _a, _b, response, path, queryParams, body;
-        return _regeneratorRuntime.wrap(function _callee59$(_context61) {
-          while (1) switch (_context61.prev = _context61.next) {
+        return _regeneratorRuntime.wrap(function _callee57$(_context59) {
+          while (1) switch (_context59.prev = _context59.next) {
             case 0:
               path = '';
               queryParams = {};
               if (!this.apiClient.isVertexAI()) {
-                _context61.next = 6;
+                _context59.next = 6;
                 break;
               }
               throw new Error('This method is only supported by the Gemini Developer API.');
@@ -12764,17 +12764,17 @@ var Tunings = /*#__PURE__*/function (_BaseModule5) {
               }).then(function (httpResponse) {
                 return httpResponse.json();
               });
-              return _context61.abrupt("return", response.then(function (apiResponse) {
-                var resp = operationFromMldev(_this32.apiClient, apiResponse);
+              return _context59.abrupt("return", response.then(function (apiResponse) {
+                var resp = operationFromMldev(_this30.apiClient, apiResponse);
                 return resp;
               }));
             case 14:
             case "end":
-              return _context61.stop();
+              return _context59.stop();
           }
-        }, _callee59, this);
+        }, _callee57, this);
       }));
-      function tuneMldevInternal(_x63) {
+      function tuneMldevInternal(_x61) {
         return _tuneMldevInternal.apply(this, arguments);
       }
       return tuneMldevInternal;
@@ -12794,18 +12794,18 @@ var BrowserDownloader = /*#__PURE__*/function () {
   _createClass$1(BrowserDownloader, [{
     key: "download",
     value: function () {
-      var _download2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee60(_params, _apiClient) {
-        return _regeneratorRuntime.wrap(function _callee60$(_context62) {
-          while (1) switch (_context62.prev = _context62.next) {
+      var _download2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee58(_params, _apiClient) {
+        return _regeneratorRuntime.wrap(function _callee58$(_context60) {
+          while (1) switch (_context60.prev = _context60.next) {
             case 0:
               throw new Error('Download to file is not supported in the browser, please use a browser compliant download like an <a> tag.');
             case 1:
             case "end":
-              return _context62.stop();
+              return _context60.stop();
           }
-        }, _callee60);
+        }, _callee58);
       }));
-      function download(_x64, _x65) {
+      function download(_x62, _x63) {
         return _download2.apply(this, arguments);
       }
       return download;
@@ -12818,14 +12818,14 @@ var MAX_RETRY_COUNT = 3;
 var INITIAL_RETRY_DELAY_MS = 1000;
 var DELAY_MULTIPLIER = 2;
 var X_GOOG_UPLOAD_STATUS_HEADER_FIELD = 'x-goog-upload-status';
-function uploadBlob(_x66, _x67, _x68) {
+function uploadBlob(_x64, _x65, _x66) {
   return _uploadBlob.apply(this, arguments);
 }
 function _uploadBlob() {
-  _uploadBlob = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee66(file, uploadUrl, apiClient) {
+  _uploadBlob = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee64(file, uploadUrl, apiClient) {
     var _a, _b, _c, fileSize, offset, response, uploadCommand, chunkSize, chunk, retryCount, currentDelayMs, responseJson;
-    return _regeneratorRuntime.wrap(function _callee66$(_context68) {
-      while (1) switch (_context68.prev = _context68.next) {
+    return _regeneratorRuntime.wrap(function _callee64$(_context66) {
+      while (1) switch (_context66.prev = _context66.next) {
         case 0:
           fileSize = 0;
           offset = 0;
@@ -12834,7 +12834,7 @@ function _uploadBlob() {
           fileSize = file.size;
         case 5:
           if (!(offset < fileSize)) {
-            _context68.next = 30;
+            _context66.next = 30;
             break;
           }
           chunkSize = Math.min(MAX_CHUNK_SIZE, fileSize - offset);
@@ -12846,10 +12846,10 @@ function _uploadBlob() {
           currentDelayMs = INITIAL_RETRY_DELAY_MS;
         case 11:
           if (!(retryCount < MAX_RETRY_COUNT)) {
-            _context68.next = 23;
+            _context66.next = 23;
             break;
           }
-          _context68.next = 14;
+          _context66.next = 14;
           return apiClient.request({
             path: '',
             body: chunk,
@@ -12865,77 +12865,77 @@ function _uploadBlob() {
             }
           });
         case 14:
-          response = _context68.sent;
+          response = _context66.sent;
           if (!((_a = response === null || response === void 0 ? void 0 : response.headers) === null || _a === void 0 ? void 0 : _a[X_GOOG_UPLOAD_STATUS_HEADER_FIELD])) {
-            _context68.next = 17;
+            _context66.next = 17;
             break;
           }
-          return _context68.abrupt("break", 23);
+          return _context66.abrupt("break", 23);
         case 17:
           retryCount++;
-          _context68.next = 20;
+          _context66.next = 20;
           return sleep(currentDelayMs);
         case 20:
           currentDelayMs = currentDelayMs * DELAY_MULTIPLIER;
-          _context68.next = 11;
+          _context66.next = 11;
           break;
         case 23:
           offset += chunkSize;
           // The `x-goog-upload-status` header field can be `active`, `final` and
           //`cancelled` in resposne.
           if (!(((_b = response === null || response === void 0 ? void 0 : response.headers) === null || _b === void 0 ? void 0 : _b[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== 'active')) {
-            _context68.next = 26;
+            _context66.next = 26;
             break;
           }
-          return _context68.abrupt("break", 30);
+          return _context66.abrupt("break", 30);
         case 26:
           if (!(fileSize <= offset)) {
-            _context68.next = 28;
+            _context66.next = 28;
             break;
           }
           throw new Error('All content has been uploaded, but the upload status is not finalized.');
         case 28:
-          _context68.next = 5;
+          _context66.next = 5;
           break;
         case 30:
-          _context68.next = 32;
+          _context66.next = 32;
           return response === null || response === void 0 ? void 0 : response.json();
         case 32:
-          responseJson = _context68.sent;
+          responseJson = _context66.sent;
           if (!(((_c = response === null || response === void 0 ? void 0 : response.headers) === null || _c === void 0 ? void 0 : _c[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== 'final')) {
-            _context68.next = 35;
+            _context66.next = 35;
             break;
           }
           throw new Error('Failed to upload file: Upload status is not finalized.');
         case 35:
-          return _context68.abrupt("return", responseJson['file']);
+          return _context66.abrupt("return", responseJson['file']);
         case 36:
         case "end":
-          return _context68.stop();
+          return _context66.stop();
       }
-    }, _callee66);
+    }, _callee64);
   }));
   return _uploadBlob.apply(this, arguments);
 }
-function getBlobStat(_x69) {
+function getBlobStat(_x67) {
   return _getBlobStat.apply(this, arguments);
 }
 function _getBlobStat() {
-  _getBlobStat = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee67(file) {
+  _getBlobStat = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee65(file) {
     var fileStat;
-    return _regeneratorRuntime.wrap(function _callee67$(_context69) {
-      while (1) switch (_context69.prev = _context69.next) {
+    return _regeneratorRuntime.wrap(function _callee65$(_context67) {
+      while (1) switch (_context67.prev = _context67.next) {
         case 0:
           fileStat = {
             size: file.size,
             type: file.type
           };
-          return _context69.abrupt("return", fileStat);
+          return _context67.abrupt("return", fileStat);
         case 2:
         case "end":
-          return _context69.stop();
+          return _context67.stop();
       }
-    }, _callee67);
+    }, _callee65);
   }));
   return _getBlobStat.apply(this, arguments);
 }
@@ -12951,27 +12951,27 @@ var BrowserUploader = /*#__PURE__*/function () {
   _createClass$1(BrowserUploader, [{
     key: "upload",
     value: function () {
-      var _upload2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee61(file, uploadUrl, apiClient) {
-        return _regeneratorRuntime.wrap(function _callee61$(_context63) {
-          while (1) switch (_context63.prev = _context63.next) {
+      var _upload2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee59(file, uploadUrl, apiClient) {
+        return _regeneratorRuntime.wrap(function _callee59$(_context61) {
+          while (1) switch (_context61.prev = _context61.next) {
             case 0:
               if (!(typeof file === 'string')) {
-                _context63.next = 2;
+                _context61.next = 2;
                 break;
               }
               throw new Error('File path is not supported in browser uploader.');
             case 2:
-              _context63.next = 4;
+              _context61.next = 4;
               return uploadBlob(file, uploadUrl, apiClient);
             case 4:
-              return _context63.abrupt("return", _context63.sent);
+              return _context61.abrupt("return", _context61.sent);
             case 5:
             case "end":
-              return _context63.stop();
+              return _context61.stop();
           }
-        }, _callee61);
+        }, _callee59);
       }));
-      function upload(_x70, _x71, _x72) {
+      function upload(_x68, _x69, _x70) {
         return _upload2.apply(this, arguments);
       }
       return upload;
@@ -12979,27 +12979,27 @@ var BrowserUploader = /*#__PURE__*/function () {
   }, {
     key: "stat",
     value: function () {
-      var _stat = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee62(file) {
-        return _regeneratorRuntime.wrap(function _callee62$(_context64) {
-          while (1) switch (_context64.prev = _context64.next) {
+      var _stat = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee60(file) {
+        return _regeneratorRuntime.wrap(function _callee60$(_context62) {
+          while (1) switch (_context62.prev = _context62.next) {
             case 0:
               if (!(typeof file === 'string')) {
-                _context64.next = 4;
+                _context62.next = 4;
                 break;
               }
               throw new Error('File path is not supported in browser uploader.');
             case 4:
-              _context64.next = 6;
+              _context62.next = 6;
               return getBlobStat(file);
             case 6:
-              return _context64.abrupt("return", _context64.sent);
+              return _context62.abrupt("return", _context62.sent);
             case 7:
             case "end":
-              return _context64.stop();
+              return _context62.stop();
           }
-        }, _callee62);
+        }, _callee60);
       }));
-      function stat(_x73) {
+      function stat(_x71) {
         return _stat.apply(this, arguments);
       }
       return stat;
@@ -13077,24 +13077,24 @@ var WebAuth = /*#__PURE__*/function () {
   _createClass$1(WebAuth, [{
     key: "addAuthHeaders",
     value: function () {
-      var _addAuthHeaders = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee63(headers) {
-        return _regeneratorRuntime.wrap(function _callee63$(_context65) {
-          while (1) switch (_context65.prev = _context65.next) {
+      var _addAuthHeaders = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee61(headers) {
+        return _regeneratorRuntime.wrap(function _callee61$(_context63) {
+          while (1) switch (_context63.prev = _context63.next) {
             case 0:
               if (!(headers.get(GOOGLE_API_KEY_HEADER) !== null)) {
-                _context65.next = 2;
+                _context63.next = 2;
                 break;
               }
-              return _context65.abrupt("return");
+              return _context63.abrupt("return");
             case 2:
               headers.append(GOOGLE_API_KEY_HEADER, this.apiKey);
             case 3:
             case "end":
-              return _context65.stop();
+              return _context63.stop();
           }
-        }, _callee63, this);
+        }, _callee61, this);
       }));
-      function addAuthHeaders(_x74) {
+      function addAuthHeaders(_x72) {
         return _addAuthHeaders.apply(this, arguments);
       }
       return addAuthHeaders;
@@ -13189,9 +13189,9 @@ var GoogleGenAI = /*#__PURE__*/_createClass$1(function GoogleGenAI(options) {
 
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
-function _createForOfIteratorHelper$1(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$1(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-function _unsupportedIterableToArray$1(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$1(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$1(o, minLen); }
-function _arrayLikeToArray$1(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
+function _createForOfIteratorHelper$1(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray$1(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray$1(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$1(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0; } }
+function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function _asyncIterator(r) { var n, t, o, e = 2; for ("undefined" != typeof Symbol && (t = Symbol.asyncIterator, o = Symbol.iterator); e--;) { if (t && null != (n = r[t])) return n.call(r); if (o && null != (n = r[o])) return new AsyncFromSyncIterator(n.call(r)); t = "@@asyncIterator", o = "@@iterator"; } throw new TypeError("Object is not async iterable"); }
 function AsyncFromSyncIterator(r) { function AsyncFromSyncIteratorContinuation(r) { if (Object(r) !== r) return Promise.reject(new TypeError(r + " is not an object.")); var n = r.done; return Promise.resolve(r.value).then(function (r) { return { value: r, done: n }; }); } return AsyncFromSyncIterator = function AsyncFromSyncIterator(r) { this.s = r, this.n = r.next; }, AsyncFromSyncIterator.prototype = { s: null, n: null, next: function next() { return AsyncFromSyncIteratorContinuation(this.n.apply(this.s, arguments)); }, return: function _return(r) { var n = this.s.return; return void 0 === n ? Promise.resolve({ value: r, done: !0 }) : AsyncFromSyncIteratorContinuation(n.apply(this.s, arguments)); }, throw: function _throw(r) { var n = this.s.return; return void 0 === n ? Promise.reject(r) : AsyncFromSyncIteratorContinuation(n.apply(this.s, arguments)); } }, new AsyncFromSyncIterator(r); }
 var HarmCategory = {
@@ -13336,7 +13336,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "countTokensAs",
     value: (function () {
-      var _countTokensAs = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee(contentParts, requestType) {
+      var _countTokensAs = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee(contentParts, requestType) {
         var models, result, geminiContentParts, history, contents;
         return _regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
@@ -13513,7 +13513,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestGenerateStream",
     value: function () {
-      var _requestGenerateStream = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(contentParts, partialResponseHandler) {
+      var _requestGenerateStream = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee2(contentParts, partialResponseHandler) {
         var models, geminiContentParts, config, streamingResult, wholeResponses, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, lastPartialResponse;
         return _regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
@@ -13642,7 +13642,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestChatStream",
     value: function () {
-      var _requestChatStream = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(contentParts, partialResponseHandler) {
+      var _requestChatStream = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee3(contentParts, partialResponseHandler) {
         var geminiContentParts, config, streamingResult, wholeResponses, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, lastPartialResponse;
         return _regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) switch (_context3.prev = _context3.next) {
@@ -13739,7 +13739,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestEmbedding",
     value: (function () {
-      var _requestEmbedding = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee4(contentParts, taskType) {
+      var _requestEmbedding = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(contentParts, taskType) {
         var toEmbed, cache, key, result, embeddingValues;
         return _regeneratorRuntime.wrap(function _callee4$(_context4) {
           while (1) switch (_context4.prev = _context4.next) {
@@ -14089,9 +14089,9 @@ var addImageAsCostume = function addImageAsCostume(target, dataURL, runtime) {
   });
 };
 
-function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 /**
  * Parse content parts text.
  * @param {string} contentPartsText - content parts text
