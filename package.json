@@ -32,5 +32,8 @@
     "rollup": "^4.9.2",
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-polyfill-node": "^0.13.0"
+  },
+  "dependencies": {
+    "@google/genai": "^0.13.0"
   }
 }

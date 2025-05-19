@@ -1,11 +1,9 @@
-// dynamic import
-let GoogleGenerativeAI;
-(async () => {
-    ({GoogleGenerativeAI} = await import(
-        /* webpackIgnore: true */
-        'https://esm.run/@google/generative-ai'
-    ));
-})();
+import {
+    GoogleGenAI,
+    createPartFromBase64,
+    createPartFromText,
+    createUserContent
+} from '@google/genai';
 
 export const HarmCategory = {
     HARM_CATEGORY_UNSPECIFIED: 'HARM_CATEGORY_UNSPECIFIED',
@@ -20,53 +18,80 @@ export const HarmBlockThreshold = {
     BLOCK_LOW_AND_ABOVE: 'BLOCK_LOW_AND_ABOVE',
     BLOCK_MEDIUM_AND_ABOVE: 'BLOCK_MEDIUM_AND_ABOVE',
     BLOCK_ONLY_HIGH: 'BLOCK_ONLY_HIGH',
-    BLOCK_NONE: 'BLOCK_NONE'
+    BLOCK_NONE: 'BLOCK_NONE',
+    OFF: 'OFF'
 };
 
 export const EmbeddingTaskType = {
     TASK_TYPE_UNSPECIFIED: 'TASK_TYPE_UNSPECIFIED',
-    RETRIEVAL_QUERY: 'RETRIEVAL_QUERY',
-    RETRIEVAL_DOCUMENT: 'RETRIEVAL_DOCUMENT',
     SEMANTIC_SIMILARITY: 'SEMANTIC_SIMILARITY',
     CLASSIFICATION: 'CLASSIFICATION',
-    CLUSTERING: 'CLUSTERING'
+    CLUSTERING: 'CLUSTERING',
+    RETRIEVAL_DOCUMENT: 'RETRIEVAL_DOCUMENT',
+    RETRIEVAL_QUERY: 'RETRIEVAL_QUERY',
+    QUESTION_ANSWERING: 'QUESTION_ANSWERING',
+    FACT_VERIFICATION: 'FACT_VERIFICATION',
+    CODE_RETRIEVAL_QUERY: 'CODE_RETRIEVAL_QUERY'
 };
 
 /**
  * Get text of the first candidate from response.
- * @param {object} response - response from generative ai
- * @return {string} response text
+ * @param {object} responses - response from generative ai
+ * @param {number} candidateIndex - index of the candidate
+ * @return {?string} response text
  */
-export const getTextFromResponse = function (response) {
-    if (!response) {
+export const getTextFromResponse = function (responses, candidateIndex = 0) {
+    if (!responses) {
         return '';
     }
-    if (typeof response === 'string') {
-        return response;
+    if (!Array.isArray(responses)) {
+        responses = [responses];
     }
-    const textStrings = [];
-    if (response.candidates && response.candidates[0] &&
-        response.candidates[0].content && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
+    let contentText = '';
+    responses.forEach(aResponse => {
+        if (typeof aResponse === 'string') {
+            return aResponse;
+        }
+        if (aResponse.promptFeedback) {
+            if (aResponse.promptFeedback.blockReason === 'SAFETY') {
+                const safetyRatings = aResponse.promptFeedback.safetyRatings;
+                let blockedMessages = '';
+                safetyRatings.forEach(safetyRating => {
+                    if (safetyRating.blocked) {
+                        blockedMessages += `\nBlocked: ${safetyRating.category} is (${safetyRating.probability})`;
+                    }
+                });
+                contentText += blockedMessages;
+                return;
+            }
+            contentText += aResponse.promptFeedback.blockReason;
+            return;
+        }
+        if (aResponse.candidates.length <= candidateIndex) {
+            return;
+        }
+        const candidate = aResponse.candidates[candidateIndex];
+        if (!candidate || !candidate.content || !candidate.content.parts) {
+            // sometimes content is empty
+            return;
+        }
+        for (const part of candidate.content.parts) {
             if (part.text) {
-                textStrings.push(part.text);
+                contentText += part.text;
             }
             if (part.executableCode) {
-                textStrings.push(
+                contentText += (
                     `\n\`\`\`python\n${part.executableCode.code}\n\`\`\`\n`
                 );
             }
             if (part.codeExecutionResult) {
-                textStrings.push(
+                contentText += (
                     `\n\`\`\`\n${part.codeExecutionResult.output}\n\`\`\`\n`
                 );
             }
         }
-    }
-    if (textStrings.length > 0) {
-        return textStrings.join('');
-    }
-    return '';
+    });
+    return contentText;
 };
 
 const GEMINI_ADAPTERS = {};
@@ -87,9 +112,15 @@ export class GeminiAdapter {
      * @returns {object} model code for data type
      */
     static MODEL_CODE = {
-        generative: 'gemini-1.5-flash',
-        embedding: 'text-embedding-004'
+        generative: 'gemini-2.5-flash-preview-04-17',
+        embedding: 'gemini-embedding-exp-03-07'
     };
+
+    /**
+     * API key for Gemini AI.
+     * @type {string}
+     */
+    static apiKey = null;
 
     /**
      * Check if Gemini AI exists for target.
@@ -138,7 +169,7 @@ export class GeminiAdapter {
      * @returns {string} - API key
      */
     static getApiKey () {
-        return GoogleGenerativeAI.apiKey;
+        return GeminiAdapter.apiKey;
     }
 
     /**
@@ -147,7 +178,7 @@ export class GeminiAdapter {
      * @returns {void}
      */
     static setApiKey (key) {
-        GoogleGenerativeAI.apiKey = key;
+        GeminiAdapter.apiKey = key;
     }
 
     /**
@@ -162,10 +193,16 @@ export class GeminiAdapter {
         this.sdk = null;
         this.modelCode = Object.assign({}, GeminiAdapter.MODEL_CODE);
         this.models = {};
-        this.modelParams = {
-            generationConfig: {},
-            safetySettings: []
-        };
+        /**
+         * safety settings
+         * @type {Array.<{category: string, blockThreshold: string}>}
+         */
+        this.safetySettings = [];
+        /**
+         * generation config
+         * @type {import('@google/genai').GenerateContentConfig}
+         */
+        this.generationConfig = {};
         this.chatSession = null;
         this.lastResponse = null;
         this.lastPartialResponse = null;
@@ -174,75 +211,59 @@ export class GeminiAdapter {
 
     /**
      * Get SDK. Initialize if not exists.
-     * @returns {GoogleGenerativeAI} - SDK
+     * @returns {GoogleGenAI} - SDK
      */
     getSDK () {
         if (!this.sdk) {
-            this.sdk = new GoogleGenerativeAI(GeminiAdapter.getApiKey());
+            this.sdk = new GoogleGenAI({
+                apiKey: GeminiAdapter.getApiKey(),
+                baseUrl: GeminiAdapter.baseUrl
+            });
         }
         return this.sdk;
     }
 
     /**
-     * Get model for data type.
-     * @param {string} type - type of model ['generative' | 'embedding' | 'qa']
-     * @returns {GenerativeModel} - model
-     */
-    getModelFor (type) {
-        const modelParams = this.getModelParams();
-        const requestOptions = {};
-        if (GeminiAdapter.baseUrl) {
-            requestOptions.baseUrl = GeminiAdapter.baseUrl;
-        }
-        const model = this.getSDK().getGenerativeModel(
-            {
-                model: this.modelCode[type],
-                generationConfig: modelParams.generationConfig,
-                safetySettings: modelParams.safetySettings
-            },
-            requestOptions
-        );
-        return model;
-    }
-
-    /**
-     * Get model parameters.
-     * @returns {object} - model parameters
-     */
-    getModelParams () {
-        return this.modelParams;
-    }
-
-    /**
      * Count tokens by model.
-     * @param {Array.<string | object>} content - content to AI
+     * @param {Array.<string | object>} contentParts - content to AI
      * @param {string} requestType - type of request {'generate' | 'chat'}
      * @returns {Promise<number>} - a Promise that resolves when the tokens are counted
      */
-    async countTokensAs (content, requestType) {
-        const model = this.getModelFor('generative');
+    async countTokensAs (contentParts, requestType) {
+        const models = this.getSDK().models;
         let result;
+        const geminiContentParts = this.convertContentParts(contentParts);
         if (requestType === 'generate') {
-            result = await model.countTokens(content);
+            result = await models.countTokens({
+                model: this.modelCode.generative,
+                contents: createUserContent(geminiContentParts),
+                config: {
+                    systemInstruction: this.generationConfig.systemInstruction,
+                    tools: this.generationConfig.tools
+                }
+            });
         } else if (requestType === 'chat') {
-            const history = await this.getChatHistory();
-            const messageContent = {
-                role: 'user',
-                parts: [{text: content[0]}] // chat message is always a string at API v1
-            };
-            const contents = [...history, messageContent];
-            result = await model.countTokens({contents});
+            const history = this.getChatHistory();
+            const contents = [...history, createUserContent(geminiContentParts)];
+            result = await models.countTokens({
+                model: this.modelCode.generative,
+                contents: contents,
+                config: {
+                    systemInstruction: this.generationConfig.systemInstruction,
+                    tools: this.generationConfig.tools
+                }
+            });
         }
         return result.totalTokens;
     }
 
     /**
      * Get chat history.
-     * @returns {Promise<Content[]>} - a Promise that resolves when the history is received
+     * @returns {Content[]} - history of chat
      */
     getChatHistory () {
         if (!this.chatSession) {
-            return Promise.resolve([]);
+            return [];
         }
         return this.chatSession.getHistory();
     }
@@ -265,7 +286,7 @@ export class GeminiAdapter {
     }
 
     /**
-     * Get last response from AI.
+     * Get last response object from AI.
      * @returns {GenerateContentResponse} - last response
      */
     getLastResponse () {
@@ -274,7 +295,7 @@ export class GeminiAdapter {
 
     /**
      * Set last response from AI.
-     * @param {GenerateContentResponse} response - last response
+     * @param {GenerateContentResponse|GenericContentResponse[]} response - last response
      * @returns {void}
      */
     setLastResponse (response) {
@@ -306,15 +327,11 @@ export class GeminiAdapter {
     convertContentParts (contentParts) {
         return contentParts.map(p => {
             if (p.type === 'text') {
-                return {text: p.data};
+                return createPartFromText(p.data);
             } else if (p.type === 'dataURL') {
-                return {
-                    inlineData:
-                    {
-                        data: (p.data.split(',')[1]),
-                        mimeType: p.data.substring(p.data.indexOf(':') + 1, p.data.indexOf(';'))
-                    }
-                };
+                const base64 = p.data.split(',')[1];
+                const mimeType = p.data.substring(p.data.indexOf(':') + 1, p.data.indexOf(';'));
+                return createPartFromBase64(base64, mimeType);
             }
             return p;
         });
@@ -323,16 +340,48 @@ export class GeminiAdapter {
     /**
      * Send generator type prompt to AI.
      * @param {Array.<string | object>} contentParts - prompt to AI
-     * @param {boolean} isStreaming - whether to get stream
-     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the prompt is sent
+     * @returns {Promise<string>} - a Promise that resolves text from AI
      */
-    requestGenerate (contentParts, isStreaming) {
-        const model = this.getModelFor('generative');
+    requestGenerate (contentParts) {
+        const models = this.getSDK().models;
         const geminiContentParts = this.convertContentParts(contentParts);
-        if (isStreaming) {
-            return model.generateContentStream(geminiContentParts);
+        return models.generateContent({
+            model: this.modelCode.generative,
+            contents: createUserContent(geminiContentParts),
+            safetySettings: this.safetySettings,
+            config: this.generationConfig
+        })
+            .then(response => {
+                this.setLastResponse(response);
+            })
+            .catch(error => {
+                this.setLastResponse(error);
+            });
+    }
+
+    async requestGenerateStream (contentParts, partialResponseHandler) {
+        const models = this.getSDK().models;
+        const geminiContentParts = this.convertContentParts(contentParts);
+        const config = {...this.generationConfig};
+        config.candidateCount = 1; // only one candidate for streaming
+        try {
+            const streamingResult = await models.generateContentStream({
+                model: this.modelCode.generative,
+                contents: createUserContent(geminiContentParts),
+                safetySettings: this.safetySettings,
+                config: config
+            });
+            const wholeResponses = [];
+            for await (const lastPartialResponse of streamingResult) {
+            // Process each partial response
+                this.setLastPartialResponse(lastPartialResponse);
+                partialResponseHandler(lastPartialResponse);
+                wholeResponses.push(lastPartialResponse);
+            }
+            this.setLastResponse(wholeResponses);
+        } catch (error) {
+            this.setLastResponse(error);
         }
-        return model.generateContent(geminiContentParts);
     }
 
     /**
@@ -341,25 +390,59 @@ export class GeminiAdapter {
      * @returns {void}
      */
     startChat (history) {
-        const model = this.getModelFor('generative');
-        this.chatSession = model.startChat({history, ...this.getModelParams()});
+        this.chatSession = this.getSDK().chats.create({
+            model: this.modelCode.generative,
+            history: history,
+            safetySettings: this.safetySettings,
+            config: this.generationConfig
+        });
     }
 
     /**
      * Send chat message to AI.
      * @param {string} contentParts - message to AI
-     * @param {boolean} isStreaming - whether to get stream
      * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the message is sent
      */
-    requestChat (contentParts, isStreaming) {
+    requestChat (contentParts) {
         if (!this.chatSession) {
             this.startChat([]);
         }
         const geminiContentParts = this.convertContentParts(contentParts);
-        if (isStreaming) {
-            return this.chatSession.sendMessageStream(geminiContentParts);
+        return this.chatSession.sendMessage({
+            config: this.generationConfig,
+            message: createUserContent(geminiContentParts)
+        })
+            .then(response => {
+                this.setLastResponse(response);
+            })
+            .catch(error => {
+                this.setLastResponse(error);
+            });
+    }
+
+    async requestChatStream (contentParts, partialResponseHandler) {
+        if (!this.chatSession) {
+            this.startChat([]);
         }
-        return this.chatSession.sendMessage(geminiContentParts);
+        const geminiContentParts = this.convertContentParts(contentParts);
+        const config = {...this.generationConfig};
+        config.candidateCount = 1; // only one candidate for streaming
+        try {
+            const streamingResult = await this.chatSession.sendMessageStream({
+                config: config,
+                message: createUserContent(geminiContentParts)
+            });
+            const wholeResponses = [];
+            for await (const lastPartialResponse of streamingResult) {
+                // Process each partial response
+                this.setLastPartialResponse(lastPartialResponse);
+                partialResponseHandler(lastPartialResponse);
+                wholeResponses.push(lastPartialResponse);
+            }
+            this.setLastResponse(wholeResponses);
+        } catch (error) {
+            this.setLastResponse(error);
+        }
     }
 
     /**
@@ -390,9 +473,15 @@ export class GeminiAdapter {
         if (cache[key]) {
             return cache[key];
         }
-        const model = this.getModelFor('embedding');
-        const result = await model.embedContent(toEmbed, taskType);
-        cache[key] = result.embedding.values;
-        return result.embedding.values;
+        const result = await this.getSDK().models.embedContent({
+            model: this.modelCode.embedding,
+            contents: toEmbed,
+            config: {
+                taskType: taskType
+            }
+        });
+        const embeddingValues = result.embeddings[0].values;
+        cache[key] = embeddingValues;
+        return embeddingValues;
     }
 }
