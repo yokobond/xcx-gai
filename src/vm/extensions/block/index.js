@@ -1,7 +1,6 @@
 import BlockType from '../../extension-support/block-type';
 import ArgumentType from '../../extension-support/argument-type';
 import Cast from '../../util/cast';
-import log from '../../util/log';
 import translations from './translations.json';
 import blockIcon from './block-icon.png';
 
@@ -14,7 +13,6 @@ import {
 import {getCostumeByNameOrNumber, costumeToDataURL, addImageAsCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
 import {dotProduct, euclideanDistance} from './math-util.js';
-
 
 /**
  * Formatter which is used for translation.
@@ -205,6 +203,17 @@ class GeminiBlocks {
                     }
                 },
                 '---',
+                {
+                    opcode: 'whenResponseReceived',
+                    blockType: BlockType.EVENT,
+                    text: formatMessage({
+                        id: 'gai.whenResponseReceived',
+                        default: 'when response received',
+                        description: 'when response received for Gemini'
+                    }),
+                    isEdgeActivated: false,
+                    shouldRestartExistingThreads: true
+                },
                 {
                     opcode: 'responseText',
                     blockType: BlockType.REPORTER,
@@ -730,14 +739,10 @@ class GeminiBlocks {
             return menu;
         }
         const ai = this.getAI(target);
-        const modelParams = ai.getModelParams();
-        if (!modelParams) {
+        const candidateCount = ai.generationConfig.candidateCount;
+        if (!candidateCount) {
             return menu;
         }
-        if (!modelParams.generationConfig) {
-            return menu;
-        }
-        const candidateCount = modelParams.generationConfig.candidateCount;
         for (let i = 1; i < candidateCount; i++) {
             menu.push({
                 text: String(i + 1),
@@ -946,22 +951,6 @@ class GeminiBlocks {
         const menu = [
             {
                 text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.retrievalQuery',
-                    default: 'Retrieval Query',
-                    description: 'embedding task type menu item in Gemini'
-                }),
-                value: EmbeddingTaskType.RETRIEVAL_QUERY
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.retrievalDocument',
-                    default: 'Retrieval Document',
-                    description: 'embedding task type menu item in Gemini'
-                }),
-                value: EmbeddingTaskType.RETRIEVAL_DOCUMENT
-            },
-            {
-                text: formatMessage({
                     id: 'gai.embeddingTaskTypeMenu.semanticSimilarity',
                     default: 'Semantic Similarity',
                     description: 'embedding task type menu item in Gemini'
@@ -983,6 +972,46 @@ class GeminiBlocks {
                     description: 'embedding task type menu item in Gemini'
                 }),
                 value: EmbeddingTaskType.CLUSTERING
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.retrievalDocument',
+                    default: 'Retrieval Document',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.RETRIEVAL_DOCUMENT
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.retrievalQuery',
+                    default: 'Retrieval Query',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.RETRIEVAL_QUERY
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.questionAnswering',
+                    default: 'Question Answering',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.QUESTION_ANSWERING
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.factVerification',
+                    default: 'Fact Verification',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.FACT_VERIFICATION
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.embeddingTaskTypeMenu.codeRetrievalQuery',
+                    default: 'Code Retrieval Query',
+                    description: 'embedding task type menu item in Gemini'
+                }),
+                value: EmbeddingTaskType.CODE_RETRIEVAL_QUERY
             }
         ];
         return menu;
@@ -1032,94 +1061,6 @@ class GeminiBlocks {
     }
 
     /**
-     * Request content to AI and get streaming result.
-     * @param {object} prompt - prompt object
-     * @param {Target} target - the target to get the AI
-     * @param {string} requestType - request type {'generate' | 'chat'}
-     * @returns {Promise<string>} - a Promise that resolves response text
-     * @private
-     */
-    async requestContentStream (prompt, target, requestType) {
-        const ai = this.getAI(target);
-        let streamingResult;
-        try {
-            if (requestType === 'generate') {
-                streamingResult = await ai.requestGenerate(prompt, true);
-            } else if (requestType === 'chat') {
-                streamingResult = await ai.requestChat(prompt, true);
-            } else {
-                throw new Error(`unknown request type: ${requestType}`);
-            }
-        } catch (e) {
-            const totalResponse = e.message;
-            ai.setLastPartialResponse(totalResponse);
-            this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
-            ai.setLastResponse(totalResponse);
-            return getTextFromResponse(totalResponse);
-        }
-        const {stream: partialResponseStream, response: totalResponseReceived} = streamingResult;
-        for await (const partialResponse of partialResponseStream) {
-            if (DEBUG) log.log(partialResponse);
-            ai.setLastPartialResponse(partialResponse);
-            this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
-        }
-        const totalResponse = await totalResponseReceived;
-        if (DEBUG) log.log(totalResponse);
-        ai.setLastResponse(totalResponse);
-        return getTextFromResponse(totalResponse);
-    }
-
-    /**
-     * Request content to AI.
-     * @param {string} prompt - prompt text to AI
-     * @param {Target} target - the target to get the AI
-     * @param {string} requestType - request type {'generate' | 'chat'}
-     * @returns {Promise<string>} - a Promise that resolves response text
-     * @private
-     */
-    async requestContent (prompt, target, requestType) {
-        const ai = this.getAI(target);
-        let result;
-        try {
-            if (requestType === 'generate') {
-                result = await ai.requestGenerate(prompt, false);
-            } else if (requestType === 'chat') {
-                result = await ai.requestChat(prompt, false);
-            } else {
-                throw new Error(`unknown request type: ${requestType}`);
-            }
-        } catch (e) {
-            result = {
-                response: e.message
-            };
-        }
-        const response = result.response;
-        ai.setLastResponse(response);
-        if (DEBUG) log.log(response);
-        return getTextFromResponse(response);
-    }
-
-    requestToAI (promptText, target, requestType, util) {
-        const ai = this.getAI(target);
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
-        ai.setRequesting(true);
-        const prompt = interpretContentPartsText(promptText);
-        if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
-            return this.requestContentStream(prompt, target, requestType)
-                .finally(() => {
-                    ai.setRequesting(false);
-                });
-        }
-        return this.requestContent(prompt, target, requestType)
-            .finally(() => {
-                ai.setRequesting(false);
-            });
-    }
-
-    /**
      * Request AI to generate content.
      * @param {object} args - the block's arguments.
      * @param {string} args.PROMPT - prompt to AI
@@ -1131,9 +1072,44 @@ class GeminiBlocks {
             return 'API key is not set.';
         }
         const promptText = Cast.toString(args.PROMPT);
-        const requestType = 'generate';
         const target = util.target;
-        return this.requestToAI(promptText, target, requestType, util);
+        const ai = this.getAI(target);
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
+        ai.setRequesting(true);
+        const prompt = interpretContentPartsText(promptText);
+        if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
+            const partialResponseHandler = partialResponse => {
+                this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+                console.log(partialResponse);
+            };
+            return ai.requestGenerateStream(prompt, partialResponseHandler)
+                .then(() => {
+                    this.runtime.startHats('gai_whenResponseReceived', null, target);
+                    return getTextFromResponse(ai.getLastResponse());
+                })
+                .catch(e => {
+                    console.error(e);
+                    return e.message;
+                })
+                .finally(() => {
+                    ai.setRequesting(false);
+                });
+        }
+        return ai.requestGenerate(prompt)
+            .then(() => {
+                this.runtime.startHats('gai_whenResponseReceived', null, target);
+                return getTextFromResponse(ai.getLastResponse());
+            })
+            .catch(e => {
+                console.error(e);
+                return e.message;
+            })
+            .finally(() => {
+                ai.setRequesting(false);
+            });
     }
 
     /**
@@ -1148,9 +1124,44 @@ class GeminiBlocks {
             return 'API key is not set.';
         }
         const promptText = Cast.toString(args.PROMPT);
-        const requestType = 'chat';
         const target = util.target;
-        return this.requestToAI(promptText, target, requestType, util);
+        const ai = this.getAI(target);
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
+        ai.setRequesting(true);
+        const prompt = interpretContentPartsText(promptText);
+        if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
+            const partialResponseHandler = partialResponse => {
+                this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+                console.log(partialResponse);
+            };
+            return ai.requestChatStream(prompt, partialResponseHandler)
+                .then(() => {
+                    this.runtime.startHats('gai_whenResponseReceived', null, target);
+                    return getTextFromResponse(ai.getLastResponse());
+                })
+                .catch(e => {
+                    console.error(e);
+                    return e.message;
+                })
+                .finally(() => {
+                    ai.setRequesting(false);
+                });
+        }
+        return ai.requestChat(prompt)
+            .then(() => {
+                this.runtime.startHats('gai_whenResponseReceived', null, target);
+                return getTextFromResponse(ai.getLastResponse());
+            })
+            .catch(e => {
+                console.error(e);
+                return e.message;
+            })
+            .finally(() => {
+                ai.setRequesting(false);
+            });
     }
 
     /**
@@ -1302,7 +1313,7 @@ class GeminiBlocks {
         this.isListening = true;
         return this.startSoundRecorder()
             .catch(e => {
-                log.warn('Failed to start listening', e);
+                console.warn('Failed to start listening', e);
                 this.isListening = false;
             });
     }
@@ -1343,13 +1354,8 @@ class GeminiBlocks {
             return '';
         }
         const ai = GeminiAdapter.getForTarget(target);
-        return ai.getChatHistory()
-            .then(history => {
-                if (!history) {
-                    return '';
-                }
-                return JSON.stringify(history).slice(1, -1);
-            });
+        const history = ai.getChatHistory();
+        return JSON.stringify(history).slice(1, -1);
     }
 
     /**
@@ -1366,7 +1372,7 @@ class GeminiBlocks {
             const history = JSON.parse(`[${historyText}]`);
             this.getAI(target).startChat(history);
         } catch (error) {
-            log.error(`startChat: ${error.message}`);
+            console.error(`startChat: ${error.message}`);
             return error.message;
         }
     }
@@ -1384,39 +1390,20 @@ class GeminiBlocks {
             return '';
         }
         const ai = GeminiAdapter.getForTarget(target);
-        const response = ai.getLastResponse(target);
+        const response = ai.getLastResponse();
         if (!response) {
             return '';
         }
-        if (typeof response === 'string') {
-            return response;
+        const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+        if (Array.isArray(response)) {
+            // the response is streaming
+            if (candidateIndex !== 1) {
+                // Streaming response has no candidates
+                return '';
+            }
+            return getTextFromResponse(response);
         }
-        try {
-            const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-            if (!response.candidates) {
-                if (response.promptFeedback.blockReason) {
-                    const blockReason = response.promptFeedback.blockReason;
-                    const blockReasons = response.promptFeedback
-                        .safetyRatings.filter(r => r.probability !== 'NEGLIGIBLE');
-                    return `prompt was blocked: ${blockReason} (${JSON.stringify(blockReasons)})`;
-                }
-                return `no candidate #${candidateIndex}`;
-            }
-            const candidate = response.candidates[candidateIndex - 1];
-            if (!candidate) {
-                return `no candidate #${candidateIndex}`;
-            }
-            if (!candidate.content) {
-                if (candidate.finishReason === 'SAFETY') {
-                    return `finished by safety: ${JSON.stringify(candidate.safetyRatings)}`;
-                }
-                return candidate.finishReason;
-            }
-            return candidate.content.parts[0].text;
-        } catch (error) {
-            log.error(`responseText: ${error.message}`);
-            return error.message;
-        }
+        return getTextFromResponse(response, candidateIndex - 1);
     }
 
     /**
@@ -1433,50 +1420,45 @@ class GeminiBlocks {
             return '';
         }
         const ai = GeminiAdapter.getForTarget(target);
-        const response = ai.getLastResponse();
+        let response = ai.getLastResponse();
         if (!response) {
             return '';
         }
+        if (Array.isArray(response)) {
+            // the response is streaming
+            response = response[0];
+        }
         try {
-            const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-            if (!response.candidates) {
-                if (response.promptFeedback.blockReason) {
-                    const blockReason = response.promptFeedback.blockReason;
+            if (response.promptFeedback?.blockReason) {
+                const blockReason = response.promptFeedback.blockReason;
+                if (blockReason === 'SAFETY') {
                     const blockReasons = response.promptFeedback
                         .safetyRatings.filter(r => r.probability !== 'NEGLIGIBLE');
                     return `prompt was blocked: ${blockReason} (${JSON.stringify(blockReasons)})`;
                 }
-                return `no candidate #${candidateIndex}`;
+                // Blocked by other reason
+                return `prompt was blocked: ${blockReason}`;
+            }
+            const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+            if (candidateIndex < 1 || candidateIndex > response.candidates.length) {
+                return '';
             }
             const candidate = response.candidates[candidateIndex - 1];
-            const category = args.HARM_CATEGORY;
-            const rating = candidate.safetyRatings.find(r => r.category === category);
-            if (!rating) {
-                return ``;
+            if (!candidate.finishReason || candidate.finishReason === 'STOP') {
+                return 'NEGLIGIBLE';
             }
-            let probabilityText = rating.probability;
-            switch (probabilityText) {
-            case 'HARM_PROBABILITY_UNSPECIFIED':
-                probabilityText = 'Unspecified';
-                break;
-            case 'NEGLIGIBLE':
-                probabilityText = 'Negligible';
-                break;
-            case 'LOW':
-                probabilityText = 'Low';
-                break;
-            case 'MEDIUM':
-                probabilityText = 'Medium';
-                break;
-            case 'HIGH':
-                probabilityText = 'High';
-                break;
-            default:
-                break;
+            if (candidate.finishReason === 'SAFETY') {
+                const category = args.HARM_CATEGORY;
+                const rating = candidate.safetyRatings.find(r => r.category === category);
+                if (!rating) {
+                    return 'NEGLIGIBLE';
+                }
+                return rating.probability;
             }
-            return probabilityText;
+            // Finished by other reason
+            return `finishReason: ${candidate.finishReason}`;
         } catch (error) {
-            log.error(`responseSafetyRating: ${error.message}`);
+            console.error(`responseSafetyRating: ${error.message}`);
             return error.message;
         }
     }
@@ -1492,7 +1474,6 @@ class GeminiBlocks {
     setSafetyRating (args, util) {
         const target = util.target;
         const ai = this.getAI(target);
-        const modelParams = ai.getModelParams();
         const harmCategory = args.HARM_CATEGORY;
         const harmBlockThreshold = args.BLOCK_THRESHOLD;
         const setParams = (category, threshold) => {
@@ -1500,11 +1481,11 @@ class GeminiBlocks {
                 category: category,
                 threshold: threshold
             };
-            const index = modelParams.safetySettings.findIndex(r => r.category === category);
+            const index = ai.safetySettings.findIndex(r => r.category === category);
             if (index >= 0) {
-                modelParams.safetySettings[index] = safetyRating;
+                ai.safetySettings[index] = safetyRating;
             } else {
-                modelParams.safetySettings.push(safetyRating);
+                ai.safetySettings.push(safetyRating);
             }
         };
         if (harmCategory === 'ALL') {
@@ -1529,7 +1510,6 @@ class GeminiBlocks {
     setGenerationConfig (args, util) {
         const target = util.target;
         const ai = this.getAI(target);
-        const modelParams = ai.getModelParams();
         const configKey = args.CONFIG;
         let configValue = args.VALUE;
         switch (configKey) {
@@ -1552,14 +1532,17 @@ class GeminiBlocks {
         case 'topK':
             configValue = Math.max(1, parseInt(Cast.toNumber(configValue), 10));
             break;
+        case 'systemInstruction':
+            configValue = Cast.toString(configValue);
+            break;
         default:
             return `unknown config key: ${configKey}`;
         }
         if (configValue === '') {
-            delete modelParams.generationConfig[configKey];
+            delete ai.generationConfig[configKey];
             return `delete ${configKey}`;
         }
-        modelParams.generationConfig[configKey] = configValue;
+        ai.generationConfig[configKey] = configValue;
     }
 
     /**
@@ -1572,9 +1555,8 @@ class GeminiBlocks {
     generationConfig (args, util) {
         const target = util.target;
         const ai = this.getAI(target);
-        const modelParams = ai.getModelParams();
         const configKey = args.CONFIG;
-        const configValue = modelParams.generationConfig[configKey];
+        const configValue = ai.generationConfig[configKey];
         if (configValue === null || typeof configValue === 'undefined') {
             return '';
         }
@@ -1607,12 +1589,12 @@ class GeminiBlocks {
         return ai.requestEmbedding(content, taskType)
             .then(embedding => {
                 const jsonText = JSON.stringify(embedding);
-                const result = jsonText.substring(1, jsonText.length - 1);
+                const result = jsonText.substring(1, jsonText.length - 1); // remove brackets
                 return result;
             })
             .catch(error => {
-                log.error(`embeddingFor: ${error.message}`);
-                return error.message;
+                console.error(`embeddingFor: ${error.message}`);
+                return '';
             })
             .finally(() => {
                 ai.setRequesting(false);
@@ -1644,7 +1626,7 @@ class GeminiBlocks {
             result = euclideanDistance(vectorA, vectorB);
             break;
         default:
-            return 'error: unknown metric';
+            console.error(`embeddingDistanceOf: unknown metric ${metric}`);
         }
         return result;
     }
@@ -1719,7 +1701,7 @@ class GeminiBlocks {
         const requestType = args.REQUEST_TYPE;
         return ai.countTokensAs(content, requestType)
             .catch(error => {
-                log.error(error);
+                console.error(error);
                 return error.message;
             })
             .finally(() => {
@@ -1810,7 +1792,7 @@ class GeminiBlocks {
         apiKeyInput.setAttribute('type', 'text');
         apiKeyInput.setAttribute('id', 'apiKeyInput');
         apiKeyInput.setAttribute('size', '50');
-        apiKeyInput.setAttribute('value', defaultApiKey);
+        apiKeyInput.setAttribute('value', defaultApiKey ? defaultApiKey : '');
         apiKeyForm.appendChild(apiKeyInput);
         // Cancel button
         const cancelButton = document.createElement('button');
