@@ -14666,7 +14666,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'apiKey',
-          hideFromPalette: true,
           blockType: BlockType$1.REPORTER,
           disableMonitor: true,
           text: formatMessage({
@@ -15767,7 +15766,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "apiKey",
     value: function apiKey() {
-      return '';
+      var apiKey = GeminiAdapter.getApiKey();
+      if (!apiKey) {
+        return '';
+      }
+      var lastFourChars = apiKey.slice(-4);
+      var maskedPortion = '*'.repeat(apiKey.length - 4);
+      return maskedPortion + lastFourChars;
     }
 
     /**
@@ -15998,7 +16003,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         return;
       }
       var prevApiKey = GeminiAdapter.getApiKey();
-      return this.openApiKeyDialog(prevApiKey).then(function (apiKey) {
+      return this.openApiKeyDialog().then(function (apiKey) {
         if (apiKey === null) {
           // canceled
           return 'canceled by user';

@@ -575,7 +575,6 @@ class GeminiBlocks {
                 },
                 {
                     opcode: 'apiKey',
-                    hideFromPalette: true,
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
@@ -1650,7 +1649,13 @@ class GeminiBlocks {
      * @deprecated
      */
     apiKey () {
-        return '';
+        const apiKey = GeminiAdapter.getApiKey();
+        if (!apiKey) {
+            return '';
+        }
+        const lastFourChars = apiKey.slice(-4);
+        const maskedPortion = '*'.repeat(apiKey.length - 4);
+        return maskedPortion + lastFourChars;
     }
 
     /**
@@ -1865,7 +1870,7 @@ class GeminiBlocks {
             return;
         }
         const prevApiKey = GeminiAdapter.getApiKey();
-        return this.openApiKeyDialog(prevApiKey)
+        return this.openApiKeyDialog()
             .then(apiKey => {
                 if (apiKey === null) {
                     // canceled
