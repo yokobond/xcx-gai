@@ -793,6 +793,10 @@ var en = {
 	"gai.countTokensAs": "count tokens [CONTENT] as [REQUEST_TYPE]",
 	"gai.countTokensRequestTypeMenu.generate": "generate",
 	"gai.countTokensRequestTypeMenu.chat": "chat",
+	"gai.getGenerativeModelID": "generative model ID at [MODEL_INDEX]",
+	"gai.getMaxGenerativeModelNumber": "max generative model number",
+	"gai.getEmbeddingModelID": "embedding model ID at [MODEL_INDEX]",
+	"gai.getMaxEmbeddingModelNumber": "max embedding model number",
 	"gai.harmCategoryMenu.hateSpeech": "Hate speech",
 	"gai.harmCategoryMenu.sexuallyExplicit": "Sexually explicit",
 	"gai.harmCategoryMenu.harassment": "Harassment",
@@ -861,6 +865,10 @@ var ja = {
 	"gai.countTokensAs": "[REQUEST_TYPE][CONTENT]のトークン数",
 	"gai.countTokensRequestTypeMenu.generate": "生成",
 	"gai.countTokensRequestTypeMenu.chat": "対話",
+	"gai.getGenerativeModelID": "生成に使えるモデルの[MODEL_INDEX]番目のID",
+	"gai.getMaxGenerativeModelNumber": "生成に使えるモデルの数",
+	"gai.getEmbeddingModelID": "埋め込みに使えるモデルの[MODEL_INDEX]番目のID",
+	"gai.getMaxEmbeddingModelNumber": "埋め込みに使えるモデルの数",
 	"gai.harmCategoryMenu.hateSpeech": "ヘイトスピーチ",
 	"gai.harmCategoryMenu.sexuallyExplicit": "露骨な性的表現",
 	"gai.harmCategoryMenu.harassment": "ハラスメント",
@@ -932,6 +940,10 @@ var translations = {
 	"gai.countTokensAs": "[REQUEST_TYPE][CONTENT]の トークンすう",
 	"gai.countTokensRequestTypeMenu.generate": "せいせい",
 	"gai.countTokensRequestTypeMenu.chat": "たいわ",
+	"gai.getGenerativeModelID": "せいせい に つかえる モデル の[MODEL_INDEX]ばんめ の ID",
+	"gai.getMaxGenerativeModelNumber": "せいせい に つかえる モデル の かず",
+	"gai.getEmbeddingModelID": "うめこみ に つかえる モデル の[MODEL_INDEX]ばんめ の ID",
+	"gai.getMaxEmbeddingModelNumber": "うめこみ に つかえる モデル の かず",
 	"gai.harmCategoryMenu.hateSpeech": "ヘイトスピーチ",
 	"gai.harmCategoryMenu.sexuallyExplicit": "ろこつな せいてき ひょうげん",
 	"gai.harmCategoryMenu.harassment": "ハラスメント",
@@ -13263,11 +13275,11 @@ var getTextFromResponse = function getTextFromResponse(responses) {
       // sometimes content is empty
       return;
     }
-    var _iterator3 = _createForOfIteratorHelper$1(candidate.content.parts),
-      _step3;
+    var _iterator4 = _createForOfIteratorHelper$1(candidate.content.parts),
+      _step4;
     try {
-      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-        var part = _step3.value;
+      for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+        var part = _step4.value;
         if (part.text) {
           contentText += part.text;
         }
@@ -13279,9 +13291,9 @@ var getTextFromResponse = function getTextFromResponse(responses) {
         }
       }
     } catch (err) {
-      _iterator3.e(err);
+      _iterator4.e(err);
     } finally {
-      _iterator3.f();
+      _iterator4.f();
     }
   });
   return contentText;
@@ -13328,6 +13340,171 @@ var GeminiAdapter = /*#__PURE__*/function () {
     }
 
     /**
+     * Get models list.
+     * @returns {Promise<Array.<Model>>} - a Promise that resolves when the models are loaded
+     */
+  }, {
+    key: "getModels",
+    value: (function () {
+      var _getModels = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
+        var pager, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, aModel;
+        return _regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              if (!(this.models && this.models.length)) {
+                _context.next = 2;
+                break;
+              }
+              return _context.abrupt("return", this.models);
+            case 2:
+              _context.next = 4;
+              return this.getSDK().models.list();
+            case 4:
+              pager = _context.sent;
+              this.models = [];
+              _iteratorAbruptCompletion = false;
+              _didIteratorError = false;
+              _context.prev = 8;
+              _iterator = _asyncIterator(pager);
+            case 10:
+              _context.next = 12;
+              return _iterator.next();
+            case 12:
+              if (!(_iteratorAbruptCompletion = !(_step = _context.sent).done)) {
+                _context.next = 18;
+                break;
+              }
+              aModel = _step.value;
+              this.models.push(aModel);
+            case 15:
+              _iteratorAbruptCompletion = false;
+              _context.next = 10;
+              break;
+            case 18:
+              _context.next = 24;
+              break;
+            case 20:
+              _context.prev = 20;
+              _context.t0 = _context["catch"](8);
+              _didIteratorError = true;
+              _iteratorError = _context.t0;
+            case 24:
+              _context.prev = 24;
+              _context.prev = 25;
+              if (!(_iteratorAbruptCompletion && _iterator.return != null)) {
+                _context.next = 29;
+                break;
+              }
+              _context.next = 29;
+              return _iterator.return();
+            case 29:
+              _context.prev = 29;
+              if (!_didIteratorError) {
+                _context.next = 32;
+                break;
+              }
+              throw _iteratorError;
+            case 32:
+              return _context.finish(29);
+            case 33:
+              return _context.finish(24);
+            case 34:
+              return _context.abrupt("return", this.models);
+            case 35:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, this, [[8, 20, 24, 34], [25,, 29, 33]]);
+      }));
+      function getModels() {
+        return _getModels.apply(this, arguments);
+      }
+      return getModels;
+    }()
+    /**
+     * Get list of generative model IDs.
+     * @returns {Promise<Array.<string>>} - a Promise that resolves when the model IDs are loaded
+     */
+    )
+  }, {
+    key: "getGenerativeModelList",
+    value: function getGenerativeModelList() {
+      return this.getModels().then(function (models) {
+        return models.filter(function (model) {
+          return model.supportedActions.includes('generateContent');
+        }).map(function (model) {
+          return model.name;
+        });
+      });
+    }
+
+    /**
+     * Get generative model ID by index.
+     * @param {number} modelIndex - index of the model
+     * @returns {Promise<string>} - a Promise that resolves when the model ID is loaded
+     */
+  }, {
+    key: "getGenerativeModelID",
+    value: function getGenerativeModelID(modelIndex) {
+      return this.getGenerativeModelList().then(function (modelList) {
+        return modelList[modelIndex];
+      });
+    }
+
+    /**
+     * Get the number of generative models.
+     * @returns {Promise<number>} - a Promise that resolves when the number of models is loaded
+     */
+  }, {
+    key: "getMaxGenerativeModelNumber",
+    value: function getMaxGenerativeModelNumber() {
+      return this.getGenerativeModelList().then(function (modelList) {
+        return modelList.length;
+      });
+    }
+
+    /**
+     * Get list of embedding model IDs.
+     * @returns {Promise<Array.<string>>} - a Promise that resolves when the model IDs are loaded
+     */
+  }, {
+    key: "getEmbeddingModelList",
+    value: function getEmbeddingModelList() {
+      return this.getModels().then(function (models) {
+        return models.filter(function (model) {
+          return model.supportedActions.includes('embedContent');
+        }).map(function (model) {
+          return model.name;
+        });
+      });
+    }
+
+    /**
+     * Get embedding model ID by index.
+     * @param {number} modelIndex - index of the model
+     * @returns {Promise<string>} - a Promise that resolves when the model ID is loaded
+     */
+  }, {
+    key: "getEmbeddingModelID",
+    value: function getEmbeddingModelID(modelIndex) {
+      return this.getEmbeddingModelList().then(function (modelList) {
+        return modelList[modelIndex];
+      });
+    }
+
+    /**
+     * Get the number of embedding models.
+     * @returns {Promise<number>} - a Promise that resolves when the number of models is loaded
+     */
+  }, {
+    key: "getMaxEmbeddingModelNumber",
+    value: function getMaxEmbeddingModelNumber() {
+      return this.getEmbeddingModelList().then(function (modelList) {
+        return modelList.length;
+      });
+    }
+
+    /**
      * Count tokens by model.
      * @param {Array.<string | object>} contentParts - content to AI
      * @param {string} requestType - type of request {'generate' | 'chat'}
@@ -13336,18 +13513,18 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "countTokensAs",
     value: (function () {
-      var _countTokensAs = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee(contentParts, requestType) {
+      var _countTokensAs = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee2(contentParts, requestType) {
         var models, result, geminiContentParts, history, contents;
-        return _regeneratorRuntime.wrap(function _callee$(_context) {
-          while (1) switch (_context.prev = _context.next) {
+        return _regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
             case 0:
               models = this.getSDK().models;
               geminiContentParts = this.convertContentParts(contentParts);
               if (!(requestType === 'generate')) {
-                _context.next = 8;
+                _context2.next = 8;
                 break;
               }
-              _context.next = 5;
+              _context2.next = 5;
               return models.countTokens({
                 model: this.modelCode.generative,
                 contents: createUserContent(geminiContentParts),
@@ -13357,17 +13534,17 @@ var GeminiAdapter = /*#__PURE__*/function () {
                 }
               });
             case 5:
-              result = _context.sent;
-              _context.next = 14;
+              result = _context2.sent;
+              _context2.next = 14;
               break;
             case 8:
               if (!(requestType === 'chat')) {
-                _context.next = 14;
+                _context2.next = 14;
                 break;
               }
               history = this.getChatHistory();
               contents = [].concat(_toConsumableArray(history), [createUserContent(geminiContentParts)]);
-              _context.next = 13;
+              _context2.next = 13;
               return models.countTokens({
                 model: this.modelCode.generative,
                 contents: contents,
@@ -13377,14 +13554,14 @@ var GeminiAdapter = /*#__PURE__*/function () {
                 }
               });
             case 13:
-              result = _context.sent;
+              result = _context2.sent;
             case 14:
-              return _context.abrupt("return", result.totalTokens);
+              return _context2.abrupt("return", result.totalTokens);
             case 15:
             case "end":
-              return _context.stop();
+              return _context2.stop();
           }
-        }, _callee, this);
+        }, _callee2, this);
       }));
       function countTokensAs(_x, _x2) {
         return _countTokensAs.apply(this, arguments);
@@ -13513,151 +13690,22 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestGenerateStream",
     value: function () {
-      var _requestGenerateStream = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee2(contentParts, partialResponseHandler) {
-        var models, geminiContentParts, config, streamingResult, wholeResponses, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, lastPartialResponse;
-        return _regeneratorRuntime.wrap(function _callee2$(_context2) {
-          while (1) switch (_context2.prev = _context2.next) {
+      var _requestGenerateStream = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee3(contentParts, partialResponseHandler) {
+        var models, geminiContentParts, config, streamingResult, wholeResponses, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, lastPartialResponse;
+        return _regeneratorRuntime.wrap(function _callee3$(_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
             case 0:
               models = this.getSDK().models;
               geminiContentParts = this.convertContentParts(contentParts);
               config = _objectSpread({}, this.generationConfig);
               config.candidateCount = 1; // only one candidate for streaming
-              _context2.prev = 4;
-              _context2.next = 7;
+              _context3.prev = 4;
+              _context3.next = 7;
               return models.generateContentStream({
                 model: this.modelCode.generative,
                 contents: createUserContent(geminiContentParts),
                 safetySettings: this.safetySettings,
                 config: config
-              });
-            case 7:
-              streamingResult = _context2.sent;
-              wholeResponses = [];
-              _iteratorAbruptCompletion = false;
-              _didIteratorError = false;
-              _context2.prev = 11;
-              _iterator = _asyncIterator(streamingResult);
-            case 13:
-              _context2.next = 15;
-              return _iterator.next();
-            case 15:
-              if (!(_iteratorAbruptCompletion = !(_step = _context2.sent).done)) {
-                _context2.next = 23;
-                break;
-              }
-              lastPartialResponse = _step.value;
-              // Process each partial response
-              this.setLastPartialResponse(lastPartialResponse);
-              partialResponseHandler(lastPartialResponse);
-              wholeResponses.push(lastPartialResponse);
-            case 20:
-              _iteratorAbruptCompletion = false;
-              _context2.next = 13;
-              break;
-            case 23:
-              _context2.next = 29;
-              break;
-            case 25:
-              _context2.prev = 25;
-              _context2.t0 = _context2["catch"](11);
-              _didIteratorError = true;
-              _iteratorError = _context2.t0;
-            case 29:
-              _context2.prev = 29;
-              _context2.prev = 30;
-              if (!(_iteratorAbruptCompletion && _iterator.return != null)) {
-                _context2.next = 34;
-                break;
-              }
-              _context2.next = 34;
-              return _iterator.return();
-            case 34:
-              _context2.prev = 34;
-              if (!_didIteratorError) {
-                _context2.next = 37;
-                break;
-              }
-              throw _iteratorError;
-            case 37:
-              return _context2.finish(34);
-            case 38:
-              return _context2.finish(29);
-            case 39:
-              this.setLastResponse(wholeResponses);
-              _context2.next = 45;
-              break;
-            case 42:
-              _context2.prev = 42;
-              _context2.t1 = _context2["catch"](4);
-              this.setLastResponse(_context2.t1);
-            case 45:
-            case "end":
-              return _context2.stop();
-          }
-        }, _callee2, this, [[4, 42], [11, 25, 29, 39], [30,, 34, 38]]);
-      }));
-      function requestGenerateStream(_x3, _x4) {
-        return _requestGenerateStream.apply(this, arguments);
-      }
-      return requestGenerateStream;
-    }()
-    /**
-     * Start chat.
-     * @param {Array.<string>} history - history of chat
-     * @returns {void}
-     */
-  }, {
-    key: "startChat",
-    value: function startChat(history) {
-      this.chatSession = this.getSDK().chats.create({
-        model: this.modelCode.generative,
-        history: history,
-        safetySettings: this.safetySettings,
-        config: this.generationConfig
-      });
-    }
-
-    /**
-     * Send chat message to AI.
-     * @param {string} contentParts - message to AI
-     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the message is sent
-     */
-  }, {
-    key: "requestChat",
-    value: function requestChat(contentParts) {
-      var _this2 = this;
-      if (!this.chatSession) {
-        this.startChat([]);
-      }
-      var geminiContentParts = this.convertContentParts(contentParts);
-      return this.chatSession.sendMessage({
-        config: this.generationConfig,
-        message: createUserContent(geminiContentParts)
-      }).then(function (response) {
-        _this2.setLastResponse(response);
-      }).catch(function (error) {
-        _this2.setLastResponse(error);
-      });
-    }
-  }, {
-    key: "requestChatStream",
-    value: function () {
-      var _requestChatStream = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee3(contentParts, partialResponseHandler) {
-        var geminiContentParts, config, streamingResult, wholeResponses, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, lastPartialResponse;
-        return _regeneratorRuntime.wrap(function _callee3$(_context3) {
-          while (1) switch (_context3.prev = _context3.next) {
-            case 0:
-              if (!this.chatSession) {
-                this.startChat([]);
-              }
-              geminiContentParts = this.convertContentParts(contentParts);
-              config = _objectSpread({}, this.generationConfig);
-              config.candidateCount = 1; // only one candidate for streaming
-              _context3.prev = 4;
-              _context3.next = 7;
-              return this.chatSession.sendMessageStream({
-                config: config,
-                message: createUserContent(geminiContentParts)
               });
             case 7:
               streamingResult = _context3.sent;
@@ -13725,6 +13773,135 @@ var GeminiAdapter = /*#__PURE__*/function () {
           }
         }, _callee3, this, [[4, 42], [11, 25, 29, 39], [30,, 34, 38]]);
       }));
+      function requestGenerateStream(_x3, _x4) {
+        return _requestGenerateStream.apply(this, arguments);
+      }
+      return requestGenerateStream;
+    }()
+    /**
+     * Start chat.
+     * @param {Array.<string>} history - history of chat
+     * @returns {void}
+     */
+  }, {
+    key: "startChat",
+    value: function startChat(history) {
+      this.chatSession = this.getSDK().chats.create({
+        model: this.modelCode.generative,
+        history: history,
+        safetySettings: this.safetySettings,
+        config: this.generationConfig
+      });
+    }
+
+    /**
+     * Send chat message to AI.
+     * @param {string} contentParts - message to AI
+     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the message is sent
+     */
+  }, {
+    key: "requestChat",
+    value: function requestChat(contentParts) {
+      var _this2 = this;
+      if (!this.chatSession) {
+        this.startChat([]);
+      }
+      var geminiContentParts = this.convertContentParts(contentParts);
+      return this.chatSession.sendMessage({
+        config: this.generationConfig,
+        message: createUserContent(geminiContentParts)
+      }).then(function (response) {
+        _this2.setLastResponse(response);
+      }).catch(function (error) {
+        _this2.setLastResponse(error);
+      });
+    }
+  }, {
+    key: "requestChatStream",
+    value: function () {
+      var _requestChatStream = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(contentParts, partialResponseHandler) {
+        var geminiContentParts, config, streamingResult, wholeResponses, _iteratorAbruptCompletion3, _didIteratorError3, _iteratorError3, _iterator3, _step3, lastPartialResponse;
+        return _regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              if (!this.chatSession) {
+                this.startChat([]);
+              }
+              geminiContentParts = this.convertContentParts(contentParts);
+              config = _objectSpread({}, this.generationConfig);
+              config.candidateCount = 1; // only one candidate for streaming
+              _context4.prev = 4;
+              _context4.next = 7;
+              return this.chatSession.sendMessageStream({
+                config: config,
+                message: createUserContent(geminiContentParts)
+              });
+            case 7:
+              streamingResult = _context4.sent;
+              wholeResponses = [];
+              _iteratorAbruptCompletion3 = false;
+              _didIteratorError3 = false;
+              _context4.prev = 11;
+              _iterator3 = _asyncIterator(streamingResult);
+            case 13:
+              _context4.next = 15;
+              return _iterator3.next();
+            case 15:
+              if (!(_iteratorAbruptCompletion3 = !(_step3 = _context4.sent).done)) {
+                _context4.next = 23;
+                break;
+              }
+              lastPartialResponse = _step3.value;
+              // Process each partial response
+              this.setLastPartialResponse(lastPartialResponse);
+              partialResponseHandler(lastPartialResponse);
+              wholeResponses.push(lastPartialResponse);
+            case 20:
+              _iteratorAbruptCompletion3 = false;
+              _context4.next = 13;
+              break;
+            case 23:
+              _context4.next = 29;
+              break;
+            case 25:
+              _context4.prev = 25;
+              _context4.t0 = _context4["catch"](11);
+              _didIteratorError3 = true;
+              _iteratorError3 = _context4.t0;
+            case 29:
+              _context4.prev = 29;
+              _context4.prev = 30;
+              if (!(_iteratorAbruptCompletion3 && _iterator3.return != null)) {
+                _context4.next = 34;
+                break;
+              }
+              _context4.next = 34;
+              return _iterator3.return();
+            case 34:
+              _context4.prev = 34;
+              if (!_didIteratorError3) {
+                _context4.next = 37;
+                break;
+              }
+              throw _iteratorError3;
+            case 37:
+              return _context4.finish(34);
+            case 38:
+              return _context4.finish(29);
+            case 39:
+              this.setLastResponse(wholeResponses);
+              _context4.next = 45;
+              break;
+            case 42:
+              _context4.prev = 42;
+              _context4.t1 = _context4["catch"](4);
+              this.setLastResponse(_context4.t1);
+            case 45:
+            case "end":
+              return _context4.stop();
+          }
+        }, _callee4, this, [[4, 42], [11, 25, 29, 39], [30,, 34, 38]]);
+      }));
       function requestChatStream(_x5, _x6) {
         return _requestChatStream.apply(this, arguments);
       }
@@ -13739,16 +13916,16 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestEmbedding",
     value: (function () {
-      var _requestEmbedding = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(contentParts, taskType) {
+      var _requestEmbedding = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee5(contentParts, taskType) {
         var toEmbed, cache, key, result, embeddingValues;
-        return _regeneratorRuntime.wrap(function _callee4$(_context4) {
-          while (1) switch (_context4.prev = _context4.next) {
+        return _regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) switch (_context5.prev = _context5.next) {
             case 0:
               if (!(!contentParts || !contentParts.length)) {
-                _context4.next = 2;
+                _context5.next = 2;
                 break;
               }
-              return _context4.abrupt("return", []);
+              return _context5.abrupt("return", []);
             case 2:
               toEmbed = contentParts.reduce(function (acc, p) {
                 if (p.type === 'text') {
@@ -13766,12 +13943,12 @@ var GeminiAdapter = /*#__PURE__*/function () {
               cache = this.embeddingCache[taskType];
               key = toEmbed;
               if (!cache[key]) {
-                _context4.next = 9;
+                _context5.next = 9;
                 break;
               }
-              return _context4.abrupt("return", cache[key]);
+              return _context5.abrupt("return", cache[key]);
             case 9:
-              _context4.next = 11;
+              _context5.next = 11;
               return this.getSDK().models.embedContent({
                 model: this.modelCode.embedding,
                 contents: toEmbed,
@@ -13780,15 +13957,15 @@ var GeminiAdapter = /*#__PURE__*/function () {
                 }
               });
             case 11:
-              result = _context4.sent;
+              result = _context5.sent;
               embeddingValues = result.embeddings[0].values;
               cache[key] = embeddingValues;
-              return _context4.abrupt("return", embeddingValues);
+              return _context5.abrupt("return", embeddingValues);
             case 15:
             case "end":
-              return _context4.stop();
+              return _context5.stop();
           }
-        }, _callee4, this);
+        }, _callee5, this);
       }));
       function requestEmbedding(_x7, _x8) {
         return _requestEmbedding.apply(this, arguments);
@@ -13891,8 +14068,8 @@ var GeminiAdapter = /*#__PURE__*/function () {
   return GeminiAdapter;
 }();
 _defineProperty(GeminiAdapter, "MODEL_CODE", {
-  generative: 'gemini-2.5-flash-preview-04-17',
-  embedding: 'gemini-embedding-exp-03-07'
+  generative: 'gemini-2.0-flash',
+  embedding: 'gemini-embedding-exp'
 });
 /**
  * API key for Gemini AI.
@@ -14585,6 +14762,33 @@ var GeminiBlocks = /*#__PURE__*/function () {
           }),
           func: 'getGenerativeModel',
           arguments: {}
+        }, {
+          opcode: 'getGenerativeModelID',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.getGenerativeModelID',
+            default: 'generative model ID at [MODEL_INDEX]',
+            description: 'generative model ID block text for Gemini'
+          }),
+          func: 'getGenerativeModelID',
+          arguments: {
+            MODEL_INDEX: {
+              type: ArgumentType$1.NUMBER,
+              defaultValue: 1
+            }
+          }
+        }, {
+          opcode: 'getMaxGenerativeModelNumber',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.getMaxGenerativeModelNumber',
+            default: 'max generative model number',
+            description: 'max generative model number block text for Gemini'
+          }),
+          func: 'getMaxGenerativeModelNumber',
+          arguments: {}
         }, '---', {
           opcode: 'embeddingFor',
           blockType: BlockType$1.REPORTER,
@@ -14652,6 +14856,33 @@ var GeminiBlocks = /*#__PURE__*/function () {
             description: 'embedding model block text for Gemini'
           }),
           func: 'getEmbeddingModel',
+          arguments: {}
+        }, {
+          opcode: 'getEmbeddingModelID',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.getEmbeddingModelID',
+            default: 'embedding model ID at [MODEL_INDEX]',
+            description: 'embedding model ID block text for Gemini'
+          }),
+          func: 'getEmbeddingModelID',
+          arguments: {
+            MODEL_INDEX: {
+              type: ArgumentType$1.NUMBER,
+              defaultValue: 1
+            }
+          }
+        }, {
+          opcode: 'getMaxEmbeddingModelNumber',
+          blockType: BlockType$1.REPORTER,
+          disableMonitor: true,
+          text: formatMessage({
+            id: 'gai.getMaxEmbeddingModelNumber',
+            default: 'max embedding model number',
+            description: 'max embedding model number block text for Gemini'
+          }),
+          func: 'getMaxEmbeddingModelNumber',
           arguments: {}
         }, '---', {
           opcode: 'askApiKey',
@@ -15862,6 +16093,51 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var ai = this.getAI(target);
       return ai.modelCode.generative;
     }
+    /**
+     * Get generative model ID.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model ID
+     */
+  }, {
+    key: "getGenerativeModelID",
+    value: function getGenerativeModelID(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return '';
+      }
+      var modelIndex = parseInt(args.MODEL_INDEX, 10);
+      if (isNaN(modelIndex)) {
+        return '';
+      }
+      if (modelIndex < 1) {
+        return '';
+      }
+      var target = util.target;
+      var ai = this.getAI(target);
+      return ai.getGenerativeModelID(modelIndex - 1).then(function (modelID) {
+        if (!modelID) {
+          return '';
+        }
+        return modelID;
+      });
+    }
+
+    /**
+     * Get max generative model number.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {number} - max generative model number
+     */
+  }, {
+    key: "getMaxGenerativeModelNumber",
+    value: function getMaxGenerativeModelNumber(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return 0;
+      }
+      var target = util.target;
+      var ai = this.getAI(target);
+      return ai.getMaxGenerativeModelNumber();
+    }
 
     /**
      * Set embedding model code.
@@ -15889,6 +16165,52 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var target = util.target;
       var ai = this.getAI(target);
       return ai.modelCode.embedding;
+    }
+
+    /**
+     * Get embedding model ID.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model ID
+     */
+  }, {
+    key: "getEmbeddingModelID",
+    value: function getEmbeddingModelID(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return '';
+      }
+      var modelIndex = parseInt(args.MODEL_INDEX, 10);
+      if (isNaN(modelIndex)) {
+        return '';
+      }
+      if (modelIndex < 1) {
+        return '';
+      }
+      var target = util.target;
+      var ai = this.getAI(target);
+      return ai.getEmbeddingModelID(modelIndex - 1).then(function (modelID) {
+        if (!modelID) {
+          return '';
+        }
+        return modelID;
+      });
+    }
+
+    /**
+     * Get max embedding model number.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {number} - max embedding model number
+     */
+  }, {
+    key: "getMaxEmbeddingModelNumber",
+    value: function getMaxEmbeddingModelNumber(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return 0;
+      }
+      var target = util.target;
+      var ai = this.getAI(target);
+      return ai.getMaxEmbeddingModelNumber();
     }
 
     /**

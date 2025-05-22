@@ -484,6 +484,36 @@ class GeminiBlocks {
                     arguments: {
                     }
                 },
+                {
+                    opcode: 'getGenerativeModelID',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getGenerativeModelID',
+                        default: 'generative model ID at [MODEL_INDEX]',
+                        description: 'generative model ID block text for Gemini'
+                    }),
+                    func: 'getGenerativeModelID',
+                    arguments: {
+                        MODEL_INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'getMaxGenerativeModelNumber',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getMaxGenerativeModelNumber',
+                        default: 'max generative model number',
+                        description: 'max generative model number block text for Gemini'
+                    }),
+                    func: 'getMaxGenerativeModelNumber',
+                    arguments: {
+                    }
+                },
                 '---',
                 {
                     opcode: 'embeddingFor',
@@ -556,6 +586,36 @@ class GeminiBlocks {
                         description: 'embedding model block text for Gemini'
                     }),
                     func: 'getEmbeddingModel',
+                    arguments: {
+                    }
+                },
+                {
+                    opcode: 'getEmbeddingModelID',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getEmbeddingModelID',
+                        default: 'embedding model ID at [MODEL_INDEX]',
+                        description: 'embedding model ID block text for Gemini'
+                    }),
+                    func: 'getEmbeddingModelID',
+                    arguments: {
+                        MODEL_INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'getMaxEmbeddingModelNumber',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getMaxEmbeddingModelNumber',
+                        default: 'max embedding model number',
+                        description: 'max embedding model number block text for Gemini'
+                    }),
+                    func: 'getMaxEmbeddingModelNumber',
                     arguments: {
                     }
                 },
@@ -1737,6 +1797,48 @@ class GeminiBlocks {
         const ai = this.getAI(target);
         return ai.modelCode.generative;
     }
+    /**
+     * Get generative model ID.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model ID
+     */
+    getGenerativeModelID (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return '';
+        }
+        const modelIndex = parseInt(args.MODEL_INDEX, 10);
+        if (isNaN(modelIndex)) {
+            return '';
+        }
+        if (modelIndex < 1) {
+            return '';
+        }
+        const target = util.target;
+        const ai = this.getAI(target);
+        return ai.getGenerativeModelID(modelIndex - 1)
+            .then(modelID => {
+                if (!modelID) {
+                    return '';
+                }
+                return modelID;
+            });
+    }
+
+    /**
+     * Get max generative model number.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {number} - max generative model number
+     */
+    getMaxGenerativeModelNumber (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return 0;
+        }
+        const target = util.target;
+        const ai = this.getAI(target);
+        return ai.getMaxGenerativeModelNumber();
+    }
 
     /**
      * Set embedding model code.
@@ -1760,6 +1862,49 @@ class GeminiBlocks {
         const target = util.target;
         const ai = this.getAI(target);
         return ai.modelCode.embedding;
+    }
+
+    /**
+     * Get embedding model ID.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model ID
+     */
+    getEmbeddingModelID (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return '';
+        }
+        const modelIndex = parseInt(args.MODEL_INDEX, 10);
+        if (isNaN(modelIndex)) {
+            return '';
+        }
+        if (modelIndex < 1) {
+            return '';
+        }
+        const target = util.target;
+        const ai = this.getAI(target);
+        return ai.getEmbeddingModelID(modelIndex - 1)
+            .then(modelID => {
+                if (!modelID) {
+                    return '';
+                }
+                return modelID;
+            });
+    }
+
+    /**
+     * Get max embedding model number.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {number} - max embedding model number
+     */
+    getMaxEmbeddingModelNumber (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return 0;
+        }
+        const target = util.target;
+        const ai = this.getAI(target);
+        return ai.getMaxEmbeddingModelNumber();
     }
 
     /**

@@ -112,8 +112,8 @@ export class GeminiAdapter {
      * @returns {object} model code for data type
      */
     static MODEL_CODE = {
-        generative: 'gemini-2.5-flash-preview-04-17',
-        embedding: 'gemini-embedding-exp-03-07'
+        generative: 'gemini-2.0-flash',
+        embedding: 'gemini-embedding-exp'
     };
 
     /**
@@ -221,6 +221,82 @@ export class GeminiAdapter {
             });
         }
         return this.sdk;
+    }
+
+    /**
+     * Get models list.
+     * @returns {Promise<Array.<Model>>} - a Promise that resolves when the models are loaded
+     */
+    async getModels () {
+        if (this.models && this.models.length) {
+            return this.models;
+        }
+        const pager = await this.getSDK().models.list();
+        this.models = [];
+        for await (const aModel of pager) {
+            this.models.push(aModel);
+        }
+        return this.models;
+    }
+
+    /**
+     * Get list of generative model IDs.
+     * @returns {Promise<Array.<string>>} - a Promise that resolves when the model IDs are loaded
+     */
+    getGenerativeModelList () {
+        return this.getModels()
+            .then(models =>
+                models.filter(model => model.supportedActions.includes('generateContent'))
+                    .map(model => model.name));
+    }
+
+    /**
+     * Get generative model ID by index.
+     * @param {number} modelIndex - index of the model
+     * @returns {Promise<string>} - a Promise that resolves when the model ID is loaded
+     */
+    getGenerativeModelID (modelIndex) {
+        return this.getGenerativeModelList()
+            .then(modelList => modelList[modelIndex]);
+    }
+    
+    /**
+     * Get the number of generative models.
+     * @returns {Promise<number>} - a Promise that resolves when the number of models is loaded
+     */
+    getMaxGenerativeModelNumber () {
+        return this.getGenerativeModelList()
+            .then(modelList => modelList.length);
+    }
+
+    /**
+     * Get list of embedding model IDs.
+     * @returns {Promise<Array.<string>>} - a Promise that resolves when the model IDs are loaded
+     */
+    getEmbeddingModelList () {
+        return this.getModels()
+            .then(models =>
+                models.filter(model => model.supportedActions.includes('embedContent'))
+                    .map(model => model.name));
+    }
+
+    /**
+     * Get embedding model ID by index.
+     * @param {number} modelIndex - index of the model
+     * @returns {Promise<string>} - a Promise that resolves when the model ID is loaded
+     */
+    getEmbeddingModelID (modelIndex) {
+        return this.getEmbeddingModelList()
+            .then(modelList => modelList[modelIndex]);
+    }
+
+    /**
+     * Get the number of embedding models.
+     * @returns {Promise<number>} - a Promise that resolves when the number of models is loaded
+     */
+    getMaxEmbeddingModelNumber () {
+        return this.getEmbeddingModelList()
+            .then(modelList => modelList.length);
     }
 
     /**
