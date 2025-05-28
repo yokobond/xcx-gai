@@ -5,6 +5,7 @@
 import iconURL from './entry-icon.png';
 import insetIconURL from './inset-icon.svg';
 import translations from './translations.json';
+import {version as packageVersion} from '../../../../../../package.json';
 
 /**
  * Formatter to translate the messages in this extension.
@@ -14,7 +15,7 @@ import translations from './translations.json';
  */
 let formatMessage = messageData => messageData.defaultMessage;
 
-const version = 'v0.7.0';
+const version = `v${packageVersion}`;
 
 const entry = {
     get name () {

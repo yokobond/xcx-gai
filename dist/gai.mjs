@@ -19,6 +19,8 @@ var translations$1 = {
 }
 };
 
+var version$1 = "0.7.0";
+
 /**
  * This is an extension for Xcratch.
  */
@@ -33,7 +35,7 @@ var translations$1 = {
 var formatMessage$1 = function formatMessage(messageData) {
   return messageData.defaultMessage;
 };
-var version = 'v0.7.0';
+var version = "v".concat(version$1);
 var entry = {
   get name() {
     return formatMessage$1({
