@@ -13269,6 +13269,10 @@ var getTextFromResponse = function getTextFromResponse(responses) {
     if (typeof aResponse === 'string') {
       return aResponse;
     }
+    if (aResponse.name === 'ServerError') {
+      contentText += "\nServerError: ".concat(aResponse.message);
+      return;
+    }
     if (aResponse.promptFeedback) {
       if (aResponse.promptFeedback.blockReason === 'SAFETY') {
         var safetyRatings = aResponse.promptFeedback.safetyRatings;
@@ -13282,6 +13286,14 @@ var getTextFromResponse = function getTextFromResponse(responses) {
         return;
       }
       contentText += aResponse.promptFeedback.blockReason;
+      return;
+    }
+    if (!aResponse.candidates || !Array.isArray(aResponse.candidates)) {
+      // sometimes response is empty
+      return;
+    }
+    if (aResponse.candidates.length === 0) {
+      // sometimes candidates are empty
       return;
     }
     if (aResponse.candidates.length <= candidateIndex) {
@@ -15800,16 +15812,21 @@ var GeminiBlocks = /*#__PURE__*/function () {
       if (!response) {
         return '';
       }
-      var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-      if (Array.isArray(response)) {
-        // the response is streaming
-        if (candidateIndex !== 1) {
-          // Streaming response has no candidates
-          return '';
+      try {
+        var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+        if (Array.isArray(response)) {
+          // the response is streaming
+          if (candidateIndex !== 1) {
+            // Streaming response has no candidates
+            return '';
+          }
+          return getTextFromResponse(response);
         }
-        return getTextFromResponse(response);
+        return getTextFromResponse(response, candidateIndex - 1);
+      } catch (error) {
+        console.error("responseText: ".concat(error.message));
+        return error.message;
       }
-      return getTextFromResponse(response, candidateIndex - 1);
     }
 
     /**

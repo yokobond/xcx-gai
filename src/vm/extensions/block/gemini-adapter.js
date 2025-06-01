@@ -52,6 +52,10 @@ export const getTextFromResponse = function (responses, candidateIndex = 0) {
         if (typeof aResponse === 'string') {
             return aResponse;
         }
+        if (aResponse.name === 'ServerError') {
+            contentText += `\nServerError: ${aResponse.message}`;
+            return;
+        }
         if (aResponse.promptFeedback) {
             if (aResponse.promptFeedback.blockReason === 'SAFETY') {
                 const safetyRatings = aResponse.promptFeedback.safetyRatings;
@@ -65,6 +69,14 @@ export const getTextFromResponse = function (responses, candidateIndex = 0) {
                 return;
             }
             contentText += aResponse.promptFeedback.blockReason;
+            return;
+        }
+        if (!aResponse.candidates || !Array.isArray(aResponse.candidates)) {
+            // sometimes response is empty
+            return;
+        }
+        if (aResponse.candidates.length === 0) {
+            // sometimes candidates are empty
             return;
         }
         if (aResponse.candidates.length <= candidateIndex) {

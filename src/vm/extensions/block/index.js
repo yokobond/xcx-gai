@@ -1526,16 +1526,21 @@ class GeminiBlocks {
         if (!response) {
             return '';
         }
-        const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-        if (Array.isArray(response)) {
+        try {
+            const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+            if (Array.isArray(response)) {
             // the response is streaming
-            if (candidateIndex !== 1) {
+                if (candidateIndex !== 1) {
                 // Streaming response has no candidates
-                return '';
+                    return '';
+                }
+                return getTextFromResponse(response);
             }
-            return getTextFromResponse(response);
+            return getTextFromResponse(response, candidateIndex - 1);
+        } catch (error) {
+            console.error(`responseText: ${error.message}`);
+            return error.message;
         }
-        return getTextFromResponse(response, candidateIndex - 1);
     }
 
     /**
