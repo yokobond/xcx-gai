@@ -413,8 +413,8 @@ class GeminiBlocks {
                             menu: 'generationConfigMenu'
                         },
                         VALUE: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: 1
+                            type: ArgumentType.STRING,
+                            defaultValue: '1'
                         }
                     }
                 },
@@ -957,6 +957,14 @@ class GeminiBlocks {
                     description: 'generation config menu item for stop sequences in Gemini'
                 }),
                 value: 'stopSequences'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.generationConfigMenu.systemInstruction',
+                    default: 'System Instruction',
+                    description: 'generation config menu item for system instruction in Gemini'
+                }),
+                value: 'systemInstruction'
             }
         ];
         return menu;
