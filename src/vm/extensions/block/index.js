@@ -516,6 +516,63 @@ class GeminiBlocks {
                 },
                 '---',
                 {
+                    opcode: 'getValueFromJson',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.getValueFromJson',
+                        default: 'get [PATH] from JSON [JSON]',
+                        description: 'get value from JSON block text for Gemini'
+                    }),
+                    func: 'getValueFromJson',
+                    arguments: {
+                        PATH: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'key1.key2'
+                        },
+                        JSON: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '{"key1":{"key2":"value"}}'
+                        }
+                    }
+                },
+                {
+                    opcode: 'getItemOfJsonArray',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.getItemOfJsonArray',
+                        default: 'item [INDEX] of JSON array [JSON]',
+                        description: 'get value from JSON array block text for Gemini'
+                    }),
+                    func: 'getItemOfJsonArray',
+                    arguments: {
+                        INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        },
+                        JSON: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '[1,2,3]'
+                        }
+                    }
+                },
+                {
+                    opcode: 'lengthOfJsonArray',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.lengthOfJsonArray',
+                        default: 'length of JSON array [JSON]',
+                        description: 'length of JSON array block text for Gemini'
+                    }),
+                    func: 'lengthOfJsonArray',
+                    arguments: {
+                        JSON: {
+                            type: ArgumentType.STRING,
+                            defaultValue: '[1,2,3]'
+                        }
+                    }
+                },
+                '---',
+                {
                     opcode: 'embeddingFor',
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
@@ -965,6 +1022,14 @@ class GeminiBlocks {
                     description: 'generation config menu item for system instruction in Gemini'
                 }),
                 value: 'systemInstruction'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.generationConfigMenu.responseSchema',
+                    default: 'Response Schema',
+                    description: 'generation config menu item for response schema in Gemini'
+                }),
+                value: 'responseSchema'
             }
         ];
         return menu;
@@ -1602,11 +1667,27 @@ class GeminiBlocks {
         case 'systemInstruction':
             configValue = Cast.toString(configValue);
             break;
+        case 'responseSchema':
+            try {
+                configValue = JSON.parse(configValue);
+                // Also set responseMimeType to application/json for structured output
+                ai.generationConfig.responseMimeType = 'application/json';
+            } catch (error) {
+                // If parsing fails, delete responseSchema
+                delete ai.generationConfig.responseSchema;
+                delete ai.generationConfig.responseMimeType;
+                return `delete ${configKey} due to error: ${error.message}`;
+            }
+            break;
         default:
             return `unknown config key: ${configKey}`;
         }
         if (configValue === '') {
             delete ai.generationConfig[configKey];
+            if (configKey === 'responseSchema') {
+                // Also remove responseMimeType when removing schema
+                delete ai.generationConfig.responseMimeType;
+            }
             return `delete ${configKey}`;
         }
         ai.generationConfig[configKey] = configValue;
@@ -1627,7 +1708,127 @@ class GeminiBlocks {
         if (configValue === null || typeof configValue === 'undefined') {
             return '';
         }
+        if (Array.isArray(configValue)) {
+            // Convert array to comma-separated string
+            return configValue.join(', ');
+        }
+        if (typeof configValue === 'object') {
+            // Convert object to JSON string
+            return JSON.stringify(configValue);
+        }
+        if (typeof configValue === 'number') {
+            // Convert number to string
+            return String(configValue);
+        }
+        if (typeof configValue === 'boolean') {
+            // Convert boolean to string
+            return configValue ? 'true' : 'false';
+        }
         return configValue;
+    }
+
+    getValueFromJson (args) {
+        const jsonText = args.JSON.trim();
+        if (!jsonText) {
+            return '';
+        }
+        let jsonObject;
+        try {
+            jsonObject = JSON.parse(jsonText);
+        } catch (error) {
+            return `error: ${error.message}`;
+        }
+        const path = Cast.toString(args.PATH).trim();
+        if (!path) {
+            return '';
+        }
+        const func = new Function('jsonObj', `return jsonObj.${path}`);
+        const value = func.call(this, jsonObject);
+        if (typeof value === 'undefined' || value === null) {
+            return '';
+        }
+        if (Array.isArray(value)) {
+            // Convert array to JSON string
+            return JSON.stringify(value);
+        }
+        if (typeof value === 'object') {
+            // Convert object to JSON string
+            return JSON.stringify(value);
+        }
+        if (typeof value === 'number') {
+            // Convert number to string
+            return String(value);
+        }
+        if (typeof value === 'boolean') {
+            // Convert boolean to string
+            return value ? 'true' : 'false';
+        }
+        return String(value);
+    }
+
+    getItemOfJsonArray (args) {
+        let jsonText = args.JSON.trim();
+        if (!jsonText) {
+            return '';
+        }
+        if (!jsonText.startsWith('[') && !jsonText.endsWith(']')) {
+            jsonText = `[${jsonText}]`; // Wrap in array brackets if not already an array
+        }
+        try {
+            const jsonArray = JSON.parse(jsonText);
+            if (!Array.isArray(jsonArray)) {
+                return 'error: not an array';
+            }
+            if (jsonArray.length === 0) {
+                return '';
+            }
+            const index = parseInt(Cast.toString(args.INDEX), 10);
+            if (isNaN(index) || index < 1 || index > jsonArray.length) {
+                return '';
+            }
+            const value = jsonArray[index - 1];
+            if (typeof value === 'undefined' || value === null) {
+                return '';
+            }
+            if (Array.isArray(value)) {
+                // Convert array to JSON string
+                return JSON.stringify(value);
+            }
+            if (typeof value === 'object') {
+                // Convert object to JSON string
+                return JSON.stringify(value);
+            }
+            if (typeof value === 'number') {
+                // Convert number to string
+                return String(value);
+            }
+            if (typeof value === 'boolean') {
+                // Convert boolean to string
+                return value ? 'true' : 'false';
+            }
+            return String(value);
+        } catch (error) {
+            return `error: ${error.message}`;
+        }
+    }
+
+    lengthOfJsonArray (args) {
+        let jsonText = args.JSON.trim();
+        if (!jsonText) {
+            return 0; // Return 0 for empty JSON
+        }
+        if (!jsonText.startsWith('[') && !jsonText.endsWith(']')) {
+            jsonText = `[${jsonText}]`; // Wrap in array brackets if not already an array
+        }
+        try {
+            const jsonArray = JSON.parse(jsonText);
+            if (!Array.isArray(jsonArray)) {
+                return 0; // Return 0 if not an array
+            }
+            return jsonArray.length;
+        } catch (error) {
+            return 0; // Return 0 if parsing fails
+        }
     }
 
     /**

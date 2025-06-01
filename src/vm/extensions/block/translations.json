@@ -44,6 +44,7 @@
     "gai.generationConfigMenu.topP": "Top P",
     "gai.generationConfigMenu.topK": "Top K",
     "gai.generationConfigMenu.systemInstruction": "System Instruction",
+    "gai.generationConfigMenu.responseSchema": "Response Schema",
     "gai.generationConfig": "generation [CONFIG]",
     "gai.countTokensAs": "count tokens [CONTENT] as [REQUEST_TYPE]",
     "gai.countTokensRequestTypeMenu.generate": "generate",
@@ -70,7 +71,10 @@
     "gai.apiKeyDialog.cancel": "cancel",
     "gai.apiKeyDialog.set": "set",
     "gai.setBaseUrl": "set base URL to [URL]",
-    "gai.baseUrl": "base URL"
+    "gai.baseUrl": "base URL",
+    "gai.getValueFromJson": "get [PATH] from JSON [JSON]",
+    "gai.getItemOfJsonArray": "item [INDEX] of JSON array [JSON]",
+    "gai.lengthOfJsonArray": "length of JSON array [JSON]"
   },
   "ja": {
     "gai.name": "GAI",
@@ -117,6 +121,7 @@
     "gai.generationConfigMenu.topP": "Top P",
     "gai.generationConfigMenu.topK": "Top K",
     "gai.generationConfigMenu.systemInstruction": "システム インストラクション",
+    "gai.generationConfigMenu.responseSchema": "レスポンス スキーマ",
     "gai.generationConfig": "生成の[CONFIG]",
     "gai.countTokensAs": "[REQUEST_TYPE][CONTENT]のトークン数",
     "gai.countTokensRequestTypeMenu.generate": "生成",
@@ -143,7 +148,10 @@
     "gai.apiKeyDialog.cancel": "キャンセル",
     "gai.apiKeyDialog.set": "設定",
     "gai.setBaseUrl": "ベースURLを[URL]にする",
-    "gai.baseUrl": "ベースURL"
+    "gai.baseUrl": "ベースURL",
+    "gai.getValueFromJson": "JSON [JSON]から[PATH]を取得",
+    "gai.getItemOfJsonArray": "JSON配列[JSON]の[INDEX]番目",
+    "gai.lengthOfJsonArray": "JSON配列[JSON]の長さ"
   },
   "ja-Hira": {
     "gai.name": "GAI",
@@ -190,6 +198,7 @@
     "gai.generationConfigMenu.topP": "トップP",
     "gai.generationConfigMenu.topK": "トップK",
     "gai.generationConfigMenu.systemInstruction": "システム インストラクション",
+    "gai.generationConfigMenu.responseSchema": "レスポンス スキーマ",
     "gai.generationConfig": "せいせい の[CONFIG]",
     "gai.countTokensAs": "[REQUEST_TYPE][CONTENT]の トークンすう",
     "gai.countTokensRequestTypeMenu.generate": "せいせい",
@@ -216,6 +225,9 @@
     "gai.apiKeyDialog.cancel": "キャンセル",
     "gai.apiKeyDialog.set": "せってい",
     "gai.setBaseUrl": "ベースURL を[URL]に する",
-    "gai.baseUrl": "ベースURL"
+    "gai.baseUrl": "ベースURL",
+    "gai.getValueFromJson": "JSON [JSON]から[PATH]を しゅとく",
+    "gai.getItemOfJsonArray": "JSONはいれつ[JSON]の[INDEX]ばんめ",
+    "gai.lengthOfJsonArray": "JSONはいれつ[JSON]の ながさ"
   }
 }

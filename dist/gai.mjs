@@ -68,12 +68,6 @@ var entry = {
   translationMap: translations$1
 };
 
-function _classCallCheck$1(instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-}
-
 function _typeof$2(o) {
   "@babel/helpers - typeof";
 
@@ -82,6 +76,12 @@ function _typeof$2(o) {
   } : function (o) {
     return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
   }, _typeof$2(o);
+}
+
+function _classCallCheck$1(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
 }
 
 function toPrimitive$1(t, r) {
@@ -791,6 +791,8 @@ var en = {
 	"gai.generationConfigMenu.temperature": "Temperature",
 	"gai.generationConfigMenu.topP": "Top P",
 	"gai.generationConfigMenu.topK": "Top K",
+	"gai.generationConfigMenu.systemInstruction": "System Instruction",
+	"gai.generationConfigMenu.responseSchema": "Response Schema",
 	"gai.generationConfig": "generation [CONFIG]",
 	"gai.countTokensAs": "count tokens [CONTENT] as [REQUEST_TYPE]",
 	"gai.countTokensRequestTypeMenu.generate": "generate",
@@ -817,7 +819,10 @@ var en = {
 	"gai.apiKeyDialog.cancel": "cancel",
 	"gai.apiKeyDialog.set": "set",
 	"gai.setBaseUrl": "set base URL to [URL]",
-	"gai.baseUrl": "base URL"
+	"gai.baseUrl": "base URL",
+	"gai.getValueFromJson": "get [PATH] from JSON [JSON]",
+	"gai.getItemOfJsonArray": "item [INDEX] of JSON array [JSON]",
+	"gai.lengthOfJsonArray": "length of JSON array [JSON]"
 };
 var ja = {
 	"gai.name": "GAI",
@@ -863,6 +868,8 @@ var ja = {
 	"gai.generationConfigMenu.temperature": "温度",
 	"gai.generationConfigMenu.topP": "Top P",
 	"gai.generationConfigMenu.topK": "Top K",
+	"gai.generationConfigMenu.systemInstruction": "システム インストラクション",
+	"gai.generationConfigMenu.responseSchema": "レスポンス スキーマ",
 	"gai.generationConfig": "生成の[CONFIG]",
 	"gai.countTokensAs": "[REQUEST_TYPE][CONTENT]のトークン数",
 	"gai.countTokensRequestTypeMenu.generate": "生成",
@@ -889,7 +896,10 @@ var ja = {
 	"gai.apiKeyDialog.cancel": "キャンセル",
 	"gai.apiKeyDialog.set": "設定",
 	"gai.setBaseUrl": "ベースURLを[URL]にする",
-	"gai.baseUrl": "ベースURL"
+	"gai.baseUrl": "ベースURL",
+	"gai.getValueFromJson": "JSON [JSON]から[PATH]を取得",
+	"gai.getItemOfJsonArray": "JSON配列[JSON]の[INDEX]番目",
+	"gai.lengthOfJsonArray": "JSON配列[JSON]の長さ"
 };
 var translations = {
 	en: en,
@@ -938,6 +948,8 @@ var translations = {
 	"gai.generationConfigMenu.temperature": "おんど",
 	"gai.generationConfigMenu.topP": "トップP",
 	"gai.generationConfigMenu.topK": "トップK",
+	"gai.generationConfigMenu.systemInstruction": "システム インストラクション",
+	"gai.generationConfigMenu.responseSchema": "レスポンス スキーマ",
 	"gai.generationConfig": "せいせい の[CONFIG]",
 	"gai.countTokensAs": "[REQUEST_TYPE][CONTENT]の トークンすう",
 	"gai.countTokensRequestTypeMenu.generate": "せいせい",
@@ -964,7 +976,10 @@ var translations = {
 	"gai.apiKeyDialog.cancel": "キャンセル",
 	"gai.apiKeyDialog.set": "せってい",
 	"gai.setBaseUrl": "ベースURL を[URL]に する",
-	"gai.baseUrl": "ベースURL"
+	"gai.baseUrl": "ベースURL",
+	"gai.getValueFromJson": "JSON [JSON]から[PATH]を しゅとく",
+	"gai.getItemOfJsonArray": "JSONはいれつ[JSON]の[INDEX]ばんめ",
+	"gai.lengthOfJsonArray": "JSONはいれつ[JSON]の ながさ"
 }
 };
 
@@ -14699,8 +14714,8 @@ var GeminiBlocks = /*#__PURE__*/function () {
               menu: 'generationConfigMenu'
             },
             VALUE: {
-              type: ArgumentType$1.NUMBER,
-              defaultValue: 1
+              type: ArgumentType$1.STRING,
+              defaultValue: '1'
             }
           }
         }, {
@@ -14791,6 +14806,59 @@ var GeminiBlocks = /*#__PURE__*/function () {
           }),
           func: 'getMaxGenerativeModelNumber',
           arguments: {}
+        }, '---', {
+          opcode: 'getValueFromJson',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.getValueFromJson',
+            default: 'get [PATH] from JSON [JSON]',
+            description: 'get value from JSON block text for Gemini'
+          }),
+          func: 'getValueFromJson',
+          arguments: {
+            PATH: {
+              type: ArgumentType$1.STRING,
+              defaultValue: 'key1.key2'
+            },
+            JSON: {
+              type: ArgumentType$1.STRING,
+              defaultValue: '{"key1":{"key2":"value"}}'
+            }
+          }
+        }, {
+          opcode: 'getItemOfJsonArray',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.getItemOfJsonArray',
+            default: 'item [INDEX] of JSON array [JSON]',
+            description: 'get value from JSON array block text for Gemini'
+          }),
+          func: 'getItemOfJsonArray',
+          arguments: {
+            INDEX: {
+              type: ArgumentType$1.NUMBER,
+              defaultValue: 1
+            },
+            JSON: {
+              type: ArgumentType$1.STRING,
+              defaultValue: '[1,2,3]'
+            }
+          }
+        }, {
+          opcode: 'lengthOfJsonArray',
+          blockType: BlockType$1.REPORTER,
+          text: formatMessage({
+            id: 'gai.lengthOfJsonArray',
+            default: 'length of JSON array [JSON]',
+            description: 'length of JSON array block text for Gemini'
+          }),
+          func: 'lengthOfJsonArray',
+          arguments: {
+            JSON: {
+              type: ArgumentType$1.STRING,
+              defaultValue: '[1,2,3]'
+            }
+          }
         }, '---', {
           opcode: 'embeddingFor',
           blockType: BlockType$1.REPORTER,
@@ -15209,6 +15277,20 @@ var GeminiBlocks = /*#__PURE__*/function () {
           description: 'generation config menu item for stop sequences in Gemini'
         }),
         value: 'stopSequences'
+      }, {
+        text: formatMessage({
+          id: 'gai.generationConfigMenu.systemInstruction',
+          default: 'System Instruction',
+          description: 'generation config menu item for system instruction in Gemini'
+        }),
+        value: 'systemInstruction'
+      }, {
+        text: formatMessage({
+          id: 'gai.generationConfigMenu.responseSchema',
+          default: 'Response Schema',
+          description: 'generation config menu item for response schema in Gemini'
+        }),
+        value: 'responseSchema'
       }];
       return menu;
     }
@@ -15871,11 +15953,27 @@ var GeminiBlocks = /*#__PURE__*/function () {
         case 'systemInstruction':
           configValue = Cast$1.toString(configValue);
           break;
+        case 'responseSchema':
+          try {
+            configValue = JSON.parse(configValue);
+            // Also set responseMimeType to application/json for structured output
+            ai.generationConfig.responseMimeType = 'application/json';
+          } catch (error) {
+            // If parsing fails, delete responseSchema
+            delete ai.generationConfig.responseSchema;
+            delete ai.generationConfig.responseMimeType;
+            return "delete ".concat(configKey, " due to error: ").concat(error.message);
+          }
+          break;
         default:
           return "unknown config key: ".concat(configKey);
       }
       if (configValue === '') {
         delete ai.generationConfig[configKey];
+        if (configKey === 'responseSchema') {
+          // Also remove responseMimeType when removing schema
+          delete ai.generationConfig.responseMimeType;
+        }
         return "delete ".concat(configKey);
       }
       ai.generationConfig[configKey] = configValue;
@@ -15898,7 +15996,130 @@ var GeminiBlocks = /*#__PURE__*/function () {
       if (configValue === null || typeof configValue === 'undefined') {
         return '';
       }
+      if (Array.isArray(configValue)) {
+        // Convert array to comma-separated string
+        return configValue.join(', ');
+      }
+      if (_typeof$2(configValue) === 'object') {
+        // Convert object to JSON string
+        return JSON.stringify(configValue);
+      }
+      if (typeof configValue === 'number') {
+        // Convert number to string
+        return String(configValue);
+      }
+      if (typeof configValue === 'boolean') {
+        // Convert boolean to string
+        return configValue ? 'true' : 'false';
+      }
       return configValue;
+    }
+  }, {
+    key: "getValueFromJson",
+    value: function getValueFromJson(args) {
+      var jsonText = args.JSON.trim();
+      if (!jsonText) {
+        return '';
+      }
+      var jsonObject;
+      try {
+        jsonObject = JSON.parse(jsonText);
+      } catch (error) {
+        return "error: ".concat(error.message);
+      }
+      var path = Cast$1.toString(args.PATH).trim();
+      if (!path) {
+        return '';
+      }
+      var func = new Function('jsonObj', "return jsonObj.".concat(path));
+      var value = func.call(this, jsonObject);
+      if (typeof value === 'undefined' || value === null) {
+        return '';
+      }
+      if (Array.isArray(value)) {
+        // Convert array to JSON string
+        return JSON.stringify(value);
+      }
+      if (_typeof$2(value) === 'object') {
+        // Convert object to JSON string
+        return JSON.stringify(value);
+      }
+      if (typeof value === 'number') {
+        // Convert number to string
+        return String(value);
+      }
+      if (typeof value === 'boolean') {
+        // Convert boolean to string
+        return value ? 'true' : 'false';
+      }
+      return String(value);
+    }
+  }, {
+    key: "getItemOfJsonArray",
+    value: function getItemOfJsonArray(args) {
+      var jsonText = args.JSON.trim();
+      if (!jsonText) {
+        return '';
+      }
+      if (!jsonText.startsWith('[') && !jsonText.endsWith(']')) {
+        jsonText = "[".concat(jsonText, "]"); // Wrap in array brackets if not already an array
+      }
+      try {
+        var jsonArray = JSON.parse(jsonText);
+        if (!Array.isArray(jsonArray)) {
+          return 'error: not an array';
+        }
+        if (jsonArray.length === 0) {
+          return '';
+        }
+        var index = parseInt(Cast$1.toString(args.INDEX), 10);
+        if (isNaN(index) || index < 1 || index > jsonArray.length) {
+          return '';
+        }
+        var value = jsonArray[index - 1];
+        if (typeof value === 'undefined' || value === null) {
+          return '';
+        }
+        if (Array.isArray(value)) {
+          // Convert array to JSON string
+          return JSON.stringify(value);
+        }
+        if (_typeof$2(value) === 'object') {
+          // Convert object to JSON string
+          return JSON.stringify(value);
+        }
+        if (typeof value === 'number') {
+          // Convert number to string
+          return String(value);
+        }
+        if (typeof value === 'boolean') {
+          // Convert boolean to string
+          return value ? 'true' : 'false';
+        }
+        return String(value);
+      } catch (error) {
+        return "error: ".concat(error.message);
+      }
+    }
+  }, {
+    key: "lengthOfJsonArray",
+    value: function lengthOfJsonArray(args) {
+      var jsonText = args.JSON.trim();
+      if (!jsonText) {
+        return 0; // Return 0 for empty JSON
+      }
+      if (!jsonText.startsWith('[') && !jsonText.endsWith(']')) {
+        jsonText = "[".concat(jsonText, "]"); // Wrap in array brackets if not already an array
+      }
+      try {
+        var jsonArray = JSON.parse(jsonText);
+        if (!Array.isArray(jsonArray)) {
+          return 0; // Return 0 if not an array
+        }
+        return jsonArray.length;
+      } catch (error) {
+        return 0; // Return 0 if parsing fails
+      }
     }
 
     /**
