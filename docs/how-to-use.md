@@ -82,6 +82,8 @@ The following can be specified for ```(parameter)```.
 - ```Max output tokens```
 - ```Candidate count```
 - ```Stop sequence```
+- ```System instruction```
+- ```Response schema```
 
 The ```generation (parameter)``` block retrieves the parameters of the generation model used by the sprite.
 

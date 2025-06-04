@@ -4,10 +4,11 @@
 
 
 * Examples
-  * [Generating Example](example-generating "Generate sentences")
-  * [Chat Example](example-chat "Have a series of conversations with AI")
+  * [Multi Modal Generating](example-generating "Generate sentences")
+  * [Chat](example-chat "Have a series of conversations with AI")
   * [Voice Interaction](example-voice-chat "Interacting with AI by voice")
-  * [Embedding Example](example-embedding "Search with AI")
+  * [Embedding](example-embedding "Search with AI")
+  * [Response Schema](example-response_schema "Get structured output")
 
 ----
 <a href="./ja/" target="_self">日本語</a>

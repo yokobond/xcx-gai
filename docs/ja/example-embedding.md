@@ -1,10 +1,9 @@
-## 埋め込み表現の例
+## おはなし検索
 
-Geminiを使った埋め込み表現のプロジェクトの例です。
+Geminiを使ったエンベディングによって文章を検索する例です。
+2つのおはなしの中から、質問に対する答えを検索します。
 
 1. 緑の旗を押してプロジェクトを開始します。
 2. 次に'1'または'2'キーを押して、該当する参照文を検索し、その文章から答えます。
 
-(Gemini proは、日本語ではうまく検索できません)
-
-<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/ja/GAI-埋め込み.sb3" width="540px" height="460px"></iframe>
+<iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/ja/gai-story_retrieval-ja.sb3" width="540px" height="460px"></iframe>

@@ -20,6 +20,17 @@ Example Project
 
 Refer to [How to Use](how-to-use) for more details.
 
+
+## Supported AI Models
+This extension supports the Google Gemini generative models, and embedding models.
+The default model is set to the latest model at the time of release but you can change it in the block.
+
+You can check the available models in the [Gemini API documentation](https://ai.google.dev/gemini-api/docs/models).
+
+This extension has model listing block, so you can check the available models like this project.
+([gai-model_listing](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/gai-model_listing.sb3))
+
+
 ## Load into Xcratch
 
 This extension can be used with other extension in Xcratch by following steps.
