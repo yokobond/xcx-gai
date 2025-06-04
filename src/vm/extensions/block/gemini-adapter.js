@@ -572,4 +572,110 @@ export class GeminiAdapter {
         cache[key] = embeddingValues;
         return embeddingValues;
     }
+
+    /**
+     * Validate API key by testing access to models list (doesn't consume tokens).
+     * @param {string} apiKey - API key to validate
+     * @returns {Promise<object>} A promise that resolves to an object with validation results
+     * @returns {boolean} Promise.valid - Whether the API key is valid
+     * @returns {string} [Promise.error] - Error message if validation failed
+     * @static
+     */
+    static async validateApiKey (apiKey) {
+        if (!apiKey || !apiKey.trim()) {
+            return {valid: false, error: 'API key is empty'};
+        }
+
+        try {
+            const testSDK = new GoogleGenAI({
+                apiKey: apiKey.trim(),
+                baseUrl: GeminiAdapter.baseUrl
+            });
+            
+            // Test API key by listing models (this doesn't consume tokens)
+            const pager = await testSDK.models.list();
+            // Try to get at least one model to confirm access
+            const iterator = pager[Symbol.asyncIterator]();
+            const firstModel = await iterator.next();
+            
+            if (firstModel.done) {
+                return {valid: false, error: 'No models available with this API key'};
+            }
+            
+            return {valid: true};
+        } catch (error) {
+            let errorMessage = 'Invalid API key';
+            if (error.message) {
+                if (error.message.includes('API_KEY_INVALID')) {
+                    errorMessage = 'API key is invalid';
+                } else if (error.message.includes('permission')) {
+                    errorMessage = 'API key lacks required permissions';
+                } else if (error.message.includes('quota')) {
+                    errorMessage = 'API quota exceeded';
+                } else {
+                    errorMessage = `API error: ${error.message}`;
+                }
+            }
+            return {valid: false, error: errorMessage};
+        }
+    }
+
+    /**
+     * Set and validate model code for specific model type.
+     * @param {string} modelCode - model code to set
+     * @param {string} modelType - type of model ('generative' | 'embedding')
+     * @returns {Promise<string>} A promise that resolves to success message or error message
+     */
+    async setModel (modelCode, modelType) {
+        if (!modelCode || !modelCode.trim()) {
+            return 'Model code is empty';
+        }
+        if (!['generative', 'embedding'].includes(modelType)) {
+            return 'Invalid model type. Must be "generative" or "embedding"';
+        }
+        if (!GeminiAdapter.getApiKey()) {
+            return 'API key is not set';
+        }
+        try {
+            if (!modelCode.startsWith('models/')) {
+                modelCode = `models/${modelCode}`;
+            }
+            const models = await this.getModels();
+            const requiredAction = modelType === 'generative' ? 'generateContent' : 'embedContent';
+            const availableModel = models.find(model =>
+                model.name === modelCode && model.supportedActions.includes(requiredAction)
+            );
+            if (!availableModel) {
+                this.modelCode[modelType] = 'model-not-found';
+                const availableModels = models
+                    .filter(model => model.supportedActions.includes(requiredAction))
+                    .map(model => model.name);
+                return `Model "${modelCode}" not found or doesn't support ${requiredAction}. ` +
+                       `Available models: ${availableModels.join(', ')}`;
+            }
+
+            this.modelCode[modelType] = modelCode;
+            return `Model "${modelCode}" set successfully for ${modelType}`;
+        } catch (error) {
+            return `Error validating model: ${error.message}`;
+        }
+    }
+
+    /**
+     * Set generative model code.
+     * @param {string} modelCode - model code to set
+     * @returns {Promise<string>} A promise that resolves to success message or error message
+     */
+    setGenerativeModel (modelCode) {
+        return this.setModel(modelCode, 'generative');
+    }
+
+    /**
+     * Set embedding model code.
+     * @param {string} modelCode - model code to set
+     * @returns {Promise<string>} A promise that resolves to success message or error message
+     */
+    setEmbeddingModel (modelCode) {
+        return this.setModel(modelCode, 'embedding');
+    }
 }

@@ -1993,11 +1993,22 @@ class GeminiBlocks {
      * @param {object} args - the block's arguments.
      * @param {string} args.MODEL_CODE - model code
      * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - validation result message
      */
     setGenerativeModel (args, util) {
         const target = util.target;
         const ai = this.getAI(target);
-        ai.modelCode.generative = args.MODEL_CODE;
+        const modelCode = Cast.toString(args.MODEL_CODE).trim();
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
+        ai.setRequesting(true);
+        return ai.setGenerativeModel(modelCode)
+            .catch(error => `Error setting model: ${error.message}`)
+            .finally(() => {
+                ai.setRequesting(false);
+            });
     }
 
     /**
@@ -2059,11 +2070,22 @@ class GeminiBlocks {
      * @param {object} args - the block's arguments.
      * @param {string} args.MODEL_CODE - model code
      * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - validation result message
      */
     setEmbeddingModel (args, util) {
         const target = util.target;
         const ai = this.getAI(target);
-        ai.modelCode.embedding = args.MODEL_CODE;
+        const modelCode = Cast.toString(args.MODEL_CODE).trim();
+        if (ai.isRequesting()) {
+            util.yield();
+            return;
+        }
+        ai.setRequesting(true);
+        return ai.setEmbeddingModel(modelCode)
+            .catch(error => `Error setting model: ${error.message}`)
+            .finally(() => {
+                ai.setRequesting(false);
+            });
     }
 
     /**
@@ -2229,17 +2251,33 @@ class GeminiBlocks {
             return;
         }
         const prevApiKey = GeminiAdapter.getApiKey();
-        return this.openApiKeyDialog()
+        return this.openApiKeyDialog(prevApiKey)
             .then(apiKey => {
                 if (apiKey === null) {
                     // canceled
                     return 'canceled by user';
                 }
-                if (apiKey !== prevApiKey) {
-                    GeminiAdapter.setApiKey(apiKey);
-                    GeminiAdapter.removeAllAdapter();
+                if (apiKey === '') {
+                    // empty key
+                    return 'API key is empty';
                 }
-                return apiKey;
+                if (apiKey === prevApiKey) {
+                    // same key, no need to validate again
+                    return 'API key unchanged';
+                }
+                
+                // Validate the new API key
+                return GeminiAdapter.validateApiKey(apiKey)
+                    .then(validation => {
+                        if (validation.valid) {
+                            GeminiAdapter.setApiKey(apiKey);
+                            GeminiAdapter.removeAllAdapter();
+                            return 'API key validated and set successfully';
+                        }
+                        return `API key validation failed: ${validation.error}`;
+                        
+                    })
+                    .catch(error => `API key validation error: ${error.message}`);
             });
     }
 }
