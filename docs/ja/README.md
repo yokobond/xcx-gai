@@ -21,6 +21,16 @@ GAI 拡張機能を使って何ができるかを見るために、サンプル�
 詳しくは、[使い方](how-to-use) を参照してください。
 
 
+## サポートしているAIモデル
+この拡張機能は、Google Gemini の生成モデルと埋め込みモデルをサポートしています。
+デフォルトのモデルはリリース時の最新モデルに設定されていますが、ブロックで変更することができます。
+
+利用可能なモデルは [Gemini API ドキュメント](https://ai.google.dev/gemini-api/docs/models) で確認できます。
+
+この拡張機能にはモデル一覧ブロックがあり、このプロジェクトのように利用可能なモデルを確認できます。
+([gai-model_listing](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/gai-model_listing.sb3))
+
+
 ## Xcratchへのロード
 
 この拡張機能は、以下の手順でXcratchにロードして、他の拡張機能とともに使うことができます。
