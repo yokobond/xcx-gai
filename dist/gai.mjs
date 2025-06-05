@@ -19,7 +19,7 @@ var translations$1 = {
 }
 };
 
-var version$1 = "0.8.0";
+var version$1 = "0.8.1";
 
 /**
  * This is an extension for Xcratch.
@@ -14000,7 +14000,112 @@ var GeminiAdapter = /*#__PURE__*/function () {
         return _requestEmbedding.apply(this, arguments);
       }
       return requestEmbedding;
-    }())
+    }()
+    /**
+     * Validate API key by testing access to models list (doesn't consume tokens).
+     * @param {string} apiKey - API key to validate
+     * @returns {Promise<object>} A promise that resolves to an object with validation results
+     * @returns {boolean} Promise.valid - Whether the API key is valid
+     * @returns {string} [Promise.error] - Error message if validation failed
+     * @static
+     */
+    )
+  }, {
+    key: "setModel",
+    value: (
+    /**
+     * Set and validate model code for specific model type.
+     * @param {string} modelCode - model code to set
+     * @param {string} modelType - type of model ('generative' | 'embedding')
+     * @returns {Promise<string>} A promise that resolves to success message or error message
+     */
+    function () {
+      var _setModel = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee6(modelCode, modelType) {
+        var models, requiredAction, availableModel, availableModels;
+        return _regeneratorRuntime.wrap(function _callee6$(_context6) {
+          while (1) switch (_context6.prev = _context6.next) {
+            case 0:
+              if (!(!modelCode || !modelCode.trim())) {
+                _context6.next = 2;
+                break;
+              }
+              return _context6.abrupt("return", 'Model code is empty');
+            case 2:
+              if (['generative', 'embedding'].includes(modelType)) {
+                _context6.next = 4;
+                break;
+              }
+              return _context6.abrupt("return", 'Invalid model type. Must be "generative" or "embedding"');
+            case 4:
+              if (GeminiAdapter.getApiKey()) {
+                _context6.next = 6;
+                break;
+              }
+              return _context6.abrupt("return", 'API key is not set');
+            case 6:
+              _context6.prev = 6;
+              if (!modelCode.startsWith('models/')) {
+                modelCode = "models/".concat(modelCode);
+              }
+              _context6.next = 10;
+              return this.getModels();
+            case 10:
+              models = _context6.sent;
+              requiredAction = modelType === 'generative' ? 'generateContent' : 'embedContent';
+              availableModel = models.find(function (model) {
+                return model.name === modelCode && model.supportedActions.includes(requiredAction);
+              });
+              if (availableModel) {
+                _context6.next = 17;
+                break;
+              }
+              this.modelCode[modelType] = 'model-not-found';
+              availableModels = models.filter(function (model) {
+                return model.supportedActions.includes(requiredAction);
+              }).map(function (model) {
+                return model.name;
+              });
+              return _context6.abrupt("return", "Model \"".concat(modelCode, "\" not found or doesn't support ").concat(requiredAction, ". ") + "Available models: ".concat(availableModels.join(', ')));
+            case 17:
+              this.modelCode[modelType] = modelCode;
+              return _context6.abrupt("return", "Model \"".concat(modelCode, "\" set successfully for ").concat(modelType));
+            case 21:
+              _context6.prev = 21;
+              _context6.t0 = _context6["catch"](6);
+              return _context6.abrupt("return", "Error validating model: ".concat(_context6.t0.message));
+            case 24:
+            case "end":
+              return _context6.stop();
+          }
+        }, _callee6, this, [[6, 21]]);
+      }));
+      function setModel(_x9, _x0) {
+        return _setModel.apply(this, arguments);
+      }
+      return setModel;
+    }()
+    /**
+     * Set generative model code.
+     * @param {string} modelCode - model code to set
+     * @returns {Promise<string>} A promise that resolves to success message or error message
+     */
+    )
+  }, {
+    key: "setGenerativeModel",
+    value: function setGenerativeModel(modelCode) {
+      return this.setModel(modelCode, 'generative');
+    }
+
+    /**
+     * Set embedding model code.
+     * @param {string} modelCode - model code to set
+     * @returns {Promise<string>} A promise that resolves to success message or error message
+     */
+  }, {
+    key: "setEmbeddingModel",
+    value: function setEmbeddingModel(modelCode) {
+      return this.setModel(modelCode, 'embedding');
+    }
   }], [{
     key: "ADAPTERS",
     get:
@@ -14093,6 +14198,80 @@ var GeminiAdapter = /*#__PURE__*/function () {
      * Base URL for Gemini AI.
      * @type {string}
      */
+  }, {
+    key: "validateApiKey",
+    value: (function () {
+      var _validateApiKey = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee7(apiKey) {
+        var testSDK, pager, iterator, firstModel, errorMessage;
+        return _regeneratorRuntime.wrap(function _callee7$(_context7) {
+          while (1) switch (_context7.prev = _context7.next) {
+            case 0:
+              if (!(!apiKey || !apiKey.trim())) {
+                _context7.next = 2;
+                break;
+              }
+              return _context7.abrupt("return", {
+                valid: false,
+                error: 'API key is empty'
+              });
+            case 2:
+              _context7.prev = 2;
+              testSDK = new GoogleGenAI({
+                apiKey: apiKey.trim(),
+                baseUrl: GeminiAdapter.baseUrl
+              }); // Test API key by listing models (this doesn't consume tokens)
+              _context7.next = 6;
+              return testSDK.models.list();
+            case 6:
+              pager = _context7.sent;
+              // Try to get at least one model to confirm access
+              iterator = pager[Symbol.asyncIterator]();
+              _context7.next = 10;
+              return iterator.next();
+            case 10:
+              firstModel = _context7.sent;
+              if (!firstModel.done) {
+                _context7.next = 13;
+                break;
+              }
+              return _context7.abrupt("return", {
+                valid: false,
+                error: 'No models available with this API key'
+              });
+            case 13:
+              return _context7.abrupt("return", {
+                valid: true
+              });
+            case 16:
+              _context7.prev = 16;
+              _context7.t0 = _context7["catch"](2);
+              errorMessage = 'Invalid API key';
+              if (_context7.t0.message) {
+                if (_context7.t0.message.includes('API_KEY_INVALID')) {
+                  errorMessage = 'API key is invalid';
+                } else if (_context7.t0.message.includes('permission')) {
+                  errorMessage = 'API key lacks required permissions';
+                } else if (_context7.t0.message.includes('quota')) {
+                  errorMessage = 'API quota exceeded';
+                } else {
+                  errorMessage = "API error: ".concat(_context7.t0.message);
+                }
+              }
+              return _context7.abrupt("return", {
+                valid: false,
+                error: errorMessage
+              });
+            case 21:
+            case "end":
+              return _context7.stop();
+          }
+        }, _callee7, null, [[2, 16]]);
+      }));
+      function validateApiKey(_x1) {
+        return _validateApiKey.apply(this, arguments);
+      }
+      return validateApiKey;
+    }())
   }]);
   return GeminiAdapter;
 }();
@@ -16311,13 +16490,24 @@ var GeminiBlocks = /*#__PURE__*/function () {
      * @param {object} args - the block's arguments.
      * @param {string} args.MODEL_CODE - model code
      * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - validation result message
      */
   }, {
     key: "setGenerativeModel",
     value: function setGenerativeModel(args, util) {
       var target = util.target;
       var ai = this.getAI(target);
-      ai.modelCode.generative = args.MODEL_CODE;
+      var modelCode = Cast$1.toString(args.MODEL_CODE).trim();
+      if (ai.isRequesting()) {
+        util.yield();
+        return;
+      }
+      ai.setRequesting(true);
+      return ai.setGenerativeModel(modelCode).catch(function (error) {
+        return "Error setting model: ".concat(error.message);
+      }).finally(function () {
+        ai.setRequesting(false);
+      });
     }
 
     /**
@@ -16384,13 +16574,24 @@ var GeminiBlocks = /*#__PURE__*/function () {
      * @param {object} args - the block's arguments.
      * @param {string} args.MODEL_CODE - model code
      * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - validation result message
      */
   }, {
     key: "setEmbeddingModel",
     value: function setEmbeddingModel(args, util) {
       var target = util.target;
       var ai = this.getAI(target);
-      ai.modelCode.embedding = args.MODEL_CODE;
+      var modelCode = Cast$1.toString(args.MODEL_CODE).trim();
+      if (ai.isRequesting()) {
+        util.yield();
+        return;
+      }
+      ai.setRequesting(true);
+      return ai.setEmbeddingModel(modelCode).catch(function (error) {
+        return "Error setting model: ".concat(error.message);
+      }).finally(function () {
+        ai.setRequesting(false);
+      });
     }
 
     /**
@@ -16565,16 +16766,31 @@ var GeminiBlocks = /*#__PURE__*/function () {
         return;
       }
       var prevApiKey = GeminiAdapter.getApiKey();
-      return this.openApiKeyDialog().then(function (apiKey) {
+      return this.openApiKeyDialog(prevApiKey).then(function (apiKey) {
         if (apiKey === null) {
           // canceled
           return 'canceled by user';
         }
-        if (apiKey !== prevApiKey) {
-          GeminiAdapter.setApiKey(apiKey);
-          GeminiAdapter.removeAllAdapter();
+        if (apiKey === '') {
+          // empty key
+          return 'API key is empty';
         }
-        return apiKey;
+        if (apiKey === prevApiKey) {
+          // same key, no need to validate again
+          return 'API key unchanged';
+        }
+
+        // Validate the new API key
+        return GeminiAdapter.validateApiKey(apiKey).then(function (validation) {
+          if (validation.valid) {
+            GeminiAdapter.setApiKey(apiKey);
+            GeminiAdapter.removeAllAdapter();
+            return 'API key validated and set successfully';
+          }
+          return "API key validation failed: ".concat(validation.error);
+        }).catch(function (error) {
+          return "API key validation error: ".concat(error.message);
+        });
       });
     }
   }], [{
