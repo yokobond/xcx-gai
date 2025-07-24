@@ -45,7 +45,8 @@ const EXTENSION_ID = 'gai';
 let extensionURL = 'https://yokobond.github.io/xcx-gai/dist/gai.mjs';
 
 /**
- * Scratch 3.0 blocks for example of Xcratch.
+ * Xcratch blocks for Gemini Generative AI (GAI).
+ * This class provides blocks to interact with Gemini API.
  */
 class GeminiBlocks {
     /**
@@ -113,6 +114,9 @@ class GeminiBlocks {
         this.runtime.on('PROJECT_STOP_ALL', () => {
             this.stopListening();
         });
+
+        this.functionNamePrefix = 'func_';
+        this.functionArgPrefix = 'arg_';
     }
 
     onExtensionAdded (extensionInfo) {
@@ -435,6 +439,40 @@ class GeminiBlocks {
                         }
                     }
                 },
+                '---',
+                {
+                    opcode: 'setFunctionCallingMode',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setFunctionCallingMode',
+                        default: 'set function calling mode [MODE]',
+                        description: 'set function calling mode block text for Gemini'
+                    }),
+                    func: 'setFunctionCallingMode',
+                    arguments: {
+                        MODE: {
+                            type: ArgumentType.STRING,
+                            menu: 'functionCallingModeMenu'
+                        }
+                    }
+                },
+                {
+                    opcode: 'returnResultToAI',
+                    blockType: BlockType.COMMAND,
+                    isTerminal: true,
+                    text: formatMessage({
+                        id: 'gai.returnResultToAI',
+                        default: 'return [RESULT] to AI',
+                        description: 'return result to AI block text for Gemini'
+                    }),
+                    arguments: {
+                        RESULT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: ' '
+                        }
+                    }
+                },
+                '---',
                 {
                     opcode: 'countTokensAs',
                     blockType: BlockType.REPORTER,
@@ -784,6 +822,10 @@ class GeminiBlocks {
                     acceptReporters: false,
                     items: 'getGenerationConfigMenu'
                 },
+                functionCallingModeMenu: {
+                    acceptReporters: false,
+                    items: 'getFunctionCallingModeMenu'
+                },
                 countTokensRequestTypeMenu: {
                     acceptReporters: false,
                     items: 'getCountTokensRequestTypeMenu'
@@ -1035,6 +1077,36 @@ class GeminiBlocks {
         return menu;
     }
 
+    getFunctionCallingModeMenu () {
+        const menu = [
+            {
+                text: formatMessage({
+                    id: 'gai.functionCallingModeMenu.auto',
+                    default: 'Auto',
+                    description: 'function calling mode menu item for auto in Gemini'
+                }),
+                value: 'AUTO'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.functionCallingModeMenu.any',
+                    default: 'Any',
+                    description: 'function calling mode menu item for function calling mode in Gemini'
+                }),
+                value: 'ANY'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.functionCallingModeMenu.none',
+                    default: 'None',
+                    description: 'function calling mode menu item for none in Gemini'
+                }),
+                value: 'NONE'
+            }
+        ];
+        return menu;
+    }
+
     getCountTokensRequestTypeMenu () {
         const menu = [
             {
@@ -1193,6 +1265,136 @@ class GeminiBlocks {
     }
 
     /**
+     * Dispatch function calls from the prompt in new threads.
+     * @param {Array<object>} funcCalls - the function calls array
+     * @param {object} util - the utility object
+     * @returns {void}
+     */
+    dispatchFunctionCalls (funcCalls, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        funcCalls.filter(funcCall => funcCall.status === 'PENDING')
+            .forEach(funcCall => {
+                funcCall.status = 'PROCESSING';
+                // Find the procedure definition
+                const functionSpec = ai.functionRegistry[funcCall.name];
+                if (!functionSpec) {
+                    console.warn(`Procedure not found: ${funcCall.name}`);
+                    funcCall.status = 'FAILED';
+                    return;
+                }
+                const procedureCode = functionSpec.procedureCode;
+                // Get the procedure definition block ID
+                const procedureDefinition = target.blocks.getProcedureDefinition(procedureCode);
+                if (!procedureDefinition) {
+                    console.warn(`Procedure definition not found: ${procedureCode}`);
+                    funcCall.status = 'FAILED';
+                    return;
+                }
+                const argumentMap = {};
+                Object.entries(funcCall.args).forEach(([key, value]) => {
+                    const paramName = functionSpec.argumentDict[key];
+                    if (paramName) {
+                    // Type conversion
+                        switch (functionSpec.declaration.parameters.properties[key].type) {
+                        case 'string':
+                            value = String(value);
+                            break;
+                        case 'number':
+                            value = Number(value);
+                            break;
+                        case 'boolean':
+                            value = Boolean(value);
+                            break;
+                        }
+                        argumentMap[paramName] = value;
+                    }
+                });
+
+                const procThread = this.runtime._pushThread(procedureDefinition, target);
+                procThread.persistentParams = argumentMap;
+                // Hook into the thread's getParam and pushStack methods to handle persistent parameters
+                const originalGetParam = procThread.getParam.bind(procThread);
+                procThread.getParam = function (paramName) {
+                    let value = originalGetParam(paramName);
+                    if (value === null && procThread.persistentParams &&
+                    Object.prototype.hasOwnProperty.call(procThread.persistentParams, paramName)) {
+                        value = procThread.persistentParams[paramName];
+                    }
+                
+                    return value;
+                };
+                const originalPushStack = procThread.pushStack.bind(procThread);
+                procThread.pushStack = function (blockId) {
+                    const result = originalPushStack(blockId);
+                    if (procThread.persistentParams) {
+                        if (procThread.initParams) {
+                            procThread.initParams();
+                            Object.entries(procThread.persistentParams).forEach(([paramName, value]) => {
+                                if (procThread.pushParam) {
+                                    procThread.pushParam(paramName, value);
+                                }
+                            });
+                        }
+                    }
+                
+                    return result;
+                };
+
+                // Use STATUS_YIELD_TICK to ensure parameter setup happens before actual execution
+                procThread.status = 3; // Thread.STATUS_YIELD_TICK
+
+                procThread.functionCall = funcCall;
+                funcCall.thread = procThread;
+            });
+    }
+
+    /**
+     * Check if all function calls have completed
+     * @param {Array<FunctionCall>} funcCalls - array of function calls
+     * @returns {boolean} - true if all completed
+     */
+    allFunctionCallsFinished (funcCalls) {
+        return funcCalls.every(funcCall =>
+            funcCall.status === 'COMPLETED' ||
+        funcCall.status === 'FAILED' ||
+        (funcCall.thread && this.runtime.threads.indexOf(funcCall.thread) === -1)
+        );
+    }
+
+    /**
+     * Mark completed function calls and clean up
+     * @param {Array} funcCalls - array of function calls
+     */
+    cleanupStoppedFunctionCalls (funcCalls) {
+        if (!Array.isArray(funcCalls) || funcCalls.length === 0) {
+            return;
+        }
+        const indicesToRemove = [];
+        for (let i = 0; i < funcCalls.length; i++) {
+            const funcCall = funcCalls[i];
+            if (funcCall.thread && this.runtime.threads.indexOf(funcCall.thread) === -1) {
+                if (funcCall.status === 'PENDING' || funcCall.status === 'PROCESSING') {
+                    funcCall.status = 'STOPPED';
+                    if (DEBUG) {
+                        console.log(`Function call ${funcCall.name} marked as STOPPED`);
+                    }
+                }
+                delete funcCall.thread;
+                indicesToRemove.push(i);
+            }
+        }
+        for (let i = indicesToRemove.length - 1; i >= 0; i--) {
+            const indexToRemove = indicesToRemove[i];
+            funcCalls.splice(indexToRemove, 1);
+        }
+        
+        if (DEBUG && indicesToRemove.length > 0) {
+            console.log(`Cleaned up ${indicesToRemove.length} stopped function calls`);
+        }
+    }
+
+    /**
      * Request AI to generate content.
      * @param {object} args - the block's arguments.
      * @param {string} args.PROMPT - prompt to AI
@@ -1206,42 +1408,70 @@ class GeminiBlocks {
         const promptText = Cast.toString(args.PROMPT);
         const target = util.target;
         const ai = this.getAI(target);
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
-        ai.setRequesting(true);
         const prompt = interpretContentPartsText(promptText);
+        const stackFrame = util.stackFrame;
+        if (stackFrame.functionCalls) {
+            const callsToStart = stackFrame.functionCalls.filter(funcCall => funcCall.status === 'PENDING');
+            if (callsToStart.length > 0) {
+                this.dispatchFunctionCalls(callsToStart, util);
+                util.yield();
+                return;
+            }
+        }
+        if (stackFrame.isResponseReceived) {
+            if (stackFrame.functionCalls
+                .every(funcCall => funcCall.thread &&
+                    this.runtime.threads.indexOf(funcCall.thread) === -1)) {
+                // All function calls are completed, exit this block
+                this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
+                return getTextFromResponse(ai.getLastResponse());
+            }
+        }
+        // If the AI is using partial response, handle it
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
             const partialResponseHandler = partialResponse => {
                 this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
                 console.log(partialResponse);
             };
-            return ai.requestGenerateStream(prompt, partialResponseHandler)
-                .then(() => {
-                    this.runtime.startHats('gai_whenResponseReceived', null, target);
-                    return getTextFromResponse(ai.getLastResponse());
+            
+            if (!stackFrame.isRequesting) {
+                stackFrame.isRequesting = true;
+                this.updateFunctionRegistry(target);
+                ai.requestGenerateStream(prompt, partialResponseHandler)
+                    .then(([, functionCalls]) => {
+                        stackFrame.functionCalls = stackFrame.functionCalls || [];
+                        stackFrame.functionCalls.push(...functionCalls);
+                        this.runtime.startHats('gai_whenResponseReceived', null, target);
+                        stackFrame.isResponseReceived = true;
+                    })
+                    .catch(e => {
+                        console.error(e);
+                        return e.message;
+                    });
+            }
+            util.yield();
+            return;
+        }
+        if (!stackFrame.isRequesting) {
+            stackFrame.isRequesting = true;
+            this.updateFunctionRegistry(target);
+            ai.requestGenerate(prompt)
+                .then(([response, functionCalls]) => {
+                    stackFrame.functionCalls = stackFrame.functionCalls || [];
+                    stackFrame.functionCalls.push(...functionCalls);
+                    if (response && response.text) {
+                        // If response is received, mark it
+                        this.runtime.startHats('gai_whenResponseReceived', null, target);
+                    }
+                    stackFrame.isResponseReceived = true;
                 })
-                .catch(e => {
-                    console.error(e);
-                    return e.message;
-                })
-                .finally(() => {
-                    ai.setRequesting(false);
+                .catch(error => {
+                    console.error(error);
+                    return error.message;
                 });
         }
-        return ai.requestGenerate(prompt)
-            .then(() => {
-                this.runtime.startHats('gai_whenResponseReceived', null, target);
-                return getTextFromResponse(ai.getLastResponse());
-            })
-            .catch(e => {
-                console.error(e);
-                return e.message;
-            })
-            .finally(() => {
-                ai.setRequesting(false);
-            });
+        util.yield();
+        return;
     }
 
     /**
@@ -1258,42 +1488,76 @@ class GeminiBlocks {
         const promptText = Cast.toString(args.PROMPT);
         const target = util.target;
         const ai = this.getAI(target);
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
-        ai.setRequesting(true);
         const prompt = interpretContentPartsText(promptText);
+        const stackFrame = util.stackFrame;
+
+        // Handle function calls execution
+        if (stackFrame.functionCalls) {
+            const callsToStart = stackFrame.functionCalls.filter(funcCall => funcCall.status === 'PENDING');
+            if (callsToStart.length > 0) {
+                this.dispatchFunctionCalls(callsToStart, util);
+                util.yield();
+                return;
+            }
+        }
+
+        if (stackFrame.isResponseReceived) {
+            if (stackFrame.functionCalls &&
+                stackFrame.functionCalls
+                    .every(funcCall => funcCall.thread &&
+                        this.runtime.threads.indexOf(funcCall.thread) === -1)) {
+                // All function calls are completed, exit this block
+                this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
+                return getTextFromResponse(ai.getLastResponse());
+            }
+        }
+
+        // If the AI is using partial response, handle it
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
             const partialResponseHandler = partialResponse => {
                 this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
                 console.log(partialResponse);
             };
-            return ai.requestChatStream(prompt, partialResponseHandler)
-                .then(() => {
-                    this.runtime.startHats('gai_whenResponseReceived', null, target);
-                    return getTextFromResponse(ai.getLastResponse());
+            
+            if (!stackFrame.isRequesting) {
+                stackFrame.isRequesting = true;
+                this.updateFunctionRegistry(target);
+                ai.requestChatStream(prompt, partialResponseHandler)
+                    .then(([, functionCalls]) => {
+                        stackFrame.functionCalls = stackFrame.functionCalls || [];
+                        stackFrame.functionCalls.push(...functionCalls);
+                        this.runtime.startHats('gai_whenResponseReceived', null, target);
+                        stackFrame.isResponseReceived = true;
+                    })
+                    .catch(e => {
+                        console.error(e);
+                        return e.message;
+                    });
+            }
+            util.yield();
+            return;
+        }
+
+        if (!stackFrame.isRequesting) {
+            stackFrame.isRequesting = true;
+            this.updateFunctionRegistry(target);
+            ai.requestChat(prompt)
+                .then(([response, functionCalls]) => {
+                    stackFrame.functionCalls = stackFrame.functionCalls || [];
+                    stackFrame.functionCalls.push(...functionCalls);
+                    if (response && response.text) {
+                        // If response is received, mark it
+                        this.runtime.startHats('gai_whenResponseReceived', null, target);
+                    }
+                    stackFrame.isResponseReceived = true;
                 })
-                .catch(e => {
-                    console.error(e);
-                    return e.message;
-                })
-                .finally(() => {
-                    ai.setRequesting(false);
+                .catch(error => {
+                    console.error(error);
+                    return error.message;
                 });
         }
-        return ai.requestChat(prompt)
-            .then(() => {
-                this.runtime.startHats('gai_whenResponseReceived', null, target);
-                return getTextFromResponse(ai.getLastResponse());
-            })
-            .catch(e => {
-                console.error(e);
-                return e.message;
-            })
-            .finally(() => {
-                ai.setRequesting(false);
-            });
+        util.yield();
+        return;
     }
 
     /**
@@ -1528,15 +1792,37 @@ class GeminiBlocks {
         }
         try {
             const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
+            let responseText;
             if (Array.isArray(response)) {
             // the response is streaming
                 if (candidateIndex !== 1) {
                 // Streaming response has no candidates
                     return '';
                 }
-                return getTextFromResponse(response);
+                responseText = getTextFromResponse(response);
+            } else {
+                responseText = getTextFromResponse(response, candidateIndex - 1);
             }
-            return getTextFromResponse(response, candidateIndex - 1);
+            // Replace function names with procedureCode and argument names with their codes
+            if (responseText && ai.functionRegistry) {
+                Object.values(ai.functionRegistry).forEach(functionSpec => {
+                    if (functionSpec.declaration && functionSpec.procedureCode) {
+                        const funcName = functionSpec.declaration.name;
+                        const procedureCode = functionSpec.procedureCode;
+                        // Replace function name with procedure code in the response text
+                        responseText = responseText.replace(new RegExp(funcName, 'g'), procedureCode);
+                        
+                        // Replace argument names with their codes
+                        if (functionSpec.argumentDict) {
+                            Object.entries(functionSpec.argumentDict).forEach(([argName, argCode]) => {
+                                // Replace argument name with argument code in the response text
+                                responseText = responseText.replace(new RegExp(argName, 'g'), argCode);
+                            });
+                        }
+                    }
+                });
+            }
+            return responseText;
         } catch (error) {
             console.error(`responseText: ${error.message}`);
             return error.message;
@@ -1837,6 +2123,205 @@ class GeminiBlocks {
     }
 
     /**
+     * Set the function calling mode for the target
+     * @param {object} args - the arguments for the block
+     * @param {object} util - the utility object
+     */
+    setFunctionCallingMode (args, util) {
+        const mode = args.MODE;
+        const target = util.target;
+        const ai = this.getAI(target);
+        if (mode === 'NONE') {
+            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_NONE);
+        } else if (mode === 'AUTO') {
+            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_AUTO);
+        } else if (mode === 'ANY') {
+            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_ANY);
+        }
+    }
+
+    /**
+     * Get all user-defined procedures from the target
+     * @param {Target} target - the target to get procedures from
+     * @returns {Array} - array of procedure information
+     */
+    getUserProcedures (target) {
+        const procedures = [];
+        const blocks = target.blocks._blocks;
+        for (const blockId in blocks) {
+            const block = blocks[blockId];
+            if (block.opcode === 'procedures_definition') {
+            // Get the procedure prototype
+                const prototypeId = block.inputs.custom_block.block;
+                const prototype = blocks[prototypeId];
+                if (prototype && prototype.mutation) {
+                    const inputTypes = Object.values(prototype.inputs)
+                        .filter(input => blocks[input.shadow].parent === prototypeId)
+                        .map(input => {
+                            const inputBlock = blocks[input.shadow];
+                            let inputType;
+                            switch (inputBlock.opcode) {
+                            case 'argument_reporter_string_number':
+                                inputType = 'string';
+                                break;
+                            case 'argument_reporter_boolean':
+                                inputType = 'boolean';
+                                break;
+                            default:
+                                inputType = 'string';
+                            }
+                            return inputType;
+                        });
+                    procedures.push({
+                        id: blockId,
+                        comment: block.comment,
+                        code: prototype.mutation.proccode,
+                        argumentNames: JSON.parse(prototype.mutation.argumentnames || '[]'),
+                        argumentIds: JSON.parse(prototype.mutation.argumentids || '[]'),
+                        argumentTypes: inputTypes,
+                        argumentDefaults: JSON.parse(prototype.mutation.argumentdefaults || '[]'),
+                        warp: prototype.mutation.warp === 'true'
+                    });
+                }
+            }
+        }
+    
+        return procedures;
+    }
+
+    /**
+     * Register a user-defined function for AI function calling
+     * @param {Target} target - the target to register the function
+     * @param {object} procedure - the procedure information
+     */
+    registerFunction (target, procedure) {
+        const ai = this.getAI(target);
+        const functionDescription = `${procedure.code}: ${target.comments[procedure.comment]?.text || ''}`;
+        const functionArguments = procedure.argumentNames.map((name, index) => {
+            const reporterBlocks = Object.values(target.blocks._blocks).filter(aBlock =>
+                !aBlock.shadow && (aBlock.fields.VALUE?.value === name));
+            const comments = reporterBlocks.reduce((prev, aBlock) => {
+                const comment = target.comments[aBlock.comment];
+                return comment ? `${prev} ${comment.text};` : prev;
+            }, `${name}: `);
+            return {
+                code: name,
+                type: procedure.argumentTypes[index],
+                description: comments
+            };
+        });
+        ai.registerFunction(procedure.code, functionDescription, functionArguments);
+    }
+
+    /**
+     * Set functions for AI function calling
+     * @param {object} args - the block's arguments
+     * @param {string} args.PATTERN - function name pattern to match
+     * @param {object} util - utility object provided by the runtime
+     * @returns {string} - result message
+     */
+    useMatchedProcedures (args, util) {
+        const target = util.target;
+        const codePattern = new RegExp(args.PATTERN.trim());
+        const ai = this.getAI(target);
+        const procedures = this.getUserProcedures(target)
+            .filter(proc => codePattern.test(proc.code));
+        if (procedures.length === 0) {
+            return 'No matching functions found.';
+        }
+        ai.clearRegisteredFunctions();
+        procedures.forEach(proc => this.registerFunction(target, proc));
+        return `Registered ["${procedures.map(proc => proc.code).join('", "')}"]`;
+    }
+
+    /**
+     * Update function call registry for AI.
+     * This will re-register all user-defined functions.
+     * @param {Target} target - the target to update the function registry
+     * @returns {void}
+     */
+    updateFunctionRegistry (target) {
+        const ai = this.getAI(target);
+        ai.clearRegisteredFunctions();
+        const procedures = this.getUserProcedures(target);
+        procedures.forEach(proc => {
+            this.registerFunction(target, proc);
+        });
+    }
+
+    /**
+     * Return result to AI for function calling of the last response.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.RESULT - result to return
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - message indicating result is returned
+     */
+    returnResultToAI (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        const result = args.RESULT;
+        const blockId = util.thread.peekStack();
+        const topBlockId = target.blocks.getTopLevelScript(blockId);
+        const topBlock = target.blocks.getBlock(topBlockId);
+        if (!topBlock || topBlock.opcode !== 'procedures_definition') {
+            return 'Error: Not in a procedure definition block.';
+        }
+        const prototypeId = topBlock.inputs.custom_block.block;
+        const prototype = target.blocks.getBlock(prototypeId);
+        const procedureCode = prototype.mutation.proccode;
+        const functionSpec = ai.getFunctionSpec(procedureCode);
+        if (!functionSpec) {
+            console.log(`returnResultToAI: "${procedureCode}" is not registered.`);
+            return `"${procedureCode}" is not registered.`;
+        }
+        const currentCall = util.thread.functionCall;
+        if (!currentCall) {
+            return 'No function call in progress.';
+        }
+        if (currentCall.name !== functionSpec.declaration.name) {
+            console.log(`returnResultToAI: "${functionSpec.declaration.name}" is not the current function call.`);
+            return `"${functionSpec.declaration.name}" is not the current function call.`;
+        }
+        const stackFrame = util.stackFrame;
+        if (stackFrame.functionCalls) {
+            const callsToStart = stackFrame.functionCalls.filter(funcCall => funcCall.status === 'PENDING');
+            if (callsToStart.length > 0) {
+                this.dispatchFunctionCalls(callsToStart, util);
+                util.yield();
+                return;
+            }
+            if (stackFrame.functionCalls
+                .every(funcCall => funcCall.thread &&
+                    this.runtime.threads.indexOf(funcCall.thread) === -1)) {
+            // All function calls are completed, exit this block
+                this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
+                console.log(
+                    `"function: ${functionSpec.declaration.name}, block: ${procedureCode}", result: ${result},`
+                );
+                return;
+            }
+        }
+        if (typeof currentCall.result === 'undefined') {
+            currentCall.result = result;
+            ai.returnFunctionResult(currentCall)
+                .then(([response, functionCalls]) => {
+                    stackFrame.functionCalls = stackFrame.functionCalls || [];
+                    stackFrame.functionCalls.push(...functionCalls);
+                    if (response && response.text) {
+                        this.runtime.startHats('gai_whenResponseReceived', null, target);
+                    }
+                    stackFrame.isResultResponseReceived = true;
+                })
+                .catch(error => {
+                    console.error(error);
+                    return error.message;
+                });
+        }
+        util.yield();
+        return;
+    }
+
+    /**
      * Get embedding of content.
      * @param {object} args - the block's arguments.
      * @param {string} args.CONTENT - content
@@ -1855,7 +2340,6 @@ class GeminiBlocks {
             util.yield();
             return;
         }
-        ai.setRequesting(true);
         const contentText = Cast.toString(args.CONTENT).trim();
         const content = interpretContentPartsText(contentText, target, runtime);
         const taskType = args.TASK_TYPE;
@@ -1868,9 +2352,6 @@ class GeminiBlocks {
             .catch(error => {
                 console.error(`embeddingFor: ${error.message}`);
                 return '';
-            })
-            .finally(() => {
-                ai.setRequesting(false);
             });
     }
 
@@ -1911,15 +2392,17 @@ class GeminiBlocks {
      * @param {object} util - utility object provided by the runtime.
      * @returns {void}
      */
-    setApiKey (args) {
+    setApiKey (args, util) {
         const apiKey = Cast.toString(args.KEY).trim();
         GeminiAdapter.setApiKey(apiKey);
         GeminiAdapter.removeAllAdapter();
+        this.updateFunctionRegistry(util.target);
     }
 
     /**
      * Get API key.
      * @returns {string} - API key
+
      * @deprecated
      */
     apiKey () {
@@ -1936,15 +2419,17 @@ class GeminiBlocks {
      * Set base URL and reset AI.
      * @param {object} args - the block's arguments.
      * @param {string} args.URL - base URL
+     * @param {object} util - utility object provided by the runtime.
      * @returns {string} - message
      */
-    setBaseUrl (args) {
+    setBaseUrl (args, util) {
         const baseUrl = Cast.toString(args.URL).trim();
         if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
             return 'error: invalid URL';
         }
         GeminiAdapter.baseUrl = baseUrl;
         GeminiAdapter.removeAllAdapter();
+        this.updateFunctionRegistry(util.target);
         return `set base URL: ${baseUrl}`;
     }
 
@@ -1974,7 +2459,6 @@ class GeminiBlocks {
             util.yield();
             return;
         }
-        ai.setRequesting(true);
         const contentText = Cast.toString(args.CONTENT);
         const content = interpretContentPartsText(contentText, target, this.runtime);
         const requestType = args.REQUEST_TYPE;
@@ -1982,9 +2466,6 @@ class GeminiBlocks {
             .catch(error => {
                 console.error(error);
                 return error.message;
-            })
-            .finally(() => {
-                ai.setRequesting(false);
             });
     }
 
@@ -2003,12 +2484,8 @@ class GeminiBlocks {
             util.yield();
             return;
         }
-        ai.setRequesting(true);
         return ai.setGenerativeModel(modelCode)
-            .catch(error => `Error setting model: ${error.message}`)
-            .finally(() => {
-                ai.setRequesting(false);
-            });
+            .catch(error => `Error setting model: ${error.message}`);
     }
 
     /**
@@ -2080,12 +2557,8 @@ class GeminiBlocks {
             util.yield();
             return;
         }
-        ai.setRequesting(true);
         return ai.setEmbeddingModel(modelCode)
-            .catch(error => `Error setting model: ${error.message}`)
-            .finally(() => {
-                ai.setRequesting(false);
-            });
+            .catch(error => `Error setting model: ${error.message}`);
     }
 
     /**
@@ -2272,6 +2745,7 @@ class GeminiBlocks {
                         if (validation.valid) {
                             GeminiAdapter.setApiKey(apiKey);
                             GeminiAdapter.removeAllAdapter();
+                            this.updateFunctionRegistry(util.target);
                             return 'API key validated and set successfully';
                         }
                         return `API key validation failed: ${validation.error}`;

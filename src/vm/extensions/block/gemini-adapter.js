@@ -2,8 +2,44 @@ import {
     GoogleGenAI,
     createPartFromBase64,
     createPartFromText,
-    createUserContent
+    createUserContent,
+    createModelContent,
+    FunctionCallingConfigMode
 } from '@google/genai';
+
+class FunctionCall {
+    constructor (call, requestType, generateParameters) {
+        this.call = call;
+        this.requestType = requestType;
+        this.generateParameters = generateParameters;
+        this.status = 'PENDING';
+        this.thread = null; // thread to run function
+    }
+    /**
+     * Get function call name.
+     * @returns {string} - function call name
+     */
+    get name () {
+        return this.call.name;
+    }
+
+    /**
+     * Get function call arguments.
+     * @returns {Array} - function call arguments
+     */
+    get args () {
+        return this.call.args;
+    }
+
+    /**
+     * Whether function call is finished.
+     * @returns {boolean} - true if function call is finished, false otherwise
+     */
+    isFinished () {
+        return this.status === 'COMPLETED' ||
+               this.status === 'FAILED';
+    }
+}
 
 export const HarmCategory = {
     HARM_CATEGORY_UNSPECIFIED: 'HARM_CATEGORY_UNSPECIFIED',
@@ -52,9 +88,9 @@ export const getTextFromResponse = function (responses, candidateIndex = 0) {
         if (typeof aResponse === 'string') {
             return aResponse;
         }
-        if (aResponse.name === 'ServerError') {
-            contentText += `\nServerError: ${aResponse.message}`;
-            return;
+        if (aResponse.name?.includes('Error')) {
+            contentText += aResponse.message || aResponse.name;
+            return contentText;
         }
         if (aResponse.promptFeedback) {
             if (aResponse.promptFeedback.blockReason === 'SAFETY') {
@@ -199,6 +235,24 @@ export class GeminiAdapter {
      */
     static baseUrl = 'https://generativelanguage.googleapis.com';
 
+    /**
+     * Request types for AI operations.
+     * @returns {object} request types
+     */
+    static REQUEST_TYPE = {
+        GENERATE: 'generate',
+        CHAT: 'chat',
+        EMBEDDING: 'embedding'
+    };
+
+    /**
+     * Function calling modes for AI operations.
+     * @returns {object} function calling modes
+     */
+    static FUNCTION_CALLING_NONE = FunctionCallingConfigMode.NONE;
+    static FUNCTION_CALLING_AUTO = FunctionCallingConfigMode.AUTO;
+    static FUNCTION_CALLING_ANY = FunctionCallingConfigMode.ANY;
+
     constructor (target) {
         this.target = target;
         GeminiAdapter.ADAPTERS[target.id] = this;
@@ -207,7 +261,7 @@ export class GeminiAdapter {
         this.models = {};
         /**
          * safety settings
-         * @type {Array.<{category: string, blockThreshold: string}>}
+         * @type {Array.<{category__/: string, blockThreshold: string}>}
          */
         this.safetySettings = [];
         /**
@@ -218,7 +272,12 @@ export class GeminiAdapter {
         this.chatSession = null;
         this.lastResponse = null;
         this.lastPartialResponse = null;
-        this.requesting = false;
+        this.functionRegistry = {};
+        this.functionCallTool = null;
+        this.functionIndex = 0; // index for function names
+        this.functionArgPrefix = 'arg_';
+        this.functionNamePrefix = 'func_';
+        this.functionCallingMode = GeminiAdapter.FUNCTION_CALLING_AUTO; // default mode
     }
 
     /**
@@ -357,23 +416,6 @@ export class GeminiAdapter {
     }
 
     /**
-     * Check if target is requesting to AI.
-     * @returns {boolean} - whether target is requesting to AI
-     */
-    isRequesting () {
-        return this.requesting;
-    }
-
-    /**
-     * Set whether target is requesting to AI.
-     * @param {boolean} requesting - whether target is requesting to AI
-     * @returns {void}
-     */
-    setRequesting (requesting) {
-        this.requesting = requesting;
-    }
-
-    /**
      * Get last response object from AI.
      * @returns {GenerateContentResponse} - last response
      */
@@ -384,6 +426,7 @@ export class GeminiAdapter {
     /**
      * Set last response from AI.
      * @param {GenerateContentResponse|GenericContentResponse[]} response - last response
+     * @param {object} prompt - the requested prompt of the response
      * @returns {void}
      */
     setLastResponse (response) {
@@ -408,6 +451,188 @@ export class GeminiAdapter {
     }
 
     /**
+     * Update function declarations in generation config according to registered functions.
+     * @returns {void}
+     */
+    updateFunctionCallTool () {
+        const declarations = Object.values(this.functionRegistry).map(func => func.declaration);
+        if (!this.generationConfig.tools) {
+            this.generationConfig.tools = [];
+        }
+        if (this.functionCallTool) {
+            this.functionCallTool.functionDeclarations = declarations;
+        } else {
+            const functionCallTool = {functionDeclarations: declarations};
+            this.generationConfig.tools.push(functionCallTool);
+            this.functionCallTool = functionCallTool;
+        }
+        // Update tool config to include function calling mode
+        this.updateToolConfig();
+    }
+
+    /**
+     * Set function calling mode for AI generation.
+     * @param {string} mode - function calling mode ('NONE', 'AUTO', 'ANY')
+     * @returns {void}
+     */
+    setFunctionCallingMode (mode) {
+        this.functionCallingMode = mode;
+        // Update toolConfig in generationConfig when function calling mode is set
+        this.updateToolConfig();
+    }
+
+    /**
+     * Update tool config in generation config to include function calling mode.
+     * @returns {void}
+     */
+    updateToolConfig () {
+        if (!this.generationConfig.toolConfig) {
+            this.generationConfig.toolConfig = {};
+        }
+        if (!this.generationConfig.toolConfig.functionCallingConfig) {
+            this.generationConfig.toolConfig.functionCallingConfig = {};
+        }
+        this.generationConfig.toolConfig.functionCallingConfig.mode = this.functionCallingMode;
+    }
+
+    /**
+     * Get function specification by procedure code.
+     * @param {string} procedureCode - code of the procedure to get specification for
+     * @returns {object|null} - function specification or null if not found
+     */
+    getFunctionSpec (procedureCode) {
+        return Object.values(this.functionRegistry).find(func => func.procedureCode === procedureCode);
+    }
+
+    /**
+     * Register a function for the generation.
+     * @param {string} procedureCode - code of the procedure to register
+     * @param {string} functionDescription - description of the function
+     * @param {Array.<{type: string, description: string, code: string}>} procedureArguments
+     *  - arguments of the procedure
+     * @returns {void}
+     */
+    registerFunction (procedureCode, functionDescription, procedureArguments) {
+        let functionName;
+        const existingSpec = this.getFunctionSpec(procedureCode);
+        if (existingSpec) {
+            // If function already exists, update it
+            functionName = existingSpec.declaration.name;
+        } else {
+            this.functionIndex = this.functionIndex + 1;
+            functionName = `${this.functionNamePrefix}${this.functionIndex}`;
+        }
+        const functionDeclaration = {
+            name: functionName,
+            description: functionDescription
+        };
+        const argumentDict = {};
+        if (procedureArguments && procedureArguments.length > 0) {
+            const parameters = {};
+            procedureArguments.forEach((argSpec, index) => {
+                const paramName = `${this.functionArgPrefix}${index}`;
+                parameters[paramName] = {
+                    type: argSpec.type,
+                    description: argSpec.description
+                };
+                argumentDict[paramName] = argSpec.code;
+            });
+            functionDeclaration.parameters = {
+                type: 'object',
+                properties: parameters
+            };
+        }
+        this.functionRegistry[functionName] = {
+            procedureCode: procedureCode,
+            argumentDict: argumentDict,
+            declaration: functionDeclaration
+        };
+        this.updateFunctionCallTool();
+    }
+
+    /**
+     * Erase a function from registered functions.
+     * @param {string} procedureCode - code of the procedure to erase
+     * @returns {void}
+     */
+    unregisterFunction (procedureCode) {
+        const functionSpec = this.getFunctionSpec(procedureCode);
+        if (functionSpec) {
+            delete this.functionRegistry[functionSpec.declaration.name];
+            this.updateFunctionCallTool();
+        }
+    }
+
+    /**
+     * Unregister all functions.
+     * This will clear all registered functions and update the function call tool.
+     * @returns {void}
+     */
+    clearRegisteredFunctions () {
+        // Clear all registered functions
+        Object.keys(this.functionRegistry).forEach(key => {
+            delete this.functionRegistry[key];
+        });
+        this.functionIndex = 0; // Reset function index
+        this.updateFunctionCallTool();
+    }
+
+    /**
+     * Return function result to AI.
+     * @param {object} functionCall - function call to return result for
+     * @param {object} result - result of the function
+     * @returns {Promise<[GenerateContentResponse, Array.<object>]>} - a Promise that resolves
+     *  to an array with response and function calls
+     */
+    returnFunctionResult (functionCall) {
+        const functionRequestContent = createModelContent([{
+            functionCall: {
+                name: functionCall.name,
+                args: functionCall.args
+            }
+        }]);
+        const functionResponseContent = createUserContent([{
+            functionResponse: {
+                name: functionCall.name,
+                response: {
+                    result: functionCall.result
+                }
+            }
+        }]);
+        if (functionCall.requestType === GeminiAdapter.REQUEST_TYPE.GENERATE) {
+            const contents = [
+                functionCall.generateParameters.contents,
+                functionRequestContent,
+                functionResponseContent
+            ];
+            const genParam = {
+                model: this.modelCode.generative,
+                contents: contents,
+                safetySettings: {...this.safetySettings},
+                config: {...this.generationConfig}
+            };
+            return this.generateForContent(genParam);
+        }
+        if (functionCall.requestType === GeminiAdapter.REQUEST_TYPE.CHAT) {
+            return this.chatSession.sendMessage({
+                config: {...this.generationConfig},
+                message: functionResponseContent
+            })
+                .then(response => {
+                    const functionCalls = [];
+                    if (response.functionCalls) {
+                        response.functionCalls.forEach(call => {
+                            functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.CHAT,
+                                functionCall.generateParameters));
+                        });
+                    }
+                    this.setLastResponse(response);
+                    return [response, functionCalls];
+                });
+        }
+    }
+
+    /**
      * Convert content parts to Gemini AI format.
      * @param {Array.<string | object>} contentParts - content to convert
      * @returns {Array.<string | object>} - content to Gemini AI
@@ -426,49 +651,79 @@ export class GeminiAdapter {
     }
 
     /**
-     * Send generator type prompt to AI.
-     * @param {Array.<string | object>} contentParts - prompt to AI
-     * @returns {Promise<string>} - a Promise that resolves text from AI
+     * Generate content for AI.
+     * @param {object} genParam - generation parameters
+     * @returns {Promise<[GenerateContentResponse, Array.<object>]>} - a Promise that resolves
+     *  to an array with response and function calls
      */
-    requestGenerate (contentParts) {
+    generateForContent (genParam) {
         const models = this.getSDK().models;
-        const geminiContentParts = this.convertContentParts(contentParts);
-        return models.generateContent({
-            model: this.modelCode.generative,
-            contents: createUserContent(geminiContentParts),
-            safetySettings: this.safetySettings,
-            config: this.generationConfig
-        })
+        return models.generateContent(genParam)
             .then(response => {
+                const functionCalls = [];
+                if (response.functionCalls) {
+                    response.functionCalls.forEach(call => {
+                        functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.GENERATE, genParam));
+                    });
+                }
+                this.setLastPartialResponse(null);
                 this.setLastResponse(response);
+                return [response, functionCalls];
             })
             .catch(error => {
                 this.setLastResponse(error);
+                return Promise.reject(error);
             });
     }
 
-    async requestGenerateStream (contentParts, partialResponseHandler) {
+    /**
+     * Send generator type prompt to AI.
+     * @param {Array.<string | object>} prompt - the original prompt to AI
+     * @returns {Promise<[GenerateContentResponse, Array.<object>]>} - a Promise that resolves
+     *  to an array with response and function calls
+     */
+    requestGenerate (prompt) {
+        const geminiContentParts = this.convertContentParts(prompt);
+        const genParam = {
+            model: this.modelCode.generative,
+            contents: createUserContent(geminiContentParts),
+            safetySettings: {...this.safetySettings},
+            config: {...this.generationConfig}
+        };
+        return this.generateForContent(genParam);
+    }
+
+    async requestGenerateStream (prompt, partialResponseHandler) {
         const models = this.getSDK().models;
-        const geminiContentParts = this.convertContentParts(contentParts);
+        const contents = createUserContent(this.convertContentParts(prompt));
         const config = {...this.generationConfig};
         config.candidateCount = 1; // only one candidate for streaming
+        const genParam = {
+            model: this.modelCode.generative,
+            contents: contents,
+            safetySettings: {...this.safetySettings},
+            config: config
+        };
         try {
-            const streamingResult = await models.generateContentStream({
-                model: this.modelCode.generative,
-                contents: createUserContent(geminiContentParts),
-                safetySettings: this.safetySettings,
-                config: config
-            });
+            const streamingResult = await models.generateContentStream(genParam);
             const wholeResponses = [];
+            const functionCalls = [];
             for await (const lastPartialResponse of streamingResult) {
-            // Process each partial response
+                // Process each partial response
                 this.setLastPartialResponse(lastPartialResponse);
                 partialResponseHandler(lastPartialResponse);
                 wholeResponses.push(lastPartialResponse);
+                if (lastPartialResponse.functionCalls) {
+                    lastPartialResponse.functionCalls.forEach(call => {
+                        functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.GENERATE, genParam));
+                    });
+                }
             }
             this.setLastResponse(wholeResponses);
+            return [wholeResponses, functionCalls];
         } catch (error) {
             this.setLastResponse(error);
+            throw error;
         }
     }
 
@@ -488,48 +743,68 @@ export class GeminiAdapter {
 
     /**
      * Send chat message to AI.
-     * @param {string} contentParts - message to AI
-     * @returns {Promise<GenerateContentResult>} - a Promise that resolves when the message is sent
+     * @param {string} prompt - message to AI
+     * @returns {Promise<[GenerateContentResponse, Array.<object>]>} - a Promise that resolves
+     *  to an array with response and function calls
      */
-    requestChat (contentParts) {
+    requestChat (prompt) {
         if (!this.chatSession) {
             this.startChat([]);
         }
-        const geminiContentParts = this.convertContentParts(contentParts);
-        return this.chatSession.sendMessage({
-            config: this.generationConfig,
-            message: createUserContent(geminiContentParts)
-        })
+        const contents = createUserContent(this.convertContentParts(prompt));
+        const chatParam = {
+            config: {...this.generationConfig},
+            message: contents
+        };
+        return this.chatSession.sendMessage(chatParam)
             .then(response => {
+                const functionCalls = [];
+                if (response.functionCalls) {
+                    response.functionCalls.forEach(call => {
+                        functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.CHAT, chatParam));
+                    });
+                }
+                this.setLastPartialResponse(null);
                 this.setLastResponse(response);
+                return [response, functionCalls];
             })
             .catch(error => {
                 this.setLastResponse(error);
+                return Promise.reject(error);
             });
     }
 
-    async requestChatStream (contentParts, partialResponseHandler) {
+    async requestChatStream (prompt, partialResponseHandler) {
         if (!this.chatSession) {
             this.startChat([]);
         }
-        const geminiContentParts = this.convertContentParts(contentParts);
+        const contents = createUserContent(this.convertContentParts(prompt));
         const config = {...this.generationConfig};
         config.candidateCount = 1; // only one candidate for streaming
+        const chatParam = {
+            config: config,
+            message: contents
+        };
         try {
-            const streamingResult = await this.chatSession.sendMessageStream({
-                config: config,
-                message: createUserContent(geminiContentParts)
-            });
+            const streamingResult = await this.chatSession.sendMessageStream(chatParam);
             const wholeResponses = [];
+            const functionCalls = [];
             for await (const lastPartialResponse of streamingResult) {
                 // Process each partial response
                 this.setLastPartialResponse(lastPartialResponse);
                 partialResponseHandler(lastPartialResponse);
                 wholeResponses.push(lastPartialResponse);
+                if (lastPartialResponse.functionCalls) {
+                    lastPartialResponse.functionCalls.forEach(call => {
+                        functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.CHAT, chatParam));
+                    });
+                }
             }
             this.setLastResponse(wholeResponses);
+            return [wholeResponses, functionCalls];
         } catch (error) {
             this.setLastResponse(error);
+            throw error;
         }
     }
 
