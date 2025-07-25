@@ -580,17 +580,10 @@ export class GeminiAdapter {
     /**
      * Return function result to AI.
      * @param {object} functionCall - function call to return result for
-     * @param {object} result - result of the function
      * @returns {Promise<[GenerateContentResponse, Array.<object>]>} - a Promise that resolves
      *  to an array with response and function calls
      */
     returnFunctionResult (functionCall) {
-        const functionRequestContent = createModelContent([{
-            functionCall: {
-                name: functionCall.name,
-                args: functionCall.args
-            }
-        }]);
         const functionResponseContent = createUserContent([{
             functionResponse: {
                 name: functionCall.name,
@@ -599,36 +592,108 @@ export class GeminiAdapter {
                 }
             }
         }]);
+
         if (functionCall.requestType === GeminiAdapter.REQUEST_TYPE.GENERATE) {
+            const functionRequestContent = createModelContent([{
+                functionCall: {
+                    name: functionCall.name,
+                    args: functionCall.args
+                }
+            }]);
             const contents = [
                 functionCall.generateParameters.contents,
                 functionRequestContent,
                 functionResponseContent
             ];
             const genParam = {
-                model: this.modelCode.generative,
-                contents: contents,
-                safetySettings: {...this.safetySettings},
-                config: {...this.generationConfig}
+                ...functionCall.generateParameters,
+                contents: contents
             };
             return this.generateForContent(genParam);
         }
+
         if (functionCall.requestType === GeminiAdapter.REQUEST_TYPE.CHAT) {
-            return this.chatSession.sendMessage({
+            const chatParam = {
                 config: {...this.generationConfig},
                 message: functionResponseContent
+            };
+            const promise = this.chatSession.sendMessage(chatParam);
+            return this._handleResponse(promise, GeminiAdapter.REQUEST_TYPE.CHAT, chatParam);
+        }
+    }
+
+    /**
+     * Process function calls from the response.
+     * @param {GenerateContentResponse} response - The response from the AI model.
+     * @param {string} requestType - The type of the request ('generate' or 'chat').
+     * @param {object} requestParam - The parameters used for the request.
+     * @returns {Array<FunctionCall>} An array of FunctionCall objects.
+     * @private
+     */
+    _createFunctionCalls (response, requestType, requestParam) {
+        const functionCalls = [];
+        if (response.functionCalls) {
+            response.functionCalls.forEach(call => {
+                functionCalls.push(new FunctionCall(call, requestType, requestParam));
+            });
+        }
+        return functionCalls;
+    }
+
+    /**
+     * Handles the response from a non-streaming API call.
+     * @param {Promise<GenerateContentResponse>} promise - The promise returned by the API call.
+     * @param {string} requestType - The type of the request.
+     * @param {object} requestParam - The parameters for the request.
+     * @returns {Promise<[GenerateContentResponse, Array.<object>]>} A promise that resolves to the response and
+     * function calls.
+     * @private
+     */
+    _handleResponse (promise, requestType, requestParam) {
+        return promise
+            .then(response => {
+                const functionCalls = this._createFunctionCalls(response, requestType, requestParam);
+                this.setLastPartialResponse(null);
+                this.setLastResponse(response);
+                return [response, functionCalls];
             })
-                .then(response => {
-                    const functionCalls = [];
-                    if (response.functionCalls) {
-                        response.functionCalls.forEach(call => {
-                            functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.CHAT,
-                                functionCall.generateParameters));
-                        });
-                    }
-                    this.setLastResponse(response);
-                    return [response, functionCalls];
-                });
+            .catch(error => {
+                this.setLastResponse(error);
+                return Promise.reject(error);
+            });
+    }
+
+    /**
+     * Handles the response from a streaming API call.
+     * @param {Promise<AsyncGenerator<EnhancedGenerateContentResponse>>} streamingPromise
+     *  - The promise for the streaming result.
+     * @param {string} requestType - The type of the request.
+     * @param {object} requestParam - The parameters for the request.
+     * @param {function} partialResponseHandler - The handler for partial responses.
+     * @returns {Promise<[Array<EnhancedGenerateContentResponse>, Array.<object>]>} A promise that resolves to the
+     * responses and function calls.
+     * @private
+     */
+    async _handleStreamResponse (streamingPromise, requestType, requestParam, partialResponseHandler) {
+        try {
+            const streamingResult = await streamingPromise;
+            const wholeResponses = [];
+            let functionCalls = [];
+            for await (const partialResponse of streamingResult) {
+                this.setLastPartialResponse(partialResponse);
+                if (partialResponseHandler) {
+                    partialResponseHandler(partialResponse);
+                }
+                wholeResponses.push(partialResponse);
+                functionCalls = functionCalls.concat(
+                    this._createFunctionCalls(partialResponse, requestType, requestParam)
+                );
+            }
+            this.setLastResponse(wholeResponses);
+            return [wholeResponses, functionCalls];
+        } catch (error) {
+            this.setLastResponse(error);
+            throw error;
         }
     }
 
@@ -658,22 +723,8 @@ export class GeminiAdapter {
      */
     generateForContent (genParam) {
         const models = this.getSDK().models;
-        return models.generateContent(genParam)
-            .then(response => {
-                const functionCalls = [];
-                if (response.functionCalls) {
-                    response.functionCalls.forEach(call => {
-                        functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.GENERATE, genParam));
-                    });
-                }
-                this.setLastPartialResponse(null);
-                this.setLastResponse(response);
-                return [response, functionCalls];
-            })
-            .catch(error => {
-                this.setLastResponse(error);
-                return Promise.reject(error);
-            });
+        const promise = models.generateContent(genParam);
+        return this._handleResponse(promise, GeminiAdapter.REQUEST_TYPE.GENERATE, genParam);
     }
 
     /**
@@ -683,48 +734,35 @@ export class GeminiAdapter {
      *  to an array with response and function calls
      */
     requestGenerate (prompt) {
-        const geminiContentParts = this.convertContentParts(prompt);
         const genParam = {
             model: this.modelCode.generative,
-            contents: createUserContent(geminiContentParts),
+            contents: createUserContent(this.convertContentParts(prompt)),
             safetySettings: {...this.safetySettings},
             config: {...this.generationConfig}
         };
         return this.generateForContent(genParam);
     }
 
-    async requestGenerateStream (prompt, partialResponseHandler) {
+    /**
+     * Send generator type prompt to AI and get a streaming response.
+     * @param {Array.<string|object>} prompt - The prompt to send to the AI.
+     * @param {function} partialResponseHandler - A function to handle partial responses.
+     * @returns {Promise<[Array<EnhancedGenerateContentResponse>, Array.<object>]>} A promise that resolves to the full
+     * response and any function calls.
+     */
+    requestGenerateStream (prompt, partialResponseHandler) {
         const models = this.getSDK().models;
-        const contents = createUserContent(this.convertContentParts(prompt));
-        const config = {...this.generationConfig};
-        config.candidateCount = 1; // only one candidate for streaming
+        const config = {...this.generationConfig, candidateCount: 1};
         const genParam = {
             model: this.modelCode.generative,
-            contents: contents,
+            contents: createUserContent(this.convertContentParts(prompt)),
             safetySettings: {...this.safetySettings},
             config: config
         };
-        try {
-            const streamingResult = await models.generateContentStream(genParam);
-            const wholeResponses = [];
-            const functionCalls = [];
-            for await (const lastPartialResponse of streamingResult) {
-                // Process each partial response
-                this.setLastPartialResponse(lastPartialResponse);
-                partialResponseHandler(lastPartialResponse);
-                wholeResponses.push(lastPartialResponse);
-                if (lastPartialResponse.functionCalls) {
-                    lastPartialResponse.functionCalls.forEach(call => {
-                        functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.GENERATE, genParam));
-                    });
-                }
-            }
-            this.setLastResponse(wholeResponses);
-            return [wholeResponses, functionCalls];
-        } catch (error) {
-            this.setLastResponse(error);
-            throw error;
-        }
+        const streamingPromise = models.generateContentStream(genParam);
+        return this._handleStreamResponse(
+            streamingPromise, GeminiAdapter.REQUEST_TYPE.GENERATE, genParam, partialResponseHandler
+        );
     }
 
     /**
@@ -751,61 +789,34 @@ export class GeminiAdapter {
         if (!this.chatSession) {
             this.startChat([]);
         }
-        const contents = createUserContent(this.convertContentParts(prompt));
         const chatParam = {
             config: {...this.generationConfig},
-            message: contents
+            message: createUserContent(this.convertContentParts(prompt))
         };
-        return this.chatSession.sendMessage(chatParam)
-            .then(response => {
-                const functionCalls = [];
-                if (response.functionCalls) {
-                    response.functionCalls.forEach(call => {
-                        functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.CHAT, chatParam));
-                    });
-                }
-                this.setLastPartialResponse(null);
-                this.setLastResponse(response);
-                return [response, functionCalls];
-            })
-            .catch(error => {
-                this.setLastResponse(error);
-                return Promise.reject(error);
-            });
+        const promise = this.chatSession.sendMessage(chatParam);
+        return this._handleResponse(promise, GeminiAdapter.REQUEST_TYPE.CHAT, chatParam);
     }
 
-    async requestChatStream (prompt, partialResponseHandler) {
+    /**
+     * Send chat message to AI and get a streaming response.
+     * @param {string} prompt - message to AI
+     * @param {function} partialResponseHandler - A function to handle partial responses.
+     * @returns {Promise<[Array<EnhancedGenerateContentResponse>, Array.<object>]>} A promise that resolves to the full
+     * response and any function calls.
+     */
+    requestChatStream (prompt, partialResponseHandler) {
         if (!this.chatSession) {
             this.startChat([]);
         }
-        const contents = createUserContent(this.convertContentParts(prompt));
-        const config = {...this.generationConfig};
-        config.candidateCount = 1; // only one candidate for streaming
+        const config = {...this.generationConfig, candidateCount: 1};
         const chatParam = {
             config: config,
-            message: contents
+            message: createUserContent(this.convertContentParts(prompt))
         };
-        try {
-            const streamingResult = await this.chatSession.sendMessageStream(chatParam);
-            const wholeResponses = [];
-            const functionCalls = [];
-            for await (const lastPartialResponse of streamingResult) {
-                // Process each partial response
-                this.setLastPartialResponse(lastPartialResponse);
-                partialResponseHandler(lastPartialResponse);
-                wholeResponses.push(lastPartialResponse);
-                if (lastPartialResponse.functionCalls) {
-                    lastPartialResponse.functionCalls.forEach(call => {
-                        functionCalls.push(new FunctionCall(call, GeminiAdapter.REQUEST_TYPE.CHAT, chatParam));
-                    });
-                }
-            }
-            this.setLastResponse(wholeResponses);
-            return [wholeResponses, functionCalls];
-        } catch (error) {
-            this.setLastResponse(error);
-            throw error;
-        }
+        const streamingPromise = this.chatSession.sendMessageStream(chatParam);
+        return this._handleStreamResponse(
+            streamingPromise, GeminiAdapter.REQUEST_TYPE.CHAT, chatParam, partialResponseHandler
+        );
     }
 
     /**
