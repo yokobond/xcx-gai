@@ -188,86 +188,104 @@ function getDefaultExportFromCjs (x) {
  * Types of block
  * @enum {string}
  */
-var BlockType = {
-  /**
-   * Boolean reporter with hexagonal shape
-   */
-  BOOLEAN: 'Boolean',
-  /**
-   * A button (not an actual block) for some special action, like making a variable
-   */
-  BUTTON: 'button',
-  /**
-   * Command block
-   */
-  COMMAND: 'command',
-  /**
-   * Specialized command block which may or may not run a child branch
-   * The thread continues with the next block whether or not a child branch ran.
-   */
-  CONDITIONAL: 'conditional',
-  /**
-   * Specialized hat block with no implementation function
-   * This stack only runs if the corresponding event is emitted by other code.
-   */
-  EVENT: 'event',
-  /**
-   * Hat block which conditionally starts a block stack
-   */
-  HAT: 'hat',
-  /**
-   * Specialized command block which may or may not run a child branch
-   * If a child branch runs, the thread evaluates the loop block again.
-   */
-  LOOP: 'loop',
-  /**
-   * General reporter with numeric or string value
-   */
-  REPORTER: 'reporter'
-};
-var blockType = BlockType;
-var BlockType$1 = /*@__PURE__*/getDefaultExportFromCjs(blockType);
+var blockType;
+var hasRequiredBlockType;
+function requireBlockType() {
+  if (hasRequiredBlockType) return blockType;
+  hasRequiredBlockType = 1;
+  var BlockType = {
+    /**
+     * Boolean reporter with hexagonal shape
+     */
+    BOOLEAN: 'Boolean',
+    /**
+     * A button (not an actual block) for some special action, like making a variable
+     */
+    BUTTON: 'button',
+    /**
+     * Command block
+     */
+    COMMAND: 'command',
+    /**
+     * Specialized command block which may or may not run a child branch
+     * The thread continues with the next block whether or not a child branch ran.
+     */
+    CONDITIONAL: 'conditional',
+    /**
+     * Specialized hat block with no implementation function
+     * This stack only runs if the corresponding event is emitted by other code.
+     */
+    EVENT: 'event',
+    /**
+     * Hat block which conditionally starts a block stack
+     */
+    HAT: 'hat',
+    /**
+     * Specialized command block which may or may not run a child branch
+     * If a child branch runs, the thread evaluates the loop block again.
+     */
+    LOOP: 'loop',
+    /**
+     * General reporter with numeric or string value
+     */
+    REPORTER: 'reporter'
+  };
+  blockType = BlockType;
+  return blockType;
+}
+
+var blockTypeExports = requireBlockType();
+var BlockType = /*@__PURE__*/getDefaultExportFromCjs(blockTypeExports);
 
 /**
  * Block argument types
  * @enum {string}
  */
-var ArgumentType = {
-  /**
-   * Numeric value with angle picker
-   */
-  ANGLE: 'angle',
-  /**
-   * Boolean value with hexagonal placeholder
-   */
-  BOOLEAN: 'Boolean',
-  /**
-   * Numeric value with color picker
-   */
-  COLOR: 'color',
-  /**
-   * Numeric value with text field
-   */
-  NUMBER: 'number',
-  /**
-   * String value with text field
-   */
-  STRING: 'string',
-  /**
-   * String value with matrix field
-   */
-  MATRIX: 'matrix',
-  /**
-   * MIDI note number with note picker (piano) field
-   */
-  NOTE: 'note',
-  /**
-   * Inline image on block (as part of the label)
-   */
-  IMAGE: 'image'
-};
-var argumentType = ArgumentType;
-var ArgumentType$1 = /*@__PURE__*/getDefaultExportFromCjs(argumentType);
+var argumentType;
+var hasRequiredArgumentType;
+function requireArgumentType() {
+  if (hasRequiredArgumentType) return argumentType;
+  hasRequiredArgumentType = 1;
+  var ArgumentType = {
+    /**
+     * Numeric value with angle picker
+     */
+    ANGLE: 'angle',
+    /**
+     * Boolean value with hexagonal placeholder
+     */
+    BOOLEAN: 'Boolean',
+    /**
+     * Numeric value with color picker
+     */
+    COLOR: 'color',
+    /**
+     * Numeric value with text field
+     */
+    NUMBER: 'number',
+    /**
+     * String value with text field
+     */
+    STRING: 'string',
+    /**
+     * String value with matrix field
+     */
+    MATRIX: 'matrix',
+    /**
+     * MIDI note number with note picker (piano) field
+     */
+    NOTE: 'note',
+    /**
+     * Inline image on block (as part of the label)
+     */
+    IMAGE: 'image'
+  };
+  argumentType = ArgumentType;
+  return argumentType;
+}
+
+var argumentTypeExports = requireArgumentType();
+var ArgumentType = /*@__PURE__*/getDefaultExportFromCjs(argumentTypeExports);
 
 function _classCallCheck(a, n) {
   if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
@@ -311,503 +329,517 @@ function _createClass(e, r, t) {
   }), e;
 }
 
-var Color$1 = /*#__PURE__*/function () {
-  function Color() {
-    _classCallCheck(this, Color);
-  }
-  _createClass(Color, null, [{
-    key: "RGB_BLACK",
-    get:
-    /**
-     * @typedef {object} RGBObject - An object representing a color in RGB format.
-     * @property {number} r - the red component, in the range [0, 255].
-     * @property {number} g - the green component, in the range [0, 255].
-     * @property {number} b - the blue component, in the range [0, 255].
-     */
-
-    /**
-     * @typedef {object} HSVObject - An object representing a color in HSV format.
-     * @property {number} h - hue, in the range [0-359).
-     * @property {number} s - saturation, in the range [0,1].
-     * @property {number} v - value, in the range [0,1].
-     */
-
-    /** @type {RGBObject} */
-    function get() {
-      return {
-        r: 0,
-        g: 0,
-        b: 0
-      };
+var color;
+var hasRequiredColor;
+function requireColor() {
+  if (hasRequiredColor) return color;
+  hasRequiredColor = 1;
+  var Color = /*#__PURE__*/function () {
+    function Color() {
+      _classCallCheck(this, Color);
     }
+    return _createClass(Color, null, [{
+      key: "RGB_BLACK",
+      get:
+      /**
+       * @typedef {object} RGBObject - An object representing a color in RGB format.
+       * @property {number} r - the red component, in the range [0, 255].
+       * @property {number} g - the green component, in the range [0, 255].
+       * @property {number} b - the blue component, in the range [0, 255].
+       */
 
-    /** @type {RGBObject} */
-  }, {
-    key: "RGB_WHITE",
-    get: function get() {
-      return {
-        r: 255,
-        g: 255,
-        b: 255
-      };
-    }
+      /**
+       * @typedef {object} HSVObject - An object representing a color in HSV format.
+       * @property {number} h - hue, in the range [0-359).
+       * @property {number} s - saturation, in the range [0,1].
+       * @property {number} v - value, in the range [0,1].
+       */
 
-    /**
-     * Convert a Scratch decimal color to a hex string, #RRGGBB.
-     * @param {number} decimal RGB color as a decimal.
-     * @return {string} RGB color as #RRGGBB hex string.
-     */
-  }, {
-    key: "decimalToHex",
-    value: function decimalToHex(decimal) {
-      if (decimal < 0) {
-        decimal += 0xFFFFFF + 1;
-      }
-      var hex = Number(decimal).toString(16);
-      hex = "#".concat('000000'.substr(0, 6 - hex.length)).concat(hex);
-      return hex;
-    }
-
-    /**
-     * Convert a Scratch decimal color to an RGB color object.
-     * @param {number} decimal RGB color as decimal.
-     * @return {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
-     */
-  }, {
-    key: "decimalToRgb",
-    value: function decimalToRgb(decimal) {
-      var a = decimal >> 24 & 0xFF;
-      var r = decimal >> 16 & 0xFF;
-      var g = decimal >> 8 & 0xFF;
-      var b = decimal & 0xFF;
-      return {
-        r: r,
-        g: g,
-        b: b,
-        a: a > 0 ? a : 255
-      };
-    }
-
-    /**
-     * Convert a hex color (e.g., F00, #03F, #0033FF) to an RGB color object.
-     * CC-BY-SA Tim Down:
-     * https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
-     * @param {!string} hex Hex representation of the color.
-     * @return {RGBObject} null on failure, or rgb: {r: red [0,255], g: green [0,255], b: blue [0,255]}.
-     */
-  }, {
-    key: "hexToRgb",
-    value: function hexToRgb(hex) {
-      var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-      hex = hex.replace(shorthandRegex, function (m, r, g, b) {
-        return r + r + g + g + b + b;
-      });
-      var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      } : null;
-    }
-
-    /**
-     * Convert an RGB color object to a hex color.
-     * @param {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
-     * @return {!string} Hex representation of the color.
-     */
-  }, {
-    key: "rgbToHex",
-    value: function rgbToHex(rgb) {
-      return Color.decimalToHex(Color.rgbToDecimal(rgb));
-    }
-
-    /**
-     * Convert an RGB color object to a Scratch decimal color.
-     * @param {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
-     * @return {!number} Number representing the color.
-     */
-  }, {
-    key: "rgbToDecimal",
-    value: function rgbToDecimal(rgb) {
-      return (rgb.r << 16) + (rgb.g << 8) + rgb.b;
-    }
-
-    /**
-    * Convert a hex color (e.g., F00, #03F, #0033FF) to a decimal color number.
-    * @param {!string} hex Hex representation of the color.
-    * @return {!number} Number representing the color.
-    */
-  }, {
-    key: "hexToDecimal",
-    value: function hexToDecimal(hex) {
-      return Color.rgbToDecimal(Color.hexToRgb(hex));
-    }
-
-    /**
-     * Convert an HSV color to RGB format.
-     * @param {HSVObject} hsv - {h: hue [0,360), s: saturation [0,1], v: value [0,1]}
-     * @return {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
-     */
-  }, {
-    key: "hsvToRgb",
-    value: function hsvToRgb(hsv) {
-      var h = hsv.h % 360;
-      if (h < 0) h += 360;
-      var s = Math.max(0, Math.min(hsv.s, 1));
-      var v = Math.max(0, Math.min(hsv.v, 1));
-      var i = Math.floor(h / 60);
-      var f = h / 60 - i;
-      var p = v * (1 - s);
-      var q = v * (1 - s * f);
-      var t = v * (1 - s * (1 - f));
-      var r;
-      var g;
-      var b;
-      switch (i) {
-        default:
-        case 0:
-          r = v;
-          g = t;
-          b = p;
-          break;
-        case 1:
-          r = q;
-          g = v;
-          b = p;
-          break;
-        case 2:
-          r = p;
-          g = v;
-          b = t;
-          break;
-        case 3:
-          r = p;
-          g = q;
-          b = v;
-          break;
-        case 4:
-          r = t;
-          g = p;
-          b = v;
-          break;
-        case 5:
-          r = v;
-          g = p;
-          b = q;
-          break;
-      }
-      return {
-        r: Math.floor(r * 255),
-        g: Math.floor(g * 255),
-        b: Math.floor(b * 255)
-      };
-    }
-
-    /**
-     * Convert an RGB color to HSV format.
-     * @param {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
-     * @return {HSVObject} hsv - {h: hue [0,360), s: saturation [0,1], v: value [0,1]}
-     */
-  }, {
-    key: "rgbToHsv",
-    value: function rgbToHsv(rgb) {
-      var r = rgb.r / 255;
-      var g = rgb.g / 255;
-      var b = rgb.b / 255;
-      var x = Math.min(Math.min(r, g), b);
-      var v = Math.max(Math.max(r, g), b);
-
-      // For grays, hue will be arbitrarily reported as zero. Otherwise, calculate
-      var h = 0;
-      var s = 0;
-      if (x !== v) {
-        var f = r === x ? g - b : g === x ? b - r : r - g;
-        var i = r === x ? 3 : g === x ? 5 : 1;
-        h = (i - f / (v - x)) * 60 % 360;
-        s = (v - x) / v;
-      }
-      return {
-        h: h,
-        s: s,
-        v: v
-      };
-    }
-
-    /**
-     * Linear interpolation between rgb0 and rgb1.
-     * @param {RGBObject} rgb0 - the color corresponding to fraction1 <= 0.
-     * @param {RGBObject} rgb1 - the color corresponding to fraction1 >= 1.
-     * @param {number} fraction1 - the interpolation parameter. If this is 0.5, for example, mix the two colors equally.
-     * @return {RGBObject} the interpolated color.
-     */
-  }, {
-    key: "mixRgb",
-    value: function mixRgb(rgb0, rgb1, fraction1) {
-      if (fraction1 <= 0) return rgb0;
-      if (fraction1 >= 1) return rgb1;
-      var fraction0 = 1 - fraction1;
-      return {
-        r: fraction0 * rgb0.r + fraction1 * rgb1.r,
-        g: fraction0 * rgb0.g + fraction1 * rgb1.g,
-        b: fraction0 * rgb0.b + fraction1 * rgb1.b
-      };
-    }
-  }]);
-  return Color;
-}();
-var color = Color$1;
-
-var Color = color;
-
-/**
- * @fileoverview
- * Utilities for casting and comparing Scratch data-types.
- * Scratch behaves slightly differently from JavaScript in many respects,
- * and these differences should be encapsulated below.
- * For example, in Scratch, add(1, join("hello", world")) -> 1.
- * This is because "hello world" is cast to 0.
- * In JavaScript, 1 + Number("hello" + "world") would give you NaN.
- * Use when coercing a value before computation.
- */
-var Cast = /*#__PURE__*/function () {
-  function Cast() {
-    _classCallCheck(this, Cast);
-  }
-  _createClass(Cast, null, [{
-    key: "toNumber",
-    value:
-    /**
-     * Scratch cast to number.
-     * Treats NaN as 0.
-     * In Scratch 2.0, this is captured by `interp.numArg.`
-     * @param {*} value Value to cast to number.
-     * @return {number} The Scratch-casted number value.
-     */
-    function toNumber(value) {
-      // If value is already a number we don't need to coerce it with
-      // Number().
-      if (typeof value === 'number') {
-        // Scratch treats NaN as 0, when needed as a number.
-        // E.g., 0 + NaN -> 0.
-        if (Number.isNaN(value)) {
-          return 0;
-        }
-        return value;
-      }
-      if (typeof value === 'string') {
-        // Replace full-width numbers with half-width ones.
-        value = value.replace(/[０-９＋．ｅ]/g, function (s) {
-          return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-        });
-        value = value.replace(/[-－﹣−‐⁃‑‒–—﹘―⎯⏤ーｰ─━]/g, '-');
-      }
-      var n = Number(value);
-      if (Number.isNaN(n)) {
-        // Scratch treats NaN as 0, when needed as a number.
-        // E.g., 0 + NaN -> 0.
-        return 0;
-      }
-      return n;
-    }
-
-    /**
-     * Scratch cast to boolean.
-     * In Scratch 2.0, this is captured by `interp.boolArg.`
-     * Treats some string values differently from JavaScript.
-     * @param {*} value Value to cast to boolean.
-     * @return {boolean} The Scratch-casted boolean value.
-     */
-  }, {
-    key: "toBoolean",
-    value: function toBoolean(value) {
-      // Already a boolean?
-      if (typeof value === 'boolean') {
-        return value;
-      }
-      if (typeof value === 'string') {
-        // These specific strings are treated as false in Scratch.
-        if (value === '' || value === '0' || value.toLowerCase() === 'false') {
-          return false;
-        }
-        // All other strings treated as true.
-        return true;
-      }
-      // Coerce other values and numbers.
-      return Boolean(value);
-    }
-
-    /**
-     * Scratch cast to string.
-     * @param {*} value Value to cast to string.
-     * @return {string} The Scratch-casted string value.
-     */
-  }, {
-    key: "toString",
-    value: function toString(value) {
-      return String(value).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
-    }
-
-    /**
-     * Cast any Scratch argument to an RGB color array to be used for the renderer.
-     * @param {*} value Value to convert to RGB color array.
-     * @return {Array.<number>} [r,g,b], values between 0-255.
-     */
-  }, {
-    key: "toRgbColorList",
-    value: function toRgbColorList(value) {
-      var color = Cast.toRgbColorObject(value);
-      return [color.r, color.g, color.b];
-    }
-
-    /**
-     * Cast any Scratch argument to an RGB color object to be used for the renderer.
-     * @param {*} value Value to convert to RGB color object.
-     * @return {RGBOject} [r,g,b], values between 0-255.
-     */
-  }, {
-    key: "toRgbColorObject",
-    value: function toRgbColorObject(value) {
-      var color;
-      if (typeof value === 'string' && value.substring(0, 1) === '#') {
-        color = Color.hexToRgb(value);
-
-        // If the color wasn't *actually* a hex color, cast to black
-        if (!color) color = {
+      /** @type {RGBObject} */
+      function get() {
+        return {
           r: 0,
           g: 0,
-          b: 0,
-          a: 255
+          b: 0
         };
-      } else {
-        color = Color.decimalToRgb(Cast.toNumber(value));
       }
-      return color;
-    }
 
-    /**
-     * Determine if a Scratch argument is a white space string (or null / empty).
-     * @param {*} val value to check.
-     * @return {boolean} True if the argument is all white spaces or null / empty.
-     */
-  }, {
-    key: "isWhiteSpace",
-    value: function isWhiteSpace(val) {
-      return val === null || typeof val === 'string' && val.trim().length === 0;
-    }
-
-    /**
-     * Compare two values, using Scratch cast, case-insensitive string compare, etc.
-     * In Scratch 2.0, this is captured by `interp.compare.`
-     * @param {*} v1 First value to compare.
-     * @param {*} v2 Second value to compare.
-     * @returns {number} Negative number if v1 < v2; 0 if equal; positive otherwise.
-     */
-  }, {
-    key: "compare",
-    value: function compare(v1, v2) {
-      var n1 = Number(v1);
-      var n2 = Number(v2);
-      if (n1 === 0 && Cast.isWhiteSpace(v1)) {
-        n1 = NaN;
-      } else if (n2 === 0 && Cast.isWhiteSpace(v2)) {
-        n2 = NaN;
+      /** @type {RGBObject} */
+    }, {
+      key: "RGB_WHITE",
+      get: function get() {
+        return {
+          r: 255,
+          g: 255,
+          b: 255
+        };
       }
-      if (isNaN(n1) || isNaN(n2)) {
-        // At least one argument can't be converted to a number.
-        // Scratch compares strings as case insensitive.
-        var s1 = Cast.toString(v1).toLowerCase();
-        var s2 = Cast.toString(v2).toLowerCase();
-        if (s1 < s2) {
-          return -1;
-        } else if (s1 > s2) {
-          return 1;
+
+      /**
+       * Convert a Scratch decimal color to a hex string, #RRGGBB.
+       * @param {number} decimal RGB color as a decimal.
+       * @return {string} RGB color as #RRGGBB hex string.
+       */
+    }, {
+      key: "decimalToHex",
+      value: function decimalToHex(decimal) {
+        if (decimal < 0) {
+          decimal += 0xFFFFFF + 1;
         }
-        return 0;
+        var hex = Number(decimal).toString(16);
+        hex = "#".concat('000000'.substr(0, 6 - hex.length)).concat(hex);
+        return hex;
       }
-      // Handle the special case of Infinity
-      if (n1 === Infinity && n2 === Infinity || n1 === -Infinity && n2 === -Infinity) {
-        return 0;
-      }
-      // Compare as numbers.
-      return n1 - n2;
-    }
 
-    /**
-     * Determine if a Scratch argument number represents a round integer.
-     * @param {*} val Value to check.
-     * @return {boolean} True if number looks like an integer.
-     */
-  }, {
-    key: "isInt",
-    value: function isInt(val) {
-      // Values that are already numbers.
-      if (typeof val === 'number') {
-        if (isNaN(val)) {
-          // NaN is considered an integer.
+      /**
+       * Convert a Scratch decimal color to an RGB color object.
+       * @param {number} decimal RGB color as decimal.
+       * @return {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
+       */
+    }, {
+      key: "decimalToRgb",
+      value: function decimalToRgb(decimal) {
+        var a = decimal >> 24 & 0xFF;
+        var r = decimal >> 16 & 0xFF;
+        var g = decimal >> 8 & 0xFF;
+        var b = decimal & 0xFF;
+        return {
+          r: r,
+          g: g,
+          b: b,
+          a: a > 0 ? a : 255
+        };
+      }
+
+      /**
+       * Convert a hex color (e.g., F00, #03F, #0033FF) to an RGB color object.
+       * CC-BY-SA Tim Down:
+       * https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+       * @param {!string} hex Hex representation of the color.
+       * @return {RGBObject} null on failure, or rgb: {r: red [0,255], g: green [0,255], b: blue [0,255]}.
+       */
+    }, {
+      key: "hexToRgb",
+      value: function hexToRgb(hex) {
+        var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+          return r + r + g + g + b + b;
+        });
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : null;
+      }
+
+      /**
+       * Convert an RGB color object to a hex color.
+       * @param {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
+       * @return {!string} Hex representation of the color.
+       */
+    }, {
+      key: "rgbToHex",
+      value: function rgbToHex(rgb) {
+        return Color.decimalToHex(Color.rgbToDecimal(rgb));
+      }
+
+      /**
+       * Convert an RGB color object to a Scratch decimal color.
+       * @param {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
+       * @return {!number} Number representing the color.
+       */
+    }, {
+      key: "rgbToDecimal",
+      value: function rgbToDecimal(rgb) {
+        return (rgb.r << 16) + (rgb.g << 8) + rgb.b;
+      }
+
+      /**
+      * Convert a hex color (e.g., F00, #03F, #0033FF) to a decimal color number.
+      * @param {!string} hex Hex representation of the color.
+      * @return {!number} Number representing the color.
+      */
+    }, {
+      key: "hexToDecimal",
+      value: function hexToDecimal(hex) {
+        return Color.rgbToDecimal(Color.hexToRgb(hex));
+      }
+
+      /**
+       * Convert an HSV color to RGB format.
+       * @param {HSVObject} hsv - {h: hue [0,360), s: saturation [0,1], v: value [0,1]}
+       * @return {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
+       */
+    }, {
+      key: "hsvToRgb",
+      value: function hsvToRgb(hsv) {
+        var h = hsv.h % 360;
+        if (h < 0) h += 360;
+        var s = Math.max(0, Math.min(hsv.s, 1));
+        var v = Math.max(0, Math.min(hsv.v, 1));
+        var i = Math.floor(h / 60);
+        var f = h / 60 - i;
+        var p = v * (1 - s);
+        var q = v * (1 - s * f);
+        var t = v * (1 - s * (1 - f));
+        var r;
+        var g;
+        var b;
+        switch (i) {
+          default:
+          case 0:
+            r = v;
+            g = t;
+            b = p;
+            break;
+          case 1:
+            r = q;
+            g = v;
+            b = p;
+            break;
+          case 2:
+            r = p;
+            g = v;
+            b = t;
+            break;
+          case 3:
+            r = p;
+            g = q;
+            b = v;
+            break;
+          case 4:
+            r = t;
+            g = p;
+            b = v;
+            break;
+          case 5:
+            r = v;
+            g = p;
+            b = q;
+            break;
+        }
+        return {
+          r: Math.floor(r * 255),
+          g: Math.floor(g * 255),
+          b: Math.floor(b * 255)
+        };
+      }
+
+      /**
+       * Convert an RGB color to HSV format.
+       * @param {RGBObject} rgb - {r: red [0,255], g: green [0,255], b: blue [0,255]}.
+       * @return {HSVObject} hsv - {h: hue [0,360), s: saturation [0,1], v: value [0,1]}
+       */
+    }, {
+      key: "rgbToHsv",
+      value: function rgbToHsv(rgb) {
+        var r = rgb.r / 255;
+        var g = rgb.g / 255;
+        var b = rgb.b / 255;
+        var x = Math.min(Math.min(r, g), b);
+        var v = Math.max(Math.max(r, g), b);
+
+        // For grays, hue will be arbitrarily reported as zero. Otherwise, calculate
+        var h = 0;
+        var s = 0;
+        if (x !== v) {
+          var f = r === x ? g - b : g === x ? b - r : r - g;
+          var i = r === x ? 3 : g === x ? 5 : 1;
+          h = (i - f / (v - x)) * 60 % 360;
+          s = (v - x) / v;
+        }
+        return {
+          h: h,
+          s: s,
+          v: v
+        };
+      }
+
+      /**
+       * Linear interpolation between rgb0 and rgb1.
+       * @param {RGBObject} rgb0 - the color corresponding to fraction1 <= 0.
+       * @param {RGBObject} rgb1 - the color corresponding to fraction1 >= 1.
+       * @param {number} fraction1 - the interpolation parameter. If this is 0.5, for example, mix the two colors equally.
+       * @return {RGBObject} the interpolated color.
+       */
+    }, {
+      key: "mixRgb",
+      value: function mixRgb(rgb0, rgb1, fraction1) {
+        if (fraction1 <= 0) return rgb0;
+        if (fraction1 >= 1) return rgb1;
+        var fraction0 = 1 - fraction1;
+        return {
+          r: fraction0 * rgb0.r + fraction1 * rgb1.r,
+          g: fraction0 * rgb0.g + fraction1 * rgb1.g,
+          b: fraction0 * rgb0.b + fraction1 * rgb1.b
+        };
+      }
+    }]);
+  }();
+  color = Color;
+  return color;
+}
+
+var cast;
+var hasRequiredCast;
+function requireCast() {
+  if (hasRequiredCast) return cast;
+  hasRequiredCast = 1;
+  var Color = requireColor();
+
+  /**
+   * @fileoverview
+   * Utilities for casting and comparing Scratch data-types.
+   * Scratch behaves slightly differently from JavaScript in many respects,
+   * and these differences should be encapsulated below.
+   * For example, in Scratch, add(1, join("hello", world")) -> 1.
+   * This is because "hello world" is cast to 0.
+   * In JavaScript, 1 + Number("hello" + "world") would give you NaN.
+   * Use when coercing a value before computation.
+   */
+  var Cast = /*#__PURE__*/function () {
+    function Cast() {
+      _classCallCheck(this, Cast);
+    }
+    return _createClass(Cast, null, [{
+      key: "toNumber",
+      value:
+      /**
+       * Scratch cast to number.
+       * Treats NaN as 0.
+       * In Scratch 2.0, this is captured by `interp.numArg.`
+       * @param {*} value Value to cast to number.
+       * @return {number} The Scratch-casted number value.
+       */
+      function toNumber(value) {
+        // If value is already a number we don't need to coerce it with
+        // Number().
+        if (typeof value === 'number') {
+          // Scratch treats NaN as 0, when needed as a number.
+          // E.g., 0 + NaN -> 0.
+          if (Number.isNaN(value)) {
+            return 0;
+          }
+          return value;
+        }
+        if (typeof value === 'string') {
+          // Replace full-width numbers with half-width ones.
+          value = value.replace(/[０-９＋．ｅ]/g, function (s) {
+            return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+          });
+          value = value.replace(/[-－﹣−‐⁃‑‒–—﹘―⎯⏤ーｰ─━]/g, '-');
+        }
+        var n = Number(value);
+        if (Number.isNaN(n)) {
+          // Scratch treats NaN as 0, when needed as a number.
+          // E.g., 0 + NaN -> 0.
+          return 0;
+        }
+        return n;
+      }
+
+      /**
+       * Scratch cast to boolean.
+       * In Scratch 2.0, this is captured by `interp.boolArg.`
+       * Treats some string values differently from JavaScript.
+       * @param {*} value Value to cast to boolean.
+       * @return {boolean} The Scratch-casted boolean value.
+       */
+    }, {
+      key: "toBoolean",
+      value: function toBoolean(value) {
+        // Already a boolean?
+        if (typeof value === 'boolean') {
+          return value;
+        }
+        if (typeof value === 'string') {
+          // These specific strings are treated as false in Scratch.
+          if (value === '' || value === '0' || value.toLowerCase() === 'false') {
+            return false;
+          }
+          // All other strings treated as true.
           return true;
         }
-        // True if it's "round" (e.g., 2.0 and 2).
-        return val === parseInt(val, 10);
-      } else if (typeof val === 'boolean') {
-        // `True` and `false` always represent integer after Scratch cast.
-        return true;
-      } else if (typeof val === 'string') {
-        // If it contains a decimal point, don't consider it an int.
-        return val.indexOf('.') < 0;
+        // Coerce other values and numbers.
+        return Boolean(value);
       }
-      return false;
-    }
-  }, {
-    key: "LIST_INVALID",
-    get: function get() {
-      return 'INVALID';
-    }
-  }, {
-    key: "LIST_ALL",
-    get: function get() {
-      return 'ALL';
-    }
 
-    /**
-     * Compute a 1-based index into a list, based on a Scratch argument.
-     * Two special cases may be returned:
-     * LIST_ALL: if the block is referring to all of the items in the list.
-     * LIST_INVALID: if the index was invalid in any way.
-     * @param {*} index Scratch arg, including 1-based numbers or special cases.
-     * @param {number} length Length of the list.
-     * @param {boolean} acceptAll Whether it should accept "all" or not.
-     * @return {(number|string)} 1-based index for list, LIST_ALL, or LIST_INVALID.
-     */
-  }, {
-    key: "toListIndex",
-    value: function toListIndex(index, length, acceptAll) {
-      if (typeof index !== 'number') {
-        if (index === 'all') {
-          return acceptAll ? Cast.LIST_ALL : Cast.LIST_INVALID;
-        }
-        if (index === 'last') {
-          if (length > 0) {
-            return length;
-          }
-          return Cast.LIST_INVALID;
-        } else if (index === 'random' || index === 'any') {
-          if (length > 0) {
-            return 1 + Math.floor(Math.random() * length);
-          }
-          return Cast.LIST_INVALID;
-        }
+      /**
+       * Scratch cast to string.
+       * @param {*} value Value to cast to string.
+       * @return {string} The Scratch-casted string value.
+       */
+    }, {
+      key: "toString",
+      value: function toString(value) {
+        return String(value).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
       }
-      index = Math.floor(Cast.toNumber(index));
-      if (index < 1 || index > length) {
-        return Cast.LIST_INVALID;
+
+      /**
+       * Cast any Scratch argument to an RGB color array to be used for the renderer.
+       * @param {*} value Value to convert to RGB color array.
+       * @return {Array.<number>} [r,g,b], values between 0-255.
+       */
+    }, {
+      key: "toRgbColorList",
+      value: function toRgbColorList(value) {
+        var color = Cast.toRgbColorObject(value);
+        return [color.r, color.g, color.b];
       }
-      return index;
-    }
-  }]);
-  return Cast;
-}();
-var cast = Cast;
-var Cast$1 = /*@__PURE__*/getDefaultExportFromCjs(cast);
+
+      /**
+       * Cast any Scratch argument to an RGB color object to be used for the renderer.
+       * @param {*} value Value to convert to RGB color object.
+       * @return {RGBOject} [r,g,b], values between 0-255.
+       */
+    }, {
+      key: "toRgbColorObject",
+      value: function toRgbColorObject(value) {
+        var color;
+        if (typeof value === 'string' && value.substring(0, 1) === '#') {
+          color = Color.hexToRgb(value);
+
+          // If the color wasn't *actually* a hex color, cast to black
+          if (!color) color = {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 255
+          };
+        } else {
+          color = Color.decimalToRgb(Cast.toNumber(value));
+        }
+        return color;
+      }
+
+      /**
+       * Determine if a Scratch argument is a white space string (or null / empty).
+       * @param {*} val value to check.
+       * @return {boolean} True if the argument is all white spaces or null / empty.
+       */
+    }, {
+      key: "isWhiteSpace",
+      value: function isWhiteSpace(val) {
+        return val === null || typeof val === 'string' && val.trim().length === 0;
+      }
+
+      /**
+       * Compare two values, using Scratch cast, case-insensitive string compare, etc.
+       * In Scratch 2.0, this is captured by `interp.compare.`
+       * @param {*} v1 First value to compare.
+       * @param {*} v2 Second value to compare.
+       * @returns {number} Negative number if v1 < v2; 0 if equal; positive otherwise.
+       */
+    }, {
+      key: "compare",
+      value: function compare(v1, v2) {
+        var n1 = Number(v1);
+        var n2 = Number(v2);
+        if (n1 === 0 && Cast.isWhiteSpace(v1)) {
+          n1 = NaN;
+        } else if (n2 === 0 && Cast.isWhiteSpace(v2)) {
+          n2 = NaN;
+        }
+        if (isNaN(n1) || isNaN(n2)) {
+          // At least one argument can't be converted to a number.
+          // Scratch compares strings as case insensitive.
+          var s1 = Cast.toString(v1).toLowerCase();
+          var s2 = Cast.toString(v2).toLowerCase();
+          if (s1 < s2) {
+            return -1;
+          } else if (s1 > s2) {
+            return 1;
+          }
+          return 0;
+        }
+        // Handle the special case of Infinity
+        if (n1 === Infinity && n2 === Infinity || n1 === -Infinity && n2 === -Infinity) {
+          return 0;
+        }
+        // Compare as numbers.
+        return n1 - n2;
+      }
+
+      /**
+       * Determine if a Scratch argument number represents a round integer.
+       * @param {*} val Value to check.
+       * @return {boolean} True if number looks like an integer.
+       */
+    }, {
+      key: "isInt",
+      value: function isInt(val) {
+        // Values that are already numbers.
+        if (typeof val === 'number') {
+          if (isNaN(val)) {
+            // NaN is considered an integer.
+            return true;
+          }
+          // True if it's "round" (e.g., 2.0 and 2).
+          return val === parseInt(val, 10);
+        } else if (typeof val === 'boolean') {
+          // `True` and `false` always represent integer after Scratch cast.
+          return true;
+        } else if (typeof val === 'string') {
+          // If it contains a decimal point, don't consider it an int.
+          return val.indexOf('.') < 0;
+        }
+        return false;
+      }
+    }, {
+      key: "LIST_INVALID",
+      get: function get() {
+        return 'INVALID';
+      }
+    }, {
+      key: "LIST_ALL",
+      get: function get() {
+        return 'ALL';
+      }
+
+      /**
+       * Compute a 1-based index into a list, based on a Scratch argument.
+       * Two special cases may be returned:
+       * LIST_ALL: if the block is referring to all of the items in the list.
+       * LIST_INVALID: if the index was invalid in any way.
+       * @param {*} index Scratch arg, including 1-based numbers or special cases.
+       * @param {number} length Length of the list.
+       * @param {boolean} acceptAll Whether it should accept "all" or not.
+       * @return {(number|string)} 1-based index for list, LIST_ALL, or LIST_INVALID.
+       */
+    }, {
+      key: "toListIndex",
+      value: function toListIndex(index, length, acceptAll) {
+        if (typeof index !== 'number') {
+          if (index === 'all') {
+            return acceptAll ? Cast.LIST_ALL : Cast.LIST_INVALID;
+          }
+          if (index === 'last') {
+            if (length > 0) {
+              return length;
+            }
+            return Cast.LIST_INVALID;
+          } else if (index === 'random' || index === 'any') {
+            if (length > 0) {
+              return 1 + Math.floor(Math.random() * length);
+            }
+            return Cast.LIST_INVALID;
+          }
+        }
+        index = Math.floor(Cast.toNumber(index));
+        if (index < 1 || index > length) {
+          return Cast.LIST_INVALID;
+        }
+        return index;
+      }
+    }]);
+  }();
+  cast = Cast;
+  return cast;
+}
+
+var castExports = requireCast();
+var Cast = /*@__PURE__*/getDefaultExportFromCjs(castExports);
 
 var en = {
 	"gai.name": "GAI",
@@ -1128,139 +1160,154 @@ var regeneratorRuntime$1 = {exports: {}};
 
 var OverloadYield = {exports: {}};
 
-(function (module) {
-	function _OverloadYield(e, d) {
-	  this.v = e, this.k = d;
-	}
-	module.exports = _OverloadYield, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (OverloadYield));
+var hasRequiredOverloadYield;
 
-var OverloadYieldExports = OverloadYield.exports;
+function requireOverloadYield () {
+	if (hasRequiredOverloadYield) return OverloadYield.exports;
+	hasRequiredOverloadYield = 1;
+	(function (module) {
+		function _OverloadYield(e, d) {
+		  this.v = e, this.k = d;
+		}
+		module.exports = _OverloadYield, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (OverloadYield));
+	return OverloadYield.exports;
+}
 
 var regenerator$1 = {exports: {}};
 
 var regeneratorDefine = {exports: {}};
 
-(function (module) {
-	function _regeneratorDefine(e, r, n, t) {
-	  var i = Object.defineProperty;
-	  try {
-	    i({}, "", {});
-	  } catch (e) {
-	    i = 0;
-	  }
-	  module.exports = _regeneratorDefine = function regeneratorDefine(e, r, n, t) {
-	    function o(r, n) {
-	      _regeneratorDefine(e, r, function (e) {
-	        return this._invoke(r, n, e);
-	      });
-	    }
-	    r ? i ? i(e, r, {
-	      value: n,
-	      enumerable: !t,
-	      configurable: !t,
-	      writable: !t
-	    }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2));
-	  }, module.exports.__esModule = true, module.exports["default"] = module.exports, _regeneratorDefine(e, r, n, t);
-	}
-	module.exports = _regeneratorDefine, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (regeneratorDefine));
+var hasRequiredRegeneratorDefine;
 
-var regeneratorDefineExports = regeneratorDefine.exports;
+function requireRegeneratorDefine () {
+	if (hasRequiredRegeneratorDefine) return regeneratorDefine.exports;
+	hasRequiredRegeneratorDefine = 1;
+	(function (module) {
+		function _regeneratorDefine(e, r, n, t) {
+		  var i = Object.defineProperty;
+		  try {
+		    i({}, "", {});
+		  } catch (e) {
+		    i = 0;
+		  }
+		  module.exports = _regeneratorDefine = function regeneratorDefine(e, r, n, t) {
+		    function o(r, n) {
+		      _regeneratorDefine(e, r, function (e) {
+		        return this._invoke(r, n, e);
+		      });
+		    }
+		    r ? i ? i(e, r, {
+		      value: n,
+		      enumerable: !t,
+		      configurable: !t,
+		      writable: !t
+		    }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2));
+		  }, module.exports.__esModule = true, module.exports["default"] = module.exports, _regeneratorDefine(e, r, n, t);
+		}
+		module.exports = _regeneratorDefine, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (regeneratorDefine));
+	return regeneratorDefine.exports;
+}
 
-(function (module) {
-	var regeneratorDefine = regeneratorDefineExports;
-	function _regenerator() {
-	  /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */
-	  var e,
-	    t,
-	    r = "function" == typeof Symbol ? Symbol : {},
-	    n = r.iterator || "@@iterator",
-	    o = r.toStringTag || "@@toStringTag";
-	  function i(r, n, o, i) {
-	    var c = n && n.prototype instanceof Generator ? n : Generator,
-	      u = Object.create(c.prototype);
-	    return regeneratorDefine(u, "_invoke", function (r, n, o) {
-	      var i,
-	        c,
-	        u,
-	        f = 0,
-	        p = o || [],
-	        y = !1,
-	        G = {
-	          p: 0,
-	          n: 0,
-	          v: e,
-	          a: d,
-	          f: d.bind(e, 4),
-	          d: function d(t, r) {
-	            return i = t, c = 0, u = e, G.n = r, a;
-	          }
-	        };
-	      function d(r, n) {
-	        for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) {
-	          var o,
-	            i = p[t],
-	            d = G.p,
-	            l = i[2];
-	          r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0));
-	        }
-	        if (o || r > 1) return a;
-	        throw y = !0, n;
-	      }
-	      return function (o, p, l) {
-	        if (f > 1) throw TypeError("Generator is already running");
-	        for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) {
-	          i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u);
-	          try {
-	            if (f = 2, i) {
-	              if (c || (o = "next"), t = i[o]) {
-	                if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object");
-	                if (!t.done) return t;
-	                u = t.value, c < 2 && (c = 0);
-	              } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1);
-	              i = e;
-	            } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break;
-	          } catch (t) {
-	            i = e, c = 1, u = t;
-	          } finally {
-	            f = 1;
-	          }
-	        }
-	        return {
-	          value: t,
-	          done: y
-	        };
-	      };
-	    }(r, o, i), !0), u;
-	  }
-	  var a = {};
-	  function Generator() {}
-	  function GeneratorFunction() {}
-	  function GeneratorFunctionPrototype() {}
-	  t = Object.getPrototypeOf;
-	  var c = [][n] ? t(t([][n]())) : (regeneratorDefine(t = {}, n, function () {
-	      return this;
-	    }), t),
-	    u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c);
-	  function f(e) {
-	    return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, regeneratorDefine(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e;
-	  }
-	  return GeneratorFunction.prototype = GeneratorFunctionPrototype, regeneratorDefine(u, "constructor", GeneratorFunctionPrototype), regeneratorDefine(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", regeneratorDefine(GeneratorFunctionPrototype, o, "GeneratorFunction"), regeneratorDefine(u), regeneratorDefine(u, o, "Generator"), regeneratorDefine(u, n, function () {
-	    return this;
-	  }), regeneratorDefine(u, "toString", function () {
-	    return "[object Generator]";
-	  }), (module.exports = _regenerator = function _regenerator() {
-	    return {
-	      w: i,
-	      m: f
-	    };
-	  }, module.exports.__esModule = true, module.exports["default"] = module.exports)();
-	}
-	module.exports = _regenerator, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (regenerator$1));
+var hasRequiredRegenerator$1;
 
-var regeneratorExports = regenerator$1.exports;
+function requireRegenerator$1 () {
+	if (hasRequiredRegenerator$1) return regenerator$1.exports;
+	hasRequiredRegenerator$1 = 1;
+	(function (module) {
+		var regeneratorDefine = requireRegeneratorDefine();
+		function _regenerator() {
+		  /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */
+		  var e,
+		    t,
+		    r = "function" == typeof Symbol ? Symbol : {},
+		    n = r.iterator || "@@iterator",
+		    o = r.toStringTag || "@@toStringTag";
+		  function i(r, n, o, i) {
+		    var c = n && n.prototype instanceof Generator ? n : Generator,
+		      u = Object.create(c.prototype);
+		    return regeneratorDefine(u, "_invoke", function (r, n, o) {
+		      var i,
+		        c,
+		        u,
+		        f = 0,
+		        p = o || [],
+		        y = !1,
+		        G = {
+		          p: 0,
+		          n: 0,
+		          v: e,
+		          a: d,
+		          f: d.bind(e, 4),
+		          d: function d(t, r) {
+		            return i = t, c = 0, u = e, G.n = r, a;
+		          }
+		        };
+		      function d(r, n) {
+		        for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) {
+		          var o,
+		            i = p[t],
+		            d = G.p,
+		            l = i[2];
+		          r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0));
+		        }
+		        if (o || r > 1) return a;
+		        throw y = !0, n;
+		      }
+		      return function (o, p, l) {
+		        if (f > 1) throw TypeError("Generator is already running");
+		        for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) {
+		          i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u);
+		          try {
+		            if (f = 2, i) {
+		              if (c || (o = "next"), t = i[o]) {
+		                if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object");
+		                if (!t.done) return t;
+		                u = t.value, c < 2 && (c = 0);
+		              } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1);
+		              i = e;
+		            } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break;
+		          } catch (t) {
+		            i = e, c = 1, u = t;
+		          } finally {
+		            f = 1;
+		          }
+		        }
+		        return {
+		          value: t,
+		          done: y
+		        };
+		      };
+		    }(r, o, i), !0), u;
+		  }
+		  var a = {};
+		  function Generator() {}
+		  function GeneratorFunction() {}
+		  function GeneratorFunctionPrototype() {}
+		  t = Object.getPrototypeOf;
+		  var c = [][n] ? t(t([][n]())) : (regeneratorDefine(t = {}, n, function () {
+		      return this;
+		    }), t),
+		    u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c);
+		  function f(e) {
+		    return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, regeneratorDefine(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e;
+		  }
+		  return GeneratorFunction.prototype = GeneratorFunctionPrototype, regeneratorDefine(u, "constructor", GeneratorFunctionPrototype), regeneratorDefine(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", regeneratorDefine(GeneratorFunctionPrototype, o, "GeneratorFunction"), regeneratorDefine(u), regeneratorDefine(u, o, "Generator"), regeneratorDefine(u, n, function () {
+		    return this;
+		  }), regeneratorDefine(u, "toString", function () {
+		    return "[object Generator]";
+		  }), (module.exports = _regenerator = function _regenerator() {
+		    return {
+		      w: i,
+		      m: f
+		    };
+		  }, module.exports.__esModule = true, module.exports["default"] = module.exports)();
+		}
+		module.exports = _regenerator, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (regenerator$1));
+	return regenerator$1.exports;
+}
 
 var regeneratorAsync = {exports: {}};
 
@@ -1268,226 +1315,270 @@ var regeneratorAsyncGen = {exports: {}};
 
 var regeneratorAsyncIterator = {exports: {}};
 
-(function (module) {
-	var OverloadYield = OverloadYieldExports;
-	var regeneratorDefine = regeneratorDefineExports;
-	function AsyncIterator(t, e) {
-	  function n(r, o, i, f) {
-	    try {
-	      var c = t[r](o),
-	        u = c.value;
-	      return u instanceof OverloadYield ? e.resolve(u.v).then(function (t) {
-	        n("next", t, i, f);
-	      }, function (t) {
-	        n("throw", t, i, f);
-	      }) : e.resolve(u).then(function (t) {
-	        c.value = t, i(c);
-	      }, function (t) {
-	        return n("throw", t, i, f);
-	      });
-	    } catch (t) {
-	      f(t);
-	    }
-	  }
-	  var r;
-	  this.next || (regeneratorDefine(AsyncIterator.prototype), regeneratorDefine(AsyncIterator.prototype, "function" == typeof Symbol && Symbol.asyncIterator || "@asyncIterator", function () {
-	    return this;
-	  })), regeneratorDefine(this, "_invoke", function (t, o, i) {
-	    function f() {
-	      return new e(function (e, r) {
-	        n(t, i, e, r);
-	      });
-	    }
-	    return r = r ? r.then(f, f) : f();
-	  }, !0);
-	}
-	module.exports = AsyncIterator, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (regeneratorAsyncIterator));
+var hasRequiredRegeneratorAsyncIterator;
 
-var regeneratorAsyncIteratorExports = regeneratorAsyncIterator.exports;
+function requireRegeneratorAsyncIterator () {
+	if (hasRequiredRegeneratorAsyncIterator) return regeneratorAsyncIterator.exports;
+	hasRequiredRegeneratorAsyncIterator = 1;
+	(function (module) {
+		var OverloadYield = requireOverloadYield();
+		var regeneratorDefine = requireRegeneratorDefine();
+		function AsyncIterator(t, e) {
+		  function n(r, o, i, f) {
+		    try {
+		      var c = t[r](o),
+		        u = c.value;
+		      return u instanceof OverloadYield ? e.resolve(u.v).then(function (t) {
+		        n("next", t, i, f);
+		      }, function (t) {
+		        n("throw", t, i, f);
+		      }) : e.resolve(u).then(function (t) {
+		        c.value = t, i(c);
+		      }, function (t) {
+		        return n("throw", t, i, f);
+		      });
+		    } catch (t) {
+		      f(t);
+		    }
+		  }
+		  var r;
+		  this.next || (regeneratorDefine(AsyncIterator.prototype), regeneratorDefine(AsyncIterator.prototype, "function" == typeof Symbol && Symbol.asyncIterator || "@asyncIterator", function () {
+		    return this;
+		  })), regeneratorDefine(this, "_invoke", function (t, o, i) {
+		    function f() {
+		      return new e(function (e, r) {
+		        n(t, i, e, r);
+		      });
+		    }
+		    return r = r ? r.then(f, f) : f();
+		  }, !0);
+		}
+		module.exports = AsyncIterator, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (regeneratorAsyncIterator));
+	return regeneratorAsyncIterator.exports;
+}
 
-(function (module) {
-	var regenerator = regeneratorExports;
-	var regeneratorAsyncIterator = regeneratorAsyncIteratorExports;
-	function _regeneratorAsyncGen(r, e, t, o, n) {
-	  return new regeneratorAsyncIterator(regenerator().w(r, e, t, o), n || Promise);
-	}
-	module.exports = _regeneratorAsyncGen, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (regeneratorAsyncGen));
+var hasRequiredRegeneratorAsyncGen;
 
-var regeneratorAsyncGenExports = regeneratorAsyncGen.exports;
+function requireRegeneratorAsyncGen () {
+	if (hasRequiredRegeneratorAsyncGen) return regeneratorAsyncGen.exports;
+	hasRequiredRegeneratorAsyncGen = 1;
+	(function (module) {
+		var regenerator = requireRegenerator$1();
+		var regeneratorAsyncIterator = requireRegeneratorAsyncIterator();
+		function _regeneratorAsyncGen(r, e, t, o, n) {
+		  return new regeneratorAsyncIterator(regenerator().w(r, e, t, o), n || Promise);
+		}
+		module.exports = _regeneratorAsyncGen, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (regeneratorAsyncGen));
+	return regeneratorAsyncGen.exports;
+}
 
-(function (module) {
-	var regeneratorAsyncGen = regeneratorAsyncGenExports;
-	function _regeneratorAsync(n, e, r, t, o) {
-	  var a = regeneratorAsyncGen(n, e, r, t, o);
-	  return a.next().then(function (n) {
-	    return n.done ? n.value : a.next();
-	  });
-	}
-	module.exports = _regeneratorAsync, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (regeneratorAsync));
+var hasRequiredRegeneratorAsync;
 
-var regeneratorAsyncExports = regeneratorAsync.exports;
+function requireRegeneratorAsync () {
+	if (hasRequiredRegeneratorAsync) return regeneratorAsync.exports;
+	hasRequiredRegeneratorAsync = 1;
+	(function (module) {
+		var regeneratorAsyncGen = requireRegeneratorAsyncGen();
+		function _regeneratorAsync(n, e, r, t, o) {
+		  var a = regeneratorAsyncGen(n, e, r, t, o);
+		  return a.next().then(function (n) {
+		    return n.done ? n.value : a.next();
+		  });
+		}
+		module.exports = _regeneratorAsync, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (regeneratorAsync));
+	return regeneratorAsync.exports;
+}
 
 var regeneratorKeys = {exports: {}};
 
-(function (module) {
-	function _regeneratorKeys(e) {
-	  var n = Object(e),
-	    r = [];
-	  for (var t in n) r.unshift(t);
-	  return function e() {
-	    for (; r.length;) if ((t = r.pop()) in n) return e.value = t, e.done = !1, e;
-	    return e.done = !0, e;
-	  };
-	}
-	module.exports = _regeneratorKeys, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (regeneratorKeys));
+var hasRequiredRegeneratorKeys;
 
-var regeneratorKeysExports = regeneratorKeys.exports;
+function requireRegeneratorKeys () {
+	if (hasRequiredRegeneratorKeys) return regeneratorKeys.exports;
+	hasRequiredRegeneratorKeys = 1;
+	(function (module) {
+		function _regeneratorKeys(e) {
+		  var n = Object(e),
+		    r = [];
+		  for (var t in n) r.unshift(t);
+		  return function e() {
+		    for (; r.length;) if ((t = r.pop()) in n) return e.value = t, e.done = !1, e;
+		    return e.done = !0, e;
+		  };
+		}
+		module.exports = _regeneratorKeys, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (regeneratorKeys));
+	return regeneratorKeys.exports;
+}
 
 var regeneratorValues = {exports: {}};
 
 var _typeof = {exports: {}};
 
-(function (module) {
-	function _typeof(o) {
-	  "@babel/helpers - typeof";
+var hasRequired_typeof;
 
-	  return module.exports = _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
-	    return typeof o;
-	  } : function (o) {
-	    return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
-	  }, module.exports.__esModule = true, module.exports["default"] = module.exports, _typeof(o);
-	}
-	module.exports = _typeof, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (_typeof));
+function require_typeof () {
+	if (hasRequired_typeof) return _typeof.exports;
+	hasRequired_typeof = 1;
+	(function (module) {
+		function _typeof(o) {
+		  "@babel/helpers - typeof";
 
-var _typeofExports = _typeof.exports;
-
-(function (module) {
-	var _typeof = _typeofExports["default"];
-	function _regeneratorValues(e) {
-	  if (null != e) {
-	    var t = e["function" == typeof Symbol && Symbol.iterator || "@@iterator"],
-	      r = 0;
-	    if (t) return t.call(e);
-	    if ("function" == typeof e.next) return e;
-	    if (!isNaN(e.length)) return {
-	      next: function next() {
-	        return e && r >= e.length && (e = void 0), {
-	          value: e && e[r++],
-	          done: !e
-	        };
-	      }
-	    };
-	  }
-	  throw new TypeError(_typeof(e) + " is not iterable");
-	}
-	module.exports = _regeneratorValues, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (regeneratorValues));
-
-var regeneratorValuesExports = regeneratorValues.exports;
-
-(function (module) {
-	var OverloadYield = OverloadYieldExports;
-	var regenerator = regeneratorExports;
-	var regeneratorAsync = regeneratorAsyncExports;
-	var regeneratorAsyncGen = regeneratorAsyncGenExports;
-	var regeneratorAsyncIterator = regeneratorAsyncIteratorExports;
-	var regeneratorKeys = regeneratorKeysExports;
-	var regeneratorValues = regeneratorValuesExports;
-	function _regeneratorRuntime() {
-
-	  var r = regenerator(),
-	    e = r.m(_regeneratorRuntime),
-	    t = (Object.getPrototypeOf ? Object.getPrototypeOf(e) : e.__proto__).constructor;
-	  function n(r) {
-	    var e = "function" == typeof r && r.constructor;
-	    return !!e && (e === t || "GeneratorFunction" === (e.displayName || e.name));
-	  }
-	  var o = {
-	    "throw": 1,
-	    "return": 2,
-	    "break": 3,
-	    "continue": 3
-	  };
-	  function a(r) {
-	    var e, t;
-	    return function (n) {
-	      e || (e = {
-	        stop: function stop() {
-	          return t(n.a, 2);
-	        },
-	        "catch": function _catch() {
-	          return n.v;
-	        },
-	        abrupt: function abrupt(r, e) {
-	          return t(n.a, o[r], e);
-	        },
-	        delegateYield: function delegateYield(r, o, a) {
-	          return e.resultName = o, t(n.d, regeneratorValues(r), a);
-	        },
-	        finish: function finish(r) {
-	          return t(n.f, r);
-	        }
-	      }, t = function t(r, _t, o) {
-	        n.p = e.prev, n.n = e.next;
-	        try {
-	          return r(_t, o);
-	        } finally {
-	          e.next = n.n;
-	        }
-	      }), e.resultName && (e[e.resultName] = n.v, e.resultName = void 0), e.sent = n.v, e.next = n.n;
-	      try {
-	        return r.call(this, e);
-	      } finally {
-	        n.p = e.prev, n.n = e.next;
-	      }
-	    };
-	  }
-	  return (module.exports = _regeneratorRuntime = function _regeneratorRuntime() {
-	    return {
-	      wrap: function wrap(e, t, n, o) {
-	        return r.w(a(e), t, n, o && o.reverse());
-	      },
-	      isGeneratorFunction: n,
-	      mark: r.m,
-	      awrap: function awrap(r, e) {
-	        return new OverloadYield(r, e);
-	      },
-	      AsyncIterator: regeneratorAsyncIterator,
-	      async: function async(r, e, t, o, u) {
-	        return (n(e) ? regeneratorAsyncGen : regeneratorAsync)(a(r), e, t, o, u);
-	      },
-	      keys: regeneratorKeys,
-	      values: regeneratorValues
-	    };
-	  }, module.exports.__esModule = true, module.exports["default"] = module.exports)();
-	}
-	module.exports = _regeneratorRuntime, module.exports.__esModule = true, module.exports["default"] = module.exports; 
-} (regeneratorRuntime$1));
-
-var regeneratorRuntimeExports = regeneratorRuntime$1.exports;
-
-// TODO(Babel 8): Remove this file.
-
-var runtime = regeneratorRuntimeExports();
-var regenerator = runtime;
-
-// Copied from https://github.com/facebook/regenerator/blob/main/packages/runtime/runtime.js#L736=
-try {
-  regeneratorRuntime = runtime;
-} catch (accidentalStrictMode) {
-  if (typeof globalThis === "object") {
-    globalThis.regeneratorRuntime = runtime;
-  } else {
-    Function("r", "regeneratorRuntime = r")(runtime);
-  }
+		  return module.exports = _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
+		    return typeof o;
+		  } : function (o) {
+		    return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
+		  }, module.exports.__esModule = true, module.exports["default"] = module.exports, _typeof(o);
+		}
+		module.exports = _typeof, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (_typeof));
+	return _typeof.exports;
 }
 
-var _regeneratorRuntime = /*@__PURE__*/getDefaultExportFromCjs(regenerator);
+var hasRequiredRegeneratorValues;
+
+function requireRegeneratorValues () {
+	if (hasRequiredRegeneratorValues) return regeneratorValues.exports;
+	hasRequiredRegeneratorValues = 1;
+	(function (module) {
+		var _typeof = require_typeof()["default"];
+		function _regeneratorValues(e) {
+		  if (null != e) {
+		    var t = e["function" == typeof Symbol && Symbol.iterator || "@@iterator"],
+		      r = 0;
+		    if (t) return t.call(e);
+		    if ("function" == typeof e.next) return e;
+		    if (!isNaN(e.length)) return {
+		      next: function next() {
+		        return e && r >= e.length && (e = void 0), {
+		          value: e && e[r++],
+		          done: !e
+		        };
+		      }
+		    };
+		  }
+		  throw new TypeError(_typeof(e) + " is not iterable");
+		}
+		module.exports = _regeneratorValues, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (regeneratorValues));
+	return regeneratorValues.exports;
+}
+
+var hasRequiredRegeneratorRuntime;
+
+function requireRegeneratorRuntime () {
+	if (hasRequiredRegeneratorRuntime) return regeneratorRuntime$1.exports;
+	hasRequiredRegeneratorRuntime = 1;
+	(function (module) {
+		var OverloadYield = requireOverloadYield();
+		var regenerator = requireRegenerator$1();
+		var regeneratorAsync = requireRegeneratorAsync();
+		var regeneratorAsyncGen = requireRegeneratorAsyncGen();
+		var regeneratorAsyncIterator = requireRegeneratorAsyncIterator();
+		var regeneratorKeys = requireRegeneratorKeys();
+		var regeneratorValues = requireRegeneratorValues();
+		function _regeneratorRuntime() {
+
+		  var r = regenerator(),
+		    e = r.m(_regeneratorRuntime),
+		    t = (Object.getPrototypeOf ? Object.getPrototypeOf(e) : e.__proto__).constructor;
+		  function n(r) {
+		    var e = "function" == typeof r && r.constructor;
+		    return !!e && (e === t || "GeneratorFunction" === (e.displayName || e.name));
+		  }
+		  var o = {
+		    "throw": 1,
+		    "return": 2,
+		    "break": 3,
+		    "continue": 3
+		  };
+		  function a(r) {
+		    var e, t;
+		    return function (n) {
+		      e || (e = {
+		        stop: function stop() {
+		          return t(n.a, 2);
+		        },
+		        "catch": function _catch() {
+		          return n.v;
+		        },
+		        abrupt: function abrupt(r, e) {
+		          return t(n.a, o[r], e);
+		        },
+		        delegateYield: function delegateYield(r, o, a) {
+		          return e.resultName = o, t(n.d, regeneratorValues(r), a);
+		        },
+		        finish: function finish(r) {
+		          return t(n.f, r);
+		        }
+		      }, t = function t(r, _t, o) {
+		        n.p = e.prev, n.n = e.next;
+		        try {
+		          return r(_t, o);
+		        } finally {
+		          e.next = n.n;
+		        }
+		      }), e.resultName && (e[e.resultName] = n.v, e.resultName = void 0), e.sent = n.v, e.next = n.n;
+		      try {
+		        return r.call(this, e);
+		      } finally {
+		        n.p = e.prev, n.n = e.next;
+		      }
+		    };
+		  }
+		  return (module.exports = _regeneratorRuntime = function _regeneratorRuntime() {
+		    return {
+		      wrap: function wrap(e, t, n, o) {
+		        return r.w(a(e), t, n, o && o.reverse());
+		      },
+		      isGeneratorFunction: n,
+		      mark: r.m,
+		      awrap: function awrap(r, e) {
+		        return new OverloadYield(r, e);
+		      },
+		      AsyncIterator: regeneratorAsyncIterator,
+		      async: function async(r, e, t, o, u) {
+		        return (n(e) ? regeneratorAsyncGen : regeneratorAsync)(a(r), e, t, o, u);
+		      },
+		      keys: regeneratorKeys,
+		      values: regeneratorValues
+		    };
+		  }, module.exports.__esModule = true, module.exports["default"] = module.exports)();
+		}
+		module.exports = _regeneratorRuntime, module.exports.__esModule = true, module.exports["default"] = module.exports; 
+	} (regeneratorRuntime$1));
+	return regeneratorRuntime$1.exports;
+}
+
+var regenerator;
+var hasRequiredRegenerator;
+
+function requireRegenerator () {
+	if (hasRequiredRegenerator) return regenerator;
+	hasRequiredRegenerator = 1;
+	// TODO(Babel 8): Remove this file.
+
+	var runtime = requireRegeneratorRuntime()();
+	regenerator = runtime;
+
+	// Copied from https://github.com/facebook/regenerator/blob/main/packages/runtime/runtime.js#L736=
+	try {
+	  regeneratorRuntime = runtime;
+	} catch (accidentalStrictMode) {
+	  if (typeof globalThis === "object") {
+	    globalThis.regeneratorRuntime = runtime;
+	  } else {
+	    Function("r", "regeneratorRuntime = r")(runtime);
+	  }
+	}
+	return regenerator;
+}
+
+var regeneratorExports = requireRegenerator();
+var _regeneratorRuntime = /*@__PURE__*/getDefaultExportFromCjs(regeneratorExports);
 
 /**
  * @license
@@ -12110,7 +12201,7 @@ var FunctionCall = /*#__PURE__*/function () {
    * Get function call name.
    * @returns {string} - function call name
    */
-  _createClass$1(FunctionCall, [{
+  return _createClass$1(FunctionCall, [{
     key: "name",
     get: function get() {
       return this.call.name;
@@ -12136,7 +12227,6 @@ var FunctionCall = /*#__PURE__*/function () {
       return this.status === 'COMPLETED' || this.status === 'FAILED';
     }
   }]);
-  return FunctionCall;
 }();
 var HarmCategory = {
   HARM_CATEGORY_UNSPECIFIED: 'HARM_CATEGORY_UNSPECIFIED',
@@ -12277,7 +12367,7 @@ var GeminiAdapter = /*#__PURE__*/function () {
    * Get SDK. Initialize if not exists.
    * @returns {GoogleGenAI} - SDK
    */
-  _createClass$1(GeminiAdapter, [{
+  return _createClass$1(GeminiAdapter, [{
     key: "getSDK",
     value: function getSDK() {
       if (!this.sdk) {
@@ -12297,74 +12387,74 @@ var GeminiAdapter = /*#__PURE__*/function () {
     key: "getModels",
     value: (function () {
       var _getModels = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
-        var pager, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, aModel;
-        return _regeneratorRuntime.wrap(function _callee$(_context) {
+        var pager, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, aModel, _t;
+        return _regeneratorRuntime.wrap(function (_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
               if (!(this.models && this.models.length)) {
-                _context.next = 2;
+                _context.next = 1;
                 break;
               }
               return _context.abrupt("return", this.models);
-            case 2:
-              _context.next = 4;
+            case 1:
+              _context.next = 2;
               return this.getSDK().models.list();
-            case 4:
+            case 2:
               pager = _context.sent;
               this.models = [];
               _iteratorAbruptCompletion = false;
               _didIteratorError = false;
-              _context.prev = 8;
+              _context.prev = 3;
               _iterator = _asyncIterator(pager);
-            case 10:
-              _context.next = 12;
+            case 4:
+              _context.next = 5;
               return _iterator.next();
-            case 12:
+            case 5:
               if (!(_iteratorAbruptCompletion = !(_step = _context.sent).done)) {
-                _context.next = 18;
+                _context.next = 7;
                 break;
               }
               aModel = _step.value;
               this.models.push(aModel);
-            case 15:
+            case 6:
               _iteratorAbruptCompletion = false;
-              _context.next = 10;
+              _context.next = 4;
               break;
-            case 18:
-              _context.next = 24;
+            case 7:
+              _context.next = 9;
               break;
-            case 20:
-              _context.prev = 20;
-              _context.t0 = _context["catch"](8);
+            case 8:
+              _context.prev = 8;
+              _t = _context["catch"](3);
               _didIteratorError = true;
-              _iteratorError = _context.t0;
-            case 24:
-              _context.prev = 24;
-              _context.prev = 25;
+              _iteratorError = _t;
+            case 9:
+              _context.prev = 9;
+              _context.prev = 10;
               if (!(_iteratorAbruptCompletion && _iterator.return != null)) {
-                _context.next = 29;
+                _context.next = 11;
                 break;
               }
-              _context.next = 29;
+              _context.next = 11;
               return _iterator.return();
-            case 29:
-              _context.prev = 29;
+            case 11:
+              _context.prev = 11;
               if (!_didIteratorError) {
-                _context.next = 32;
+                _context.next = 12;
                 break;
               }
               throw _iteratorError;
-            case 32:
-              return _context.finish(29);
-            case 33:
-              return _context.finish(24);
-            case 34:
+            case 12:
+              return _context.finish(11);
+            case 13:
+              return _context.finish(9);
+            case 14:
               return _context.abrupt("return", this.models);
-            case 35:
+            case 15:
             case "end":
               return _context.stop();
           }
-        }, _callee, this, [[8, 20, 24, 34], [25,, 29, 33]]);
+        }, _callee, this, [[3, 8, 9, 14], [10,, 11, 13]]);
       }));
       function getModels() {
         return _getModels.apply(this, arguments);
@@ -12465,16 +12555,16 @@ var GeminiAdapter = /*#__PURE__*/function () {
     value: (function () {
       var _countTokensAs = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee2(contentParts, requestType) {
         var models, result, geminiContentParts, history, contents;
-        return _regeneratorRuntime.wrap(function _callee2$(_context2) {
+        return _regeneratorRuntime.wrap(function (_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
               models = this.getSDK().models;
               geminiContentParts = this.convertContentParts(contentParts);
               if (!(requestType === 'generate')) {
-                _context2.next = 8;
+                _context2.next = 2;
                 break;
               }
-              _context2.next = 5;
+              _context2.next = 1;
               return models.countTokens({
                 model: this.modelCode.generative,
                 contents: createUserContent(geminiContentParts),
@@ -12483,18 +12573,18 @@ var GeminiAdapter = /*#__PURE__*/function () {
                   tools: this.generationConfig.tools
                 }
               });
-            case 5:
+            case 1:
               result = _context2.sent;
-              _context2.next = 14;
+              _context2.next = 4;
               break;
-            case 8:
+            case 2:
               if (!(requestType === 'chat')) {
-                _context2.next = 14;
+                _context2.next = 4;
                 break;
               }
               history = this.getChatHistory();
               contents = [].concat(_toConsumableArray(history), [createUserContent(geminiContentParts)]);
-              _context2.next = 13;
+              _context2.next = 3;
               return models.countTokens({
                 model: this.modelCode.generative,
                 contents: contents,
@@ -12503,11 +12593,11 @@ var GeminiAdapter = /*#__PURE__*/function () {
                   tools: this.generationConfig.tools
                 }
               });
-            case 13:
+            case 3:
               result = _context2.sent;
-            case 14:
+            case 4:
               return _context2.abrupt("return", result.totalTokens);
-            case 15:
+            case 5:
             case "end":
               return _context2.stop();
           }
@@ -12823,27 +12913,27 @@ var GeminiAdapter = /*#__PURE__*/function () {
     key: "_handleStreamResponse",
     value: (function () {
       var _handleStreamResponse2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee3(streamingPromise, requestType, requestParam, partialResponseHandler) {
-        var streamingResult, wholeResponses, functionCalls, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, partialResponse;
-        return _regeneratorRuntime.wrap(function _callee3$(_context3) {
+        var streamingResult, wholeResponses, functionCalls, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, partialResponse, _t2, _t3;
+        return _regeneratorRuntime.wrap(function (_context3) {
           while (1) switch (_context3.prev = _context3.next) {
             case 0:
               _context3.prev = 0;
-              _context3.next = 3;
+              _context3.next = 1;
               return streamingPromise;
-            case 3:
+            case 1:
               streamingResult = _context3.sent;
               wholeResponses = [];
               functionCalls = [];
               _iteratorAbruptCompletion2 = false;
               _didIteratorError2 = false;
-              _context3.prev = 8;
+              _context3.prev = 2;
               _iterator2 = _asyncIterator(streamingResult);
-            case 10:
-              _context3.next = 12;
+            case 3:
+              _context3.next = 4;
               return _iterator2.next();
-            case 12:
+            case 4:
               if (!(_iteratorAbruptCompletion2 = !(_step2 = _context3.sent).done)) {
-                _context3.next = 21;
+                _context3.next = 6;
                 break;
               }
               partialResponse = _step2.value;
@@ -12853,51 +12943,51 @@ var GeminiAdapter = /*#__PURE__*/function () {
               }
               wholeResponses.push(partialResponse);
               functionCalls = functionCalls.concat(this._createFunctionCalls(partialResponse, requestType, requestParam));
-            case 18:
+            case 5:
               _iteratorAbruptCompletion2 = false;
-              _context3.next = 10;
+              _context3.next = 3;
               break;
-            case 21:
-              _context3.next = 27;
+            case 6:
+              _context3.next = 8;
               break;
-            case 23:
-              _context3.prev = 23;
-              _context3.t0 = _context3["catch"](8);
+            case 7:
+              _context3.prev = 7;
+              _t2 = _context3["catch"](2);
               _didIteratorError2 = true;
-              _iteratorError2 = _context3.t0;
-            case 27:
-              _context3.prev = 27;
-              _context3.prev = 28;
+              _iteratorError2 = _t2;
+            case 8:
+              _context3.prev = 8;
+              _context3.prev = 9;
               if (!(_iteratorAbruptCompletion2 && _iterator2.return != null)) {
-                _context3.next = 32;
+                _context3.next = 10;
                 break;
               }
-              _context3.next = 32;
+              _context3.next = 10;
               return _iterator2.return();
-            case 32:
-              _context3.prev = 32;
+            case 10:
+              _context3.prev = 10;
               if (!_didIteratorError2) {
-                _context3.next = 35;
+                _context3.next = 11;
                 break;
               }
               throw _iteratorError2;
-            case 35:
-              return _context3.finish(32);
-            case 36:
-              return _context3.finish(27);
-            case 37:
+            case 11:
+              return _context3.finish(10);
+            case 12:
+              return _context3.finish(8);
+            case 13:
               this.setLastResponse(wholeResponses);
               return _context3.abrupt("return", [wholeResponses, functionCalls]);
-            case 41:
-              _context3.prev = 41;
-              _context3.t1 = _context3["catch"](0);
-              this.setLastResponse(_context3.t1);
-              throw _context3.t1;
-            case 45:
+            case 14:
+              _context3.prev = 14;
+              _t3 = _context3["catch"](0);
+              this.setLastResponse(_t3);
+              throw _t3;
+            case 15:
             case "end":
               return _context3.stop();
           }
-        }, _callee3, this, [[0, 41], [8, 23, 27, 37], [28,, 32, 36]]);
+        }, _callee3, this, [[0, 14], [2, 7, 8, 13], [9,, 10, 12]]);
       }));
       function _handleStreamResponse(_x3, _x4, _x5, _x6) {
         return _handleStreamResponse2.apply(this, arguments);
@@ -13052,15 +13142,15 @@ var GeminiAdapter = /*#__PURE__*/function () {
     value: (function () {
       var _requestEmbedding = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(contentParts, taskType) {
         var toEmbed, cache, key, result, embeddingValues;
-        return _regeneratorRuntime.wrap(function _callee4$(_context4) {
+        return _regeneratorRuntime.wrap(function (_context4) {
           while (1) switch (_context4.prev = _context4.next) {
             case 0:
               if (!(!contentParts || !contentParts.length)) {
-                _context4.next = 2;
+                _context4.next = 1;
                 break;
               }
               return _context4.abrupt("return", []);
-            case 2:
+            case 1:
               toEmbed = contentParts.reduce(function (acc, p) {
                 if (p.type === 'text') {
                   return acc + p.data;
@@ -13077,12 +13167,12 @@ var GeminiAdapter = /*#__PURE__*/function () {
               cache = this.embeddingCache[taskType];
               key = toEmbed;
               if (!cache[key]) {
-                _context4.next = 9;
+                _context4.next = 2;
                 break;
               }
               return _context4.abrupt("return", cache[key]);
-            case 9:
-              _context4.next = 11;
+            case 2:
+              _context4.next = 3;
               return this.getSDK().models.embedContent({
                 model: this.modelCode.embedding,
                 contents: toEmbed,
@@ -13090,12 +13180,12 @@ var GeminiAdapter = /*#__PURE__*/function () {
                   taskType: taskType
                 }
               });
-            case 11:
+            case 3:
               result = _context4.sent;
               embeddingValues = result.embeddings[0].values;
               cache[key] = embeddingValues;
               return _context4.abrupt("return", embeddingValues);
-            case 15:
+            case 4:
             case "end":
               return _context4.stop();
           }
@@ -13126,42 +13216,42 @@ var GeminiAdapter = /*#__PURE__*/function () {
      */
     function () {
       var _setModel = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee5(modelCode, modelType) {
-        var models, requiredAction, availableModel, availableModels;
-        return _regeneratorRuntime.wrap(function _callee5$(_context5) {
+        var models, requiredAction, availableModel, availableModels, _t4;
+        return _regeneratorRuntime.wrap(function (_context5) {
           while (1) switch (_context5.prev = _context5.next) {
             case 0:
               if (!(!modelCode || !modelCode.trim())) {
-                _context5.next = 2;
+                _context5.next = 1;
                 break;
               }
               return _context5.abrupt("return", 'Model code is empty');
-            case 2:
+            case 1:
               if (['generative', 'embedding'].includes(modelType)) {
-                _context5.next = 4;
+                _context5.next = 2;
                 break;
               }
               return _context5.abrupt("return", 'Invalid model type. Must be "generative" or "embedding"');
-            case 4:
+            case 2:
               if (GeminiAdapter.getApiKey()) {
-                _context5.next = 6;
+                _context5.next = 3;
                 break;
               }
               return _context5.abrupt("return", 'API key is not set');
-            case 6:
-              _context5.prev = 6;
+            case 3:
+              _context5.prev = 3;
               if (!modelCode.startsWith('models/')) {
                 modelCode = "models/".concat(modelCode);
               }
-              _context5.next = 10;
+              _context5.next = 4;
               return this.getModels();
-            case 10:
+            case 4:
               models = _context5.sent;
               requiredAction = modelType === 'generative' ? 'generateContent' : 'embedContent';
               availableModel = models.find(function (model) {
                 return model.name === modelCode && model.supportedActions.includes(requiredAction);
               });
               if (availableModel) {
-                _context5.next = 17;
+                _context5.next = 5;
                 break;
               }
               this.modelCode[modelType] = 'model-not-found';
@@ -13171,18 +13261,18 @@ var GeminiAdapter = /*#__PURE__*/function () {
                 return model.name;
               });
               return _context5.abrupt("return", "Model \"".concat(modelCode, "\" not found or doesn't support ").concat(requiredAction, ". ") + "Available models: ".concat(availableModels.join(', ')));
-            case 17:
+            case 5:
               this.modelCode[modelType] = modelCode;
               return _context5.abrupt("return", "Model \"".concat(modelCode, "\" set successfully for ").concat(modelType));
-            case 21:
-              _context5.prev = 21;
-              _context5.t0 = _context5["catch"](6);
-              return _context5.abrupt("return", "Error validating model: ".concat(_context5.t0.message));
-            case 24:
+            case 6:
+              _context5.prev = 6;
+              _t4 = _context5["catch"](3);
+              return _context5.abrupt("return", "Error validating model: ".concat(_t4.message));
+            case 7:
             case "end":
               return _context5.stop();
           }
-        }, _callee5, this, [[6, 21]]);
+        }, _callee5, this, [[3, 6]]);
       }));
       function setModel(_x9, _x0) {
         return _setModel.apply(this, arguments);
@@ -13307,70 +13397,70 @@ var GeminiAdapter = /*#__PURE__*/function () {
     key: "validateApiKey",
     value: (function () {
       var _validateApiKey = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee6(apiKey) {
-        var testSDK, pager, iterator, firstModel, errorMessage;
-        return _regeneratorRuntime.wrap(function _callee6$(_context6) {
+        var testSDK, pager, iterator, firstModel, errorMessage, _t5;
+        return _regeneratorRuntime.wrap(function (_context6) {
           while (1) switch (_context6.prev = _context6.next) {
             case 0:
               if (!(!apiKey || !apiKey.trim())) {
-                _context6.next = 2;
+                _context6.next = 1;
                 break;
               }
               return _context6.abrupt("return", {
                 valid: false,
                 error: 'API key is empty'
               });
-            case 2:
-              _context6.prev = 2;
+            case 1:
+              _context6.prev = 1;
               testSDK = new GoogleGenAI({
                 apiKey: apiKey.trim(),
                 baseUrl: GeminiAdapter.baseUrl
               }); // Test API key by listing models (this doesn't consume tokens)
-              _context6.next = 6;
+              _context6.next = 2;
               return testSDK.models.list();
-            case 6:
+            case 2:
               pager = _context6.sent;
               // Try to get at least one model to confirm access
               iterator = pager[Symbol.asyncIterator]();
-              _context6.next = 10;
+              _context6.next = 3;
               return iterator.next();
-            case 10:
+            case 3:
               firstModel = _context6.sent;
               if (!firstModel.done) {
-                _context6.next = 13;
+                _context6.next = 4;
                 break;
               }
               return _context6.abrupt("return", {
                 valid: false,
                 error: 'No models available with this API key'
               });
-            case 13:
+            case 4:
               return _context6.abrupt("return", {
                 valid: true
               });
-            case 16:
-              _context6.prev = 16;
-              _context6.t0 = _context6["catch"](2);
+            case 5:
+              _context6.prev = 5;
+              _t5 = _context6["catch"](1);
               errorMessage = 'Invalid API key';
-              if (_context6.t0.message) {
-                if (_context6.t0.message.includes('API_KEY_INVALID')) {
+              if (_t5.message) {
+                if (_t5.message.includes('API_KEY_INVALID')) {
                   errorMessage = 'API key is invalid';
-                } else if (_context6.t0.message.includes('permission')) {
+                } else if (_t5.message.includes('permission')) {
                   errorMessage = 'API key lacks required permissions';
-                } else if (_context6.t0.message.includes('quota')) {
+                } else if (_t5.message.includes('quota')) {
                   errorMessage = 'API quota exceeded';
                 } else {
-                  errorMessage = "API error: ".concat(_context6.t0.message);
+                  errorMessage = "API error: ".concat(_t5.message);
                 }
               }
               return _context6.abrupt("return", {
                 valid: false,
                 error: errorMessage
               });
-            case 21:
+            case 6:
             case "end":
               return _context6.stop();
           }
-        }, _callee6, null, [[2, 16]]);
+        }, _callee6, null, [[1, 5]]);
       }));
       function validateApiKey(_x1) {
         return _validateApiKey.apply(this, arguments);
@@ -13378,7 +13468,6 @@ var GeminiAdapter = /*#__PURE__*/function () {
       return validateApiKey;
     }())
   }]);
-  return GeminiAdapter;
 }();
 _defineProperty(GeminiAdapter, "MODEL_CODE", {
   generative: 'gemini-2.0-flash',
@@ -13754,7 +13843,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
     this.functionNamePrefix = 'func_';
     this.functionArgPrefix = 'arg_';
   }
-  _createClass$1(GeminiBlocks, [{
+  return _createClass$1(GeminiBlocks, [{
     key: "onExtensionAdded",
     value: function onExtensionAdded(extensionInfo) {
       if (extensionInfo.id === 'gai') {
@@ -13777,7 +13866,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         showStatusButton: false,
         blocks: [{
           opcode: 'generate',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.generate',
             default: 'generate [PROMPT]',
@@ -13786,7 +13875,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'generate',
           arguments: {
             PROMPT: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: formatMessage({
                 id: 'gai.generateDefault',
                 default: 'What is AI?',
@@ -13796,7 +13885,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           }
         }, {
           opcode: 'chat',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.chat',
             default: 'chat [PROMPT]',
@@ -13805,7 +13894,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'chat',
           arguments: {
             PROMPT: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: formatMessage({
                 id: 'gai.chatDefault',
                 default: 'Hello Gemini!',
@@ -13815,7 +13904,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           }
         }, {
           opcode: 'chatHistory',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.chatHistory',
             default: 'chat history',
@@ -13826,7 +13915,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'startChat',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.startChat',
             default: 'start chat with history [HISTORY]',
@@ -13835,13 +13924,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'startChat',
           arguments: {
             HISTORY: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: ' '
             }
           }
         }, '---', {
           opcode: 'whenResponseReceived',
-          blockType: BlockType$1.EVENT,
+          blockType: BlockType.EVENT,
           text: formatMessage({
             id: 'gai.whenResponseReceived',
             default: 'when response received',
@@ -13851,7 +13940,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           shouldRestartExistingThreads: true
         }, {
           opcode: 'responseText',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.responseText',
             default: 'response draft #[CANDIDATE_INDEX]',
@@ -13861,13 +13950,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'responseText',
           arguments: {
             CANDIDATE_INDEX: {
-              type: ArgumentType$1.NUMBER,
+              type: ArgumentType.NUMBER,
               menu: 'responseCandidateIndexMenu'
             }
           }
         }, {
           opcode: 'responseSafetyRating',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.responseSafetyRating',
             default: 'response #[CANDIDATE_INDEX] safety rating [HARM_CATEGORY]',
@@ -13877,17 +13966,17 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'responseSafetyRating',
           arguments: {
             CANDIDATE_INDEX: {
-              type: ArgumentType$1.NUMBER,
+              type: ArgumentType.NUMBER,
               menu: 'responseCandidateIndexMenu'
             },
             HARM_CATEGORY: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'harmCategoryMenu'
             }
           }
         }, {
           opcode: 'whenPartialResponseReceived',
-          blockType: BlockType$1.EVENT,
+          blockType: BlockType.EVENT,
           text: formatMessage({
             id: 'gai.whenPartialResponseReceived',
             default: 'when partial response received',
@@ -13897,7 +13986,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           shouldRestartExistingThreads: true
         }, {
           opcode: 'partialResponseText',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.partialResponseText',
             default: 'partial response text',
@@ -13908,7 +13997,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, '---', {
           opcode: 'costumeData',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.costumeData',
@@ -13917,13 +14006,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'costumeData',
           arguments: {
             COSTUME: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'costumeMenu'
             }
           }
         }, {
           opcode: 'backdropData',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.backdropData',
@@ -13932,13 +14021,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'backdropData',
           arguments: {
             BACKDROP: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'backdropMenu'
             }
           }
         }, {
           opcode: 'snapshotData',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.snapshotData',
@@ -13949,7 +14038,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'soundData',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.soundData',
@@ -13959,13 +14048,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'soundData',
           arguments: {
             SOUND: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'soundMenu'
             }
           }
         }, {
           opcode: 'startListening',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.startListening',
             default: 'start listening',
@@ -13975,7 +14064,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'stopListening',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.stopListening',
             default: 'stop listening',
@@ -13985,7 +14074,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'listenedData',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.listenedData',
@@ -13996,7 +14085,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, '---', {
           opcode: 'setSafetyRating',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setSafetyRating',
             default: 'set [HARM_CATEGORY] to [BLOCK_THRESHOLD]',
@@ -14006,17 +14095,17 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'setSafetyRating',
           arguments: {
             HARM_CATEGORY: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'harmCategorySettingMenu'
             },
             BLOCK_THRESHOLD: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'harmBlockThresholdMenu'
             }
           }
         }, {
           opcode: 'setGenerationConfig',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setGenerationConfig',
             default: 'set generation [CONFIG] to [VALUE]',
@@ -14025,17 +14114,17 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'setGenerationConfig',
           arguments: {
             CONFIG: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'generationConfigMenu'
             },
             VALUE: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: '1'
             }
           }
         }, {
           opcode: 'generationConfig',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.generationConfig',
@@ -14045,13 +14134,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'generationConfig',
           arguments: {
             CONFIG: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'generationConfigMenu'
             }
           }
         }, '---', {
           opcode: 'setFunctionCallingMode',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setFunctionCallingMode',
             default: 'set function calling mode [MODE]',
@@ -14060,13 +14149,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'setFunctionCallingMode',
           arguments: {
             MODE: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'functionCallingModeMenu'
             }
           }
         }, {
           opcode: 'returnResultToAI',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           isTerminal: true,
           text: formatMessage({
             id: 'gai.returnResultToAI',
@@ -14075,13 +14164,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           }),
           arguments: {
             RESULT: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: ' '
             }
           }
         }, '---', {
           opcode: 'countTokensAs',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.countTokensAs',
             default: 'count tokens [CONTENT] as [REQUEST_TYPE]',
@@ -14090,17 +14179,17 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'countTokensAs',
           arguments: {
             CONTENT: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: ' '
             },
             REQUEST_TYPE: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'countTokensRequestTypeMenu'
             }
           }
         }, {
           opcode: 'setGenerativeModel',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setGenerativeModel',
             default: 'use model [MODEL_CODE] for generative',
@@ -14109,13 +14198,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'setGenerativeModel',
           arguments: {
             MODEL_CODE: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: GeminiAdapter.MODEL_CODE.generative
             }
           }
         }, {
           opcode: 'getGenerativeModel',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.getGenerativeModel',
@@ -14126,7 +14215,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'getGenerativeModelID',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.getGenerativeModelID',
@@ -14136,13 +14225,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'getGenerativeModelID',
           arguments: {
             MODEL_INDEX: {
-              type: ArgumentType$1.NUMBER,
+              type: ArgumentType.NUMBER,
               defaultValue: 1
             }
           }
         }, {
           opcode: 'getMaxGenerativeModelNumber',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.getMaxGenerativeModelNumber',
@@ -14153,7 +14242,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, '---', {
           opcode: 'getValueFromJson',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.getValueFromJson',
             default: 'get [PATH] from JSON [JSON]',
@@ -14162,17 +14251,17 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'getValueFromJson',
           arguments: {
             PATH: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: 'key1.key2'
             },
             JSON: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: '{"key1":{"key2":"value"}}'
             }
           }
         }, {
           opcode: 'getItemOfJsonArray',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.getItemOfJsonArray',
             default: 'item [INDEX] of JSON array [JSON]',
@@ -14181,17 +14270,17 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'getItemOfJsonArray',
           arguments: {
             INDEX: {
-              type: ArgumentType$1.NUMBER,
+              type: ArgumentType.NUMBER,
               defaultValue: 1
             },
             JSON: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: '[1,2,3]'
             }
           }
         }, {
           opcode: 'lengthOfJsonArray',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.lengthOfJsonArray',
             default: 'length of JSON array [JSON]',
@@ -14200,13 +14289,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'lengthOfJsonArray',
           arguments: {
             JSON: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: '[1,2,3]'
             }
           }
         }, '---', {
           opcode: 'embeddingFor',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.embeddingFor',
             default: 'embedding of [CONTENT] for [TASK_TYPE]',
@@ -14215,17 +14304,17 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'embeddingFor',
           arguments: {
             CONTENT: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: ' '
             },
             TASK_TYPE: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'embeddingTaskTypeMenu'
             }
           }
         }, {
           opcode: 'embeddingDistanceOf',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.embeddingDistanceOf',
             default: '[METRIC] of [VECTOR_A] and [VECTOR_B]',
@@ -14234,21 +14323,21 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'embeddingDistanceOf',
           arguments: {
             METRIC: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               menu: 'distanceMetricMenu'
             },
             VECTOR_A: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: '1,1,1'
             },
             VECTOR_B: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: '1,2,3'
             }
           }
         }, '---', {
           opcode: 'setEmbeddingModel',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setEmbeddingModel',
             default: 'use model [MODEL_CODE] for embedding',
@@ -14257,13 +14346,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'setEmbeddingModel',
           arguments: {
             MODEL_CODE: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: GeminiAdapter.MODEL_CODE.embedding
             }
           }
         }, {
           opcode: 'getEmbeddingModel',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.getEmbeddingModel',
@@ -14274,7 +14363,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'getEmbeddingModelID',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.getEmbeddingModelID',
@@ -14284,13 +14373,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'getEmbeddingModelID',
           arguments: {
             MODEL_INDEX: {
-              type: ArgumentType$1.NUMBER,
+              type: ArgumentType.NUMBER,
               defaultValue: 1
             }
           }
         }, {
           opcode: 'getMaxEmbeddingModelNumber',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.getMaxEmbeddingModelNumber',
@@ -14301,7 +14390,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, '---', {
           opcode: 'askApiKey',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           blockAllThreads: true,
           text: formatMessage({
             id: 'gai.askApiKey',
@@ -14312,7 +14401,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'apiKey',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.apiKey',
@@ -14323,7 +14412,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           arguments: {}
         }, {
           opcode: 'setApiKey',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setApiKey',
             default: 'set API key to [KEY]',
@@ -14332,14 +14421,14 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'setApiKey',
           arguments: {
             KEY: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: ' ',
               description: 'API key for Gemini'
             }
           }
         }, {
           opcode: 'setBaseUrl',
-          blockType: BlockType$1.COMMAND,
+          blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setBaseUrl',
             default: 'set base URL to [URL]',
@@ -14348,14 +14437,14 @@ var GeminiBlocks = /*#__PURE__*/function () {
           func: 'setBaseUrl',
           arguments: {
             URL: {
-              type: ArgumentType$1.STRING,
+              type: ArgumentType.STRING,
               defaultValue: GeminiAdapter.baseUrl,
               description: 'default base URL for Gemini'
             }
           }
         }, {
           opcode: 'baseUrl',
-          blockType: BlockType$1.REPORTER,
+          blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
             id: 'gai.baseUrl',
@@ -14961,23 +15050,19 @@ var GeminiBlocks = /*#__PURE__*/function () {
     }
 
     /**
-     * Request AI to generate content.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.PROMPT - prompt to AI
+     * Request AI to generate content or chat.
+     * @param {string} prompt - the prompt to send to the AI.
+     * @param {boolean} isChat - whether this is a chat request.
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves response text
+     * @private
      */
   }, {
-    key: "generate",
-    value: function generate(args, util) {
+    key: "_requestAI",
+    value: function _requestAI(prompt, isChat, util) {
       var _this4 = this;
-      if (!GeminiAdapter.getApiKey()) {
-        return 'API key is not set.';
-      }
-      var promptText = Cast$1.toString(args.PROMPT);
       var target = util.target;
       var ai = this.getAI(target);
-      var prompt = interpretContentPartsText(promptText);
       var stackFrame = util.stackFrame;
       if (stackFrame.functionCalls) {
         var callsToStart = stackFrame.functionCalls.filter(function (funcCall) {
@@ -14990,24 +15075,23 @@ var GeminiBlocks = /*#__PURE__*/function () {
         }
       }
       if (stackFrame.isResponseReceived) {
-        if (stackFrame.functionCalls.every(function (funcCall) {
-          return funcCall.thread && _this4.runtime.threads.indexOf(funcCall.thread) === -1;
-        })) {
-          // All function calls are completed, exit this block
+        if (this.allFunctionCallsFinished(stackFrame.functionCalls)) {
           this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
           return getTextFromResponse(ai.getLastResponse());
         }
       }
-      // If the AI is using partial response, handle it
       if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
         var partialResponseHandler = function partialResponseHandler(partialResponse) {
           _this4.runtime.startHats('gai_whenPartialResponseReceived', null, target);
-          console.log(partialResponse);
+          if (DEBUG) {
+            console.log(partialResponse);
+          }
         };
         if (!stackFrame.isRequesting) {
           stackFrame.isRequesting = true;
           this.updateFunctionRegistry(target);
-          ai.requestGenerateStream(prompt, partialResponseHandler).then(function (_ref5) {
+          var request = isChat ? ai.requestChatStream(prompt, partialResponseHandler) : ai.requestGenerateStream(prompt, partialResponseHandler);
+          request.then(function (_ref5) {
             var _stackFrame$functionC;
             var _ref6 = _slicedToArray(_ref5, 2),
               functionCalls = _ref6[1];
@@ -15026,7 +15110,8 @@ var GeminiBlocks = /*#__PURE__*/function () {
       if (!stackFrame.isRequesting) {
         stackFrame.isRequesting = true;
         this.updateFunctionRegistry(target);
-        ai.requestGenerate(prompt).then(function (_ref7) {
+        var _request = isChat ? ai.requestChat(prompt) : ai.requestGenerate(prompt);
+        _request.then(function (_ref7) {
           var _stackFrame$functionC2;
           var _ref8 = _slicedToArray(_ref7, 2),
             response = _ref8[0],
@@ -15034,7 +15119,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
           stackFrame.functionCalls = stackFrame.functionCalls || [];
           (_stackFrame$functionC2 = stackFrame.functionCalls).push.apply(_stackFrame$functionC2, _toConsumableArray(functionCalls));
           if (response && response.text) {
-            // If response is received, mark it
             _this4.runtime.startHats('gai_whenResponseReceived', null, target);
           }
           stackFrame.isResponseReceived = true;
@@ -15044,7 +15128,24 @@ var GeminiBlocks = /*#__PURE__*/function () {
         });
       }
       util.yield();
-      return;
+    }
+
+    /**
+     * Request AI to generate content.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.PROMPT - prompt to AI
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves response text
+     */
+  }, {
+    key: "generate",
+    value: function generate(args, util) {
+      if (!GeminiAdapter.getApiKey()) {
+        return 'API key is not set.';
+      }
+      var promptText = Cast.toString(args.PROMPT);
+      var prompt = interpretContentPartsText(promptText);
+      return this._requestAI(prompt, false, util);
     }
 
     /**
@@ -15057,84 +15158,12 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "chat",
     value: function chat(args, util) {
-      var _this5 = this;
       if (!GeminiAdapter.getApiKey()) {
         return 'API key is not set.';
       }
-      var promptText = Cast$1.toString(args.PROMPT);
-      var target = util.target;
-      var ai = this.getAI(target);
+      var promptText = Cast.toString(args.PROMPT);
       var prompt = interpretContentPartsText(promptText);
-      var stackFrame = util.stackFrame;
-
-      // Handle function calls execution
-      if (stackFrame.functionCalls) {
-        var callsToStart = stackFrame.functionCalls.filter(function (funcCall) {
-          return funcCall.status === 'PENDING';
-        });
-        if (callsToStart.length > 0) {
-          this.dispatchFunctionCalls(callsToStart, util);
-          util.yield();
-          return;
-        }
-      }
-      if (stackFrame.isResponseReceived) {
-        if (stackFrame.functionCalls && stackFrame.functionCalls.every(function (funcCall) {
-          return funcCall.thread && _this5.runtime.threads.indexOf(funcCall.thread) === -1;
-        })) {
-          // All function calls are completed, exit this block
-          this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
-          return getTextFromResponse(ai.getLastResponse());
-        }
-      }
-
-      // If the AI is using partial response, handle it
-      if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
-        var partialResponseHandler = function partialResponseHandler(partialResponse) {
-          _this5.runtime.startHats('gai_whenPartialResponseReceived', null, target);
-          console.log(partialResponse);
-        };
-        if (!stackFrame.isRequesting) {
-          stackFrame.isRequesting = true;
-          this.updateFunctionRegistry(target);
-          ai.requestChatStream(prompt, partialResponseHandler).then(function (_ref9) {
-            var _stackFrame$functionC3;
-            var _ref0 = _slicedToArray(_ref9, 2),
-              functionCalls = _ref0[1];
-            stackFrame.functionCalls = stackFrame.functionCalls || [];
-            (_stackFrame$functionC3 = stackFrame.functionCalls).push.apply(_stackFrame$functionC3, _toConsumableArray(functionCalls));
-            _this5.runtime.startHats('gai_whenResponseReceived', null, target);
-            stackFrame.isResponseReceived = true;
-          }).catch(function (e) {
-            console.error(e);
-            return e.message;
-          });
-        }
-        util.yield();
-        return;
-      }
-      if (!stackFrame.isRequesting) {
-        stackFrame.isRequesting = true;
-        this.updateFunctionRegistry(target);
-        ai.requestChat(prompt).then(function (_ref1) {
-          var _stackFrame$functionC4;
-          var _ref10 = _slicedToArray(_ref1, 2),
-            response = _ref10[0],
-            functionCalls = _ref10[1];
-          stackFrame.functionCalls = stackFrame.functionCalls || [];
-          (_stackFrame$functionC4 = stackFrame.functionCalls).push.apply(_stackFrame$functionC4, _toConsumableArray(functionCalls));
-          if (response && response.text) {
-            // If response is received, mark it
-            _this5.runtime.startHats('gai_whenResponseReceived', null, target);
-          }
-          stackFrame.isResponseReceived = true;
-        }).catch(function (error) {
-          console.error(error);
-          return error.message;
-        });
-      }
-      util.yield();
-      return;
+      return this._requestAI(prompt, true, util);
     }
 
     /**
@@ -15147,7 +15176,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "costumeData",
     value: function costumeData(args, util) {
-      var costumeName = Cast$1.toString(args.COSTUME);
+      var costumeName = Cast.toString(args.COSTUME);
       var target = util.target;
       var costume = getCostumeByNameOrNumber(target, costumeName);
       if (!costume) {
@@ -15167,7 +15196,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "backdropData",
     value: function backdropData(args) {
-      var backdropName = Cast$1.toString(args.BACKDROP);
+      var backdropName = Cast.toString(args.BACKDROP);
       var stage = this.runtime.getTargetForStage();
       var backdrop = getCostumeByNameOrNumber(stage, backdropName);
       if (!backdrop) {
@@ -15187,11 +15216,11 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "snapshotData",
     value: function snapshotData(args, util) {
-      var _this6 = this;
+      var _this5 = this;
       var runtime = this.runtime;
       var requester = util.target;
       return new Promise(function (resolve) {
-        _this6.runtime.renderer.requestSnapshot(function (imageDataURL) {
+        _this5.runtime.renderer.requestSnapshot(function (imageDataURL) {
           if (DEBUG) {
             addImageAsCostume(requester, imageDataURL, runtime, 'snapshot', runtime.vm).catch(function (e) {
               console.error(e);
@@ -15211,7 +15240,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "soundData",
     value: function soundData(args, util) {
-      var soundName = Cast$1.toString(args.SOUND);
+      var soundName = Cast.toString(args.SOUND);
       var target = util.target;
       var sounds = target.sprite.sounds;
       var sound;
@@ -15235,20 +15264,20 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "startSoundRecorder",
     value: function startSoundRecorder() {
-      var _this7 = this;
+      var _this6 = this;
       return navigator.mediaDevices.getUserMedia({
         audio: true
       }).then(function (stream) {
-        _this7.runtime.emitMicListening(true);
+        _this6.runtime.emitMicListening(true);
         var mediaRecorder = new MediaRecorder(stream);
-        _this7.soundRecorder = mediaRecorder;
-        _this7.soundRecorderChunks = [];
+        _this6.soundRecorder = mediaRecorder;
+        _this6.soundRecorderChunks = [];
         mediaRecorder.ondataavailable = function (event) {
-          _this7.soundRecorderChunks.push(event.data);
+          _this6.soundRecorderChunks.push(event.data);
         };
         mediaRecorder.start();
-        _this7.listeningTimeout = setTimeout(function () {
-          _this7.stopSoundRecorder();
+        _this6.listeningTimeout = setTimeout(function () {
+          _this6.stopSoundRecorder();
         }, 60 * 1000);
       });
     }
@@ -15261,29 +15290,29 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "stopSoundRecorder",
     value: function stopSoundRecorder() {
-      var _this8 = this;
+      var _this7 = this;
       if (this.listeningTimeout) {
         clearTimeout(this.listeningTimeout);
         this.listeningTimeout = null;
       }
       if (this.soundRecorder) {
         return new Promise(function (resolve) {
-          _this8.soundRecorder.onstop = function () {
-            _this8.runtime.emitMicListening(false);
-            var audioBlob = new Blob(_this8.soundRecorderChunks, {
+          _this7.soundRecorder.onstop = function () {
+            _this7.runtime.emitMicListening(false);
+            var audioBlob = new Blob(_this7.soundRecorderChunks, {
               type: 'audio/wav'
             });
             var reader = new FileReader();
             reader.readAsDataURL(audioBlob);
             reader.onloadend = function () {
               var dataURL = reader.result;
-              _this8.recordedSoundData = dataURL;
-              _this8.isListening = false;
-              _this8.soundRecorder = null;
+              _this7.recordedSoundData = dataURL;
+              _this7.isListening = false;
+              _this7.soundRecorder = null;
               resolve(dataURL);
             };
           };
-          _this8.soundRecorder.stop();
+          _this7.soundRecorder.stop();
         });
       }
       return null;
@@ -15296,14 +15325,14 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "startListening",
     value: function startListening() {
-      var _this9 = this;
+      var _this8 = this;
       if (this.isListening) {
         return;
       }
       this.isListening = true;
       return this.startSoundRecorder().catch(function (e) {
         console.warn('Failed to start listening', e);
-        _this9.isListening = false;
+        _this8.isListening = false;
       });
     }
 
@@ -15395,40 +15424,40 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }
       try {
         var candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-        var responseText;
+        var _responseText;
         if (Array.isArray(response)) {
           // the response is streaming
           if (candidateIndex !== 1) {
             // Streaming response has no candidates
             return '';
           }
-          responseText = getTextFromResponse(response);
+          _responseText = getTextFromResponse(response);
         } else {
-          responseText = getTextFromResponse(response, candidateIndex - 1);
+          _responseText = getTextFromResponse(response, candidateIndex - 1);
         }
         // Replace function names with procedureCode and argument names with their codes
-        if (responseText && ai.functionRegistry) {
+        if (_responseText && ai.functionRegistry) {
           Object.values(ai.functionRegistry).forEach(function (functionSpec) {
             if (functionSpec.declaration && functionSpec.procedureCode) {
               var funcName = functionSpec.declaration.name;
               var procedureCode = functionSpec.procedureCode;
               // Replace function name with procedure code in the response text
-              responseText = responseText.replace(new RegExp(funcName, 'g'), procedureCode);
+              _responseText = _responseText.replace(new RegExp(funcName, 'g'), procedureCode);
 
               // Replace argument names with their codes
               if (functionSpec.argumentDict) {
-                Object.entries(functionSpec.argumentDict).forEach(function (_ref11) {
-                  var _ref12 = _slicedToArray(_ref11, 2),
-                    argName = _ref12[0],
-                    argCode = _ref12[1];
+                Object.entries(functionSpec.argumentDict).forEach(function (_ref9) {
+                  var _ref0 = _slicedToArray(_ref9, 2),
+                    argName = _ref0[0],
+                    argCode = _ref0[1];
                   // Replace argument name with argument code in the response text
-                  responseText = responseText.replace(new RegExp(argName, 'g'), argCode);
+                  _responseText = _responseText.replace(new RegExp(argName, 'g'), argCode);
                 });
               }
             }
           });
         }
-        return responseText;
+        return _responseText;
       } catch (error) {
         console.error("responseText: ".concat(error.message));
         return error.message;
@@ -15554,27 +15583,27 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var configValue = args.VALUE;
       switch (configKey) {
         case 'maxOutputTokens':
-          configValue = Math.max(1, parseInt(Cast$1.toString(configValue), 10));
+          configValue = Math.max(1, parseInt(Cast.toString(configValue), 10));
           break;
         case 'candidateCount':
-          configValue = Math.max(1, parseInt(Cast$1.toString(configValue), 10));
+          configValue = Math.max(1, parseInt(Cast.toString(configValue), 10));
           break;
         case 'stopSequences':
-          configValue = Cast$1.toString(configValue).split(',').map(function (s) {
+          configValue = Cast.toString(configValue).split(',').map(function (s) {
             return s.trim();
           });
           break;
         case 'temperature':
-          configValue = Math.max(0.0, Math.min(1.0, Cast$1.toNumber(configValue)));
+          configValue = Math.max(0.0, Math.min(1.0, Cast.toNumber(configValue)));
           break;
         case 'topP':
-          configValue = Math.max(0.0, Math.min(1.0, Cast$1.toNumber(configValue)));
+          configValue = Math.max(0.0, Math.min(1.0, Cast.toNumber(configValue)));
           break;
         case 'topK':
-          configValue = Math.max(1, parseInt(Cast$1.toNumber(configValue), 10));
+          configValue = Math.max(1, parseInt(Cast.toNumber(configValue), 10));
           break;
         case 'systemInstruction':
-          configValue = Cast$1.toString(configValue);
+          configValue = Cast.toString(configValue);
           break;
         case 'responseSchema':
           try {
@@ -15650,7 +15679,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
       } catch (error) {
         return "error: ".concat(error.message);
       }
-      var path = Cast$1.toString(args.PATH).trim();
+      var path = Cast.toString(args.PATH).trim();
       if (!path) {
         return '';
       }
@@ -15695,7 +15724,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         if (jsonArray.length === 0) {
           return '';
         }
-        var index = parseInt(Cast$1.toString(args.INDEX), 10);
+        var index = parseInt(Cast.toString(args.INDEX), 10);
         if (isNaN(index) || index < 1 || index > jsonArray.length) {
           return '';
         }
@@ -15857,7 +15886,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "useMatchedProcedures",
     value: function useMatchedProcedures(args, util) {
-      var _this0 = this;
+      var _this9 = this;
       var target = util.target;
       var codePattern = new RegExp(args.PATTERN.trim());
       var ai = this.getAI(target);
@@ -15869,7 +15898,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }
       ai.clearRegisteredFunctions();
       procedures.forEach(function (proc) {
-        return _this0.registerFunction(target, proc);
+        return _this9.registerFunction(target, proc);
       });
       return "Registered [\"".concat(procedures.map(function (proc) {
         return proc.code;
@@ -15885,12 +15914,12 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "updateFunctionRegistry",
     value: function updateFunctionRegistry(target) {
-      var _this1 = this;
+      var _this0 = this;
       var ai = this.getAI(target);
       ai.clearRegisteredFunctions();
       var procedures = this.getUserProcedures(target);
       procedures.forEach(function (proc) {
-        _this1.registerFunction(target, proc);
+        _this0.registerFunction(target, proc);
       });
     }
 
@@ -15904,7 +15933,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "returnResultToAI",
     value: function returnResultToAI(args, util) {
-      var _this10 = this;
+      var _this1 = this;
       var target = util.target;
       var ai = this.getAI(target);
       var result = args.RESULT;
@@ -15941,7 +15970,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           return;
         }
         if (stackFrame.functionCalls.every(function (funcCall) {
-          return funcCall.thread && _this10.runtime.threads.indexOf(funcCall.thread) === -1;
+          return funcCall.thread && _this1.runtime.threads.indexOf(funcCall.thread) === -1;
         })) {
           // All function calls are completed, exit this block
           this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
@@ -15951,15 +15980,15 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }
       if (typeof currentCall.result === 'undefined') {
         currentCall.result = result;
-        ai.returnFunctionResult(currentCall).then(function (_ref13) {
-          var _stackFrame$functionC5;
-          var _ref14 = _slicedToArray(_ref13, 2),
-            response = _ref14[0],
-            functionCalls = _ref14[1];
+        ai.returnFunctionResult(currentCall).then(function (_ref1) {
+          var _stackFrame$functionC3;
+          var _ref10 = _slicedToArray(_ref1, 2),
+            response = _ref10[0],
+            functionCalls = _ref10[1];
           stackFrame.functionCalls = stackFrame.functionCalls || [];
-          (_stackFrame$functionC5 = stackFrame.functionCalls).push.apply(_stackFrame$functionC5, _toConsumableArray(functionCalls));
+          (_stackFrame$functionC3 = stackFrame.functionCalls).push.apply(_stackFrame$functionC3, _toConsumableArray(functionCalls));
           if (response && response.text) {
-            _this10.runtime.startHats('gai_whenResponseReceived', null, target);
+            _this1.runtime.startHats('gai_whenResponseReceived', null, target);
           }
           stackFrame.isResultResponseReceived = true;
         }).catch(function (error) {
@@ -15992,7 +16021,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         util.yield();
         return;
       }
-      var contentText = Cast$1.toString(args.CONTENT).trim();
+      var contentText = Cast.toString(args.CONTENT).trim();
       var content = interpretContentPartsText(contentText);
       var taskType = args.TASK_TYPE;
       return ai.requestEmbedding(content, taskType).then(function (embedding) {
@@ -16053,7 +16082,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "setApiKey",
     value: function setApiKey(args, util) {
-      var apiKey = Cast$1.toString(args.KEY).trim();
+      var apiKey = Cast.toString(args.KEY).trim();
       GeminiAdapter.setApiKey(apiKey);
       GeminiAdapter.removeAllAdapter();
       this.updateFunctionRegistry(util.target);
@@ -16086,7 +16115,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "setBaseUrl",
     value: function setBaseUrl(args, util) {
-      var baseUrl = Cast$1.toString(args.URL).trim();
+      var baseUrl = Cast.toString(args.URL).trim();
       if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
         return 'error: invalid URL';
       }
@@ -16126,7 +16155,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         util.yield();
         return;
       }
-      var contentText = Cast$1.toString(args.CONTENT);
+      var contentText = Cast.toString(args.CONTENT);
       var content = interpretContentPartsText(contentText, target, this.runtime);
       var requestType = args.REQUEST_TYPE;
       return ai.countTokensAs(content, requestType).catch(function (error) {
@@ -16147,7 +16176,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
     value: function setGenerativeModel(args, util) {
       var target = util.target;
       var ai = this.getAI(target);
-      var modelCode = Cast$1.toString(args.MODEL_CODE).trim();
+      var modelCode = Cast.toString(args.MODEL_CODE).trim();
       if (ai.isRequesting()) {
         util.yield();
         return;
@@ -16228,7 +16257,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
     value: function setEmbeddingModel(args, util) {
       var target = util.target;
       var ai = this.getAI(target);
-      var modelCode = Cast$1.toString(args.MODEL_CODE).trim();
+      var modelCode = Cast.toString(args.MODEL_CODE).trim();
       if (ai.isRequesting()) {
         util.yield();
         return;
@@ -16306,7 +16335,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this11 = this;
+      var _this10 = this;
       var defaultApiKey = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       if (this.apiKeyDialogOpened) {
         // prevent to open multiple dialogs
@@ -16392,7 +16421,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this11.apiKeyDialogOpened = false;
+        _this10.apiKeyDialogOpened = false;
       });
     }
 
@@ -16405,7 +16434,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "askApiKey",
     value: function askApiKey(args, util) {
-      var _this12 = this;
+      var _this11 = this;
       if (this.apiKeyDialogOpened) {
         util.yield();
         return;
@@ -16430,7 +16459,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
           if (validation.valid) {
             GeminiAdapter.setApiKey(apiKey);
             GeminiAdapter.removeAllAdapter();
-            _this12.updateFunctionRegistry(util.target);
+            _this11.updateFunctionRegistry(util.target);
             return 'API key validated and set successfully';
           }
           return "API key validation failed: ".concat(validation.error);
@@ -16492,7 +16521,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
       extensionURL = url;
     }
   }]);
-  return GeminiBlocks;
 }();
 
 export { GeminiBlocks as blockClass, entry };

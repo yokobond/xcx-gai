@@ -1395,21 +1395,18 @@ class GeminiBlocks {
     }
 
     /**
-     * Request AI to generate content.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.PROMPT - prompt to AI
+     * Request AI to generate content or chat.
+     * @param {string} prompt - the prompt to send to the AI.
+     * @param {boolean} isChat - whether this is a chat request.
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves response text
+     * @private
      */
-    generate (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
-            return 'API key is not set.';
-        }
-        const promptText = Cast.toString(args.PROMPT);
+    _requestAI (prompt, isChat, util) {
         const target = util.target;
         const ai = this.getAI(target);
-        const prompt = interpretContentPartsText(promptText);
         const stackFrame = util.stackFrame;
+
         if (stackFrame.functionCalls) {
             const callsToStart = stackFrame.functionCalls.filter(funcCall => funcCall.status === 'PENDING');
             if (callsToStart.length > 0) {
@@ -1418,26 +1415,29 @@ class GeminiBlocks {
                 return;
             }
         }
+
         if (stackFrame.isResponseReceived) {
-            if (stackFrame.functionCalls
-                .every(funcCall => funcCall.thread &&
-                    this.runtime.threads.indexOf(funcCall.thread) === -1)) {
-                // All function calls are completed, exit this block
+            if (this.allFunctionCallsFinished(stackFrame.functionCalls)) {
                 this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
                 return getTextFromResponse(ai.getLastResponse());
             }
         }
-        // If the AI is using partial response, handle it
+
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
             const partialResponseHandler = partialResponse => {
                 this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
-                console.log(partialResponse);
+                if (DEBUG) {
+                    console.log(partialResponse);
+                }
             };
-            
+
             if (!stackFrame.isRequesting) {
                 stackFrame.isRequesting = true;
                 this.updateFunctionRegistry(target);
-                ai.requestGenerateStream(prompt, partialResponseHandler)
+                const request = isChat ?
+                    ai.requestChatStream(prompt, partialResponseHandler) :
+                    ai.requestGenerateStream(prompt, partialResponseHandler);
+                request
                     .then(([, functionCalls]) => {
                         stackFrame.functionCalls = stackFrame.functionCalls || [];
                         stackFrame.functionCalls.push(...functionCalls);
@@ -1452,15 +1452,16 @@ class GeminiBlocks {
             util.yield();
             return;
         }
+
         if (!stackFrame.isRequesting) {
             stackFrame.isRequesting = true;
             this.updateFunctionRegistry(target);
-            ai.requestGenerate(prompt)
+            const request = isChat ? ai.requestChat(prompt) : ai.requestGenerate(prompt);
+            request
                 .then(([response, functionCalls]) => {
                     stackFrame.functionCalls = stackFrame.functionCalls || [];
                     stackFrame.functionCalls.push(...functionCalls);
                     if (response && response.text) {
-                        // If response is received, mark it
                         this.runtime.startHats('gai_whenResponseReceived', null, target);
                     }
                     stackFrame.isResponseReceived = true;
@@ -1471,7 +1472,22 @@ class GeminiBlocks {
                 });
         }
         util.yield();
-        return;
+    }
+
+    /**
+     * Request AI to generate content.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.PROMPT - prompt to AI
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - a Promise that resolves response text
+     */
+    generate (args, util) {
+        if (!GeminiAdapter.getApiKey()) {
+            return 'API key is not set.';
+        }
+        const promptText = Cast.toString(args.PROMPT);
+        const prompt = interpretContentPartsText(promptText);
+        return this._requestAI(prompt, false, util);
     }
 
     /**
@@ -1486,78 +1502,8 @@ class GeminiBlocks {
             return 'API key is not set.';
         }
         const promptText = Cast.toString(args.PROMPT);
-        const target = util.target;
-        const ai = this.getAI(target);
         const prompt = interpretContentPartsText(promptText);
-        const stackFrame = util.stackFrame;
-
-        // Handle function calls execution
-        if (stackFrame.functionCalls) {
-            const callsToStart = stackFrame.functionCalls.filter(funcCall => funcCall.status === 'PENDING');
-            if (callsToStart.length > 0) {
-                this.dispatchFunctionCalls(callsToStart, util);
-                util.yield();
-                return;
-            }
-        }
-
-        if (stackFrame.isResponseReceived) {
-            if (stackFrame.functionCalls &&
-                stackFrame.functionCalls
-                    .every(funcCall => funcCall.thread &&
-                        this.runtime.threads.indexOf(funcCall.thread) === -1)) {
-                // All function calls are completed, exit this block
-                this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
-                return getTextFromResponse(ai.getLastResponse());
-            }
-        }
-
-        // If the AI is using partial response, handle it
-        if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
-            const partialResponseHandler = partialResponse => {
-                this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
-                console.log(partialResponse);
-            };
-            
-            if (!stackFrame.isRequesting) {
-                stackFrame.isRequesting = true;
-                this.updateFunctionRegistry(target);
-                ai.requestChatStream(prompt, partialResponseHandler)
-                    .then(([, functionCalls]) => {
-                        stackFrame.functionCalls = stackFrame.functionCalls || [];
-                        stackFrame.functionCalls.push(...functionCalls);
-                        this.runtime.startHats('gai_whenResponseReceived', null, target);
-                        stackFrame.isResponseReceived = true;
-                    })
-                    .catch(e => {
-                        console.error(e);
-                        return e.message;
-                    });
-            }
-            util.yield();
-            return;
-        }
-
-        if (!stackFrame.isRequesting) {
-            stackFrame.isRequesting = true;
-            this.updateFunctionRegistry(target);
-            ai.requestChat(prompt)
-                .then(([response, functionCalls]) => {
-                    stackFrame.functionCalls = stackFrame.functionCalls || [];
-                    stackFrame.functionCalls.push(...functionCalls);
-                    if (response && response.text) {
-                        // If response is received, mark it
-                        this.runtime.startHats('gai_whenResponseReceived', null, target);
-                    }
-                    stackFrame.isResponseReceived = true;
-                })
-                .catch(error => {
-                    console.error(error);
-                    return error.message;
-                });
-        }
-        util.yield();
-        return;
+        return this._requestAI(prompt, true, util);
     }
 
     /**
