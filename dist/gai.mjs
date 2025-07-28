@@ -15082,7 +15082,9 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }
       if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
         var partialResponseHandler = function partialResponseHandler(partialResponse) {
-          _this4.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+          if (partialResponse && partialResponse.text) {
+            _this4.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+          }
           if (DEBUG) {
             console.log(partialResponse);
           }
@@ -15094,10 +15096,13 @@ var GeminiBlocks = /*#__PURE__*/function () {
           request.then(function (_ref5) {
             var _stackFrame$functionC;
             var _ref6 = _slicedToArray(_ref5, 2),
+              response = _ref6[0],
               functionCalls = _ref6[1];
             stackFrame.functionCalls = stackFrame.functionCalls || [];
             (_stackFrame$functionC = stackFrame.functionCalls).push.apply(_stackFrame$functionC, _toConsumableArray(functionCalls));
-            _this4.runtime.startHats('gai_whenResponseReceived', null, target);
+            if (response && response.text) {
+              _this4.runtime.startHats('gai_whenResponseReceived', null, target);
+            }
             stackFrame.isResponseReceived = true;
           }).catch(function (e) {
             console.error(e);

@@ -1425,7 +1425,9 @@ class GeminiBlocks {
 
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
             const partialResponseHandler = partialResponse => {
-                this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+                if (partialResponse && partialResponse.text) {
+                    this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+                }
                 if (DEBUG) {
                     console.log(partialResponse);
                 }
@@ -1438,10 +1440,12 @@ class GeminiBlocks {
                     ai.requestChatStream(prompt, partialResponseHandler) :
                     ai.requestGenerateStream(prompt, partialResponseHandler);
                 request
-                    .then(([, functionCalls]) => {
+                    .then(([response, functionCalls]) => {
                         stackFrame.functionCalls = stackFrame.functionCalls || [];
                         stackFrame.functionCalls.push(...functionCalls);
-                        this.runtime.startHats('gai_whenResponseReceived', null, target);
+                        if (response && response.text) {
+                            this.runtime.startHats('gai_whenResponseReceived', null, target);
+                        }
                         stackFrame.isResponseReceived = true;
                     })
                     .catch(e => {
