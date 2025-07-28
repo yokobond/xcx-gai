@@ -2352,7 +2352,6 @@ class GeminiBlocks {
     /**
      * Get API key.
      * @returns {string} - API key
-
      * @deprecated
      */
     apiKey () {
@@ -2568,7 +2567,7 @@ class GeminiBlocks {
 
     /**
      * Open dialog to input API key by user.
-     * @param {string} [defaultApiKey=''] - default API key
+     * @param {string} [defaultApiKey] - default API key
      * @returns {Promise<string>?} - a Promise that resolves API key or null if canceled
      */
     openApiKeyDialog (defaultApiKey = '') {
