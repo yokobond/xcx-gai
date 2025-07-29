@@ -2286,10 +2286,6 @@ class GeminiBlocks {
         const target = util.target;
         const runtime = util.runtime;
         const ai = this.getAI(target);
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
         const contentText = Cast.toString(args.CONTENT).trim();
         const content = interpretContentPartsText(contentText, target, runtime);
         const taskType = args.TASK_TYPE;
@@ -2404,10 +2400,6 @@ class GeminiBlocks {
         }
         const target = util.target;
         const ai = this.getAI(target);
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
         const contentText = Cast.toString(args.CONTENT);
         const content = interpretContentPartsText(contentText, target, this.runtime);
         const requestType = args.REQUEST_TYPE;
@@ -2429,10 +2421,6 @@ class GeminiBlocks {
         const target = util.target;
         const ai = this.getAI(target);
         const modelCode = Cast.toString(args.MODEL_CODE).trim();
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
         return ai.setGenerativeModel(modelCode)
             .catch(error => `Error setting model: ${error.message}`);
     }
@@ -2502,10 +2490,6 @@ class GeminiBlocks {
         const target = util.target;
         const ai = this.getAI(target);
         const modelCode = Cast.toString(args.MODEL_CODE).trim();
-        if (ai.isRequesting()) {
-            util.yield();
-            return;
-        }
         return ai.setEmbeddingModel(modelCode)
             .catch(error => `Error setting model: ${error.message}`);
     }
