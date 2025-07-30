@@ -138,26 +138,6 @@ class GeminiBlocks {
             showStatusButton: false,
             blocks: [
                 {
-                    opcode: 'generate',
-                    blockType: BlockType.COMMAND,
-                    text: formatMessage({
-                        id: 'gai.generate',
-                        default: 'generate [PROMPT]',
-                        description: 'generate block text of GAI'
-                    }),
-                    func: 'generate',
-                    arguments: {
-                        PROMPT: {
-                            type: ArgumentType.STRING,
-                            defaultValue: formatMessage({
-                                id: 'gai.generateDefault',
-                                default: 'What is AI?',
-                                description: 'default generate prompt for Gemini'
-                            })
-                        }
-                    }
-                },
-                {
                     opcode: 'chat',
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
@@ -203,6 +183,26 @@ class GeminiBlocks {
                         HISTORY: {
                             type: ArgumentType.STRING,
                             defaultValue: ' '
+                        }
+                    }
+                },
+                {
+                    opcode: 'generate',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.generate',
+                        default: 'generate [PROMPT]',
+                        description: 'generate block text of GAI'
+                    }),
+                    func: 'generate',
+                    arguments: {
+                        PROMPT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: formatMessage({
+                                id: 'gai.generateDefault',
+                                default: 'What is AI?',
+                                description: 'default generate prompt for Gemini'
+                            })
                         }
                     }
                 },

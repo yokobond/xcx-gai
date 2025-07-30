@@ -922,7 +922,7 @@ var en = {
 };
 var ja = {
 	"gai.name": "GAI",
-	"gai.generate": "生成[PROMPT]",
+	"gai.generate": "単独の生成[PROMPT]",
 	"gai.generateDefault": "AIとは?",
 	"gai.costumeData": "コスチューム[COSTUME]のデータ",
 	"gai.backdropData": "背景[BACKDROP]のデータ",
@@ -1007,7 +1007,7 @@ var translations = {
 	ja: ja,
 	"ja-Hira": {
 	"gai.name": "GAI",
-	"gai.generate": "せいせい[PROMPT]",
+	"gai.generate": "たんどく の せいせい[PROMPT]",
 	"gai.generateDefault": "AIとは?",
 	"gai.costumeData": "コスチューム[COSTUME]の データ",
 	"gai.backdropData": "はいけい[BACKDROP]の データ",
@@ -20493,8 +20493,8 @@ var GeminiAdapter = /*#__PURE__*/function () {
   }]);
 }();
 _defineProperty(GeminiAdapter, "MODEL_CODE", {
-  generative: 'gemini-2.0-flash',
-  embedding: 'gemini-embedding-exp'
+  generative: 'gemini-2.5-flash',
+  embedding: 'gemini-embedding-001'
 });
 /**
  * API key for Gemini AI.
@@ -20888,25 +20888,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
         blockIconURI: img,
         showStatusButton: false,
         blocks: [{
-          opcode: 'generate',
-          blockType: BlockType.COMMAND,
-          text: formatMessage({
-            id: 'gai.generate',
-            default: 'generate [PROMPT]',
-            description: 'generate block text of GAI'
-          }),
-          func: 'generate',
-          arguments: {
-            PROMPT: {
-              type: ArgumentType.STRING,
-              defaultValue: formatMessage({
-                id: 'gai.generateDefault',
-                default: 'What is AI?',
-                description: 'default generate prompt for Gemini'
-              })
-            }
-          }
-        }, {
           opcode: 'chat',
           blockType: BlockType.COMMAND,
           text: formatMessage({
@@ -20949,6 +20930,25 @@ var GeminiBlocks = /*#__PURE__*/function () {
             HISTORY: {
               type: ArgumentType.STRING,
               defaultValue: ' '
+            }
+          }
+        }, {
+          opcode: 'generate',
+          blockType: BlockType.COMMAND,
+          text: formatMessage({
+            id: 'gai.generate',
+            default: 'generate [PROMPT]',
+            description: 'generate block text of GAI'
+          }),
+          func: 'generate',
+          arguments: {
+            PROMPT: {
+              type: ArgumentType.STRING,
+              defaultValue: formatMessage({
+                id: 'gai.generateDefault',
+                default: 'What is AI?',
+                description: 'default generate prompt for Gemini'
+              })
             }
           }
         }, '---', {
@@ -23045,10 +23045,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var target = util.target;
       util.runtime;
       var ai = this.getAI(target);
-      if (ai.isRequesting()) {
-        util.yield();
-        return;
-      }
       var contentText = Cast.toString(args.CONTENT).trim();
       var content = interpretContentPartsText(contentText);
       var taskType = args.TASK_TYPE;
@@ -23179,10 +23175,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
       }
       var target = util.target;
       var ai = this.getAI(target);
-      if (ai.isRequesting()) {
-        util.yield();
-        return;
-      }
       var contentText = Cast.toString(args.CONTENT);
       var content = interpretContentPartsText(contentText, target, this.runtime);
       var requestType = args.REQUEST_TYPE;
@@ -23205,10 +23197,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var target = util.target;
       var ai = this.getAI(target);
       var modelCode = Cast.toString(args.MODEL_CODE).trim();
-      if (ai.isRequesting()) {
-        util.yield();
-        return;
-      }
       return ai.setGenerativeModel(modelCode).catch(function (error) {
         return "Error setting model: ".concat(error.message);
       });
@@ -23286,10 +23274,6 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var target = util.target;
       var ai = this.getAI(target);
       var modelCode = Cast.toString(args.MODEL_CODE).trim();
-      if (ai.isRequesting()) {
-        util.yield();
-        return;
-      }
       return ai.setEmbeddingModel(modelCode).catch(function (error) {
         return "Error setting model: ".concat(error.message);
       });

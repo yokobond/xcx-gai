@@ -83,7 +83,7 @@
   },
   "ja": {
     "gai.name": "GAI",
-    "gai.generate": "生成[PROMPT]",
+    "gai.generate": "単独の生成[PROMPT]",
     "gai.generateDefault": "AIとは?",
     "gai.costumeData": "コスチューム[COSTUME]のデータ",
     "gai.backdropData": "背景[BACKDROP]のデータ",
@@ -165,7 +165,7 @@
   },
   "ja-Hira": {
     "gai.name": "GAI",
-    "gai.generate": "せいせい[PROMPT]",
+    "gai.generate": "たんどく の せいせい[PROMPT]",
     "gai.generateDefault": "AIとは?",
     "gai.costumeData": "コスチューム[COSTUME]の データ",
     "gai.backdropData": "はいけい[BACKDROP]の データ",
