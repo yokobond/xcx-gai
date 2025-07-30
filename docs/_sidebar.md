@@ -9,6 +9,7 @@
   * [Voice Interaction](example-voice-chat "Interacting with AI by voice")
   * [Embedding](example-embedding "Search with AI")
   * [Response Schema](example-response_schema "Get structured output")
+  * [Function Calling](example-function_calling "Execute Scratch code by AI")
 
 ----
 <a href="./ja/" target="_self">日本語</a>
