@@ -27,19 +27,24 @@ const rollupOptions = {
     plugins: [
         multi(),
         importImage(),
-        commonjs(),
-        nodeGlobals(),
-        nodePolifills(),
+        json(),
         nodeResolve({
             browser: true, 
-            preferBuiltins: true, 
+            preferBuiltins: false, // Changed to false for browser environment
             modulePaths: [
                 path.resolve(process.cwd(), './node_modules'),
             ],
+            // Add these options to better resolve @babel/runtime
+            include: ['**'],
+            skip: [],
         }),
-        json(),
+        commonjs(),
+        nodeGlobals(),
+        nodePolifills(),
         babel({
             babelrc: false,
+            // Exclude node_modules from babel transformation except for specific packages
+            exclude: ['node_modules/**'],
             presets: [
                 ['@babel/preset-env',
                     {
@@ -59,7 +64,10 @@ const rollupOptions = {
                 '@babel/plugin-transform-react-jsx',
                 [
                     "@babel/plugin-transform-runtime",
-                    { "regenerator": true }
+                    { 
+                        "regenerator": true,
+                        "useESModules": true // This helps with ES module compatibility
+                    }
                 ]
             ],
         }),
@@ -69,6 +77,7 @@ const rollupOptions = {
         format: 'es',
         sourcemap: true,
     },
+    external: [], // Keep this empty to bundle everything
     watch: {
         clearScreen: false,
         chokidar: {
@@ -76,7 +85,6 @@ const rollupOptions = {
         },
         buildDelay: 500,
     },
-    external: [],
 }
 
 export default rollupOptions;
