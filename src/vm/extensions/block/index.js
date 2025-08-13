@@ -9,6 +9,9 @@ import {
     GeminiAdapter,
     HarmCategory, HarmBlockThreshold, EmbeddingTaskType
 } from './gemini-adapter.js';
+import {
+    OpenAIAdapter
+} from './openai-adapter.js';
 import {getCostumeByNameOrNumber, costumeToDataURL, addImageAsCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
 import {dotProduct, euclideanDistance} from './math-util.js';
@@ -766,15 +769,19 @@ class GeminiBlocks {
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
                         id: 'gai.setBaseUrl',
-                        default: 'set base URL to [URL]',
-                        description: 'set base URL for Gemini'
+                        default: 'set base URL to [URL] as [API]',
+                        description: 'set base URL for AI'
                     }),
                     func: 'setBaseUrl',
                     arguments: {
+                        API: {
+                            type: ArgumentType.STRING,
+                            menu: 'apiMenu'
+                        },
                         URL: {
                             type: ArgumentType.STRING,
-                            defaultValue: GeminiAdapter.baseUrl,
-                            description: 'default base URL for Gemini'
+                            defaultValue: this.AIAdapter.baseUrl,
+                            description: 'default base URL for AI'
                         }
                     }
                 },
@@ -840,6 +847,10 @@ class GeminiBlocks {
                 embeddingTaskTypeMenu: {
                     acceptReporters: false,
                     items: 'getEmbeddingTaskTypeMenu'
+                },
+                apiMenu: {
+                    acceptReporters: false,
+                    items: 'getApiMenu'
                 }
             }
         };
@@ -1262,7 +1273,7 @@ class GeminiBlocks {
 
     /**
      * @param {Target} target - the target to get the AI
-     * @return {GeminiAdapter} - the AI for the target
+     * @return {OpenAIAdapter|GeminiAdapter} - the AI for the target
      */
     getAI (target) {
         return this.AIAdapter.getForTarget(target);
@@ -2400,21 +2411,28 @@ class GeminiBlocks {
     }
 
     /**
-     * Set base URL and reset AI.
+     * Set base URL and switch adapter based on API type.
      * @param {object} args - the block's arguments.
+     * @param {string} args.API - API type ('OpenAI' or 'Gemini')
      * @param {string} args.URL - base URL
      * @param {object} util - utility object provided by the runtime.
      * @returns {string} - message
      */
     setBaseUrl (args, util) {
+        const apiType = args.API;
         const baseUrl = Cast.toString(args.URL).trim();
+        
         if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
             return 'error: invalid URL';
         }
-        GeminiAdapter.baseUrl = baseUrl;
-        GeminiAdapter.removeAllAdapter();
+        
+        // Switch adapter based on API type
+        this.switchAdapter(apiType);
+        
+        this.AIAdapter.baseUrl = baseUrl;
+        this.AIAdapter.removeAllAdapter();
         this.updateFunctionRegistry(util.target);
-        return `set base URL: ${baseUrl}`;
+        return `set ${apiType} base URL: ${baseUrl}`;
     }
 
     /**
