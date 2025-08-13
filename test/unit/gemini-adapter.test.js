@@ -16,8 +16,7 @@ import {
     GeminiAdapter,
     HarmCategory,
     HarmBlockThreshold,
-    EmbeddingTaskType,
-    getTextFromResponse
+    EmbeddingTaskType
 } from '../../src/vm/extensions/block/gemini-adapter.js';
 
 import { GoogleGenAI } from '@google/genai';
@@ -591,15 +590,15 @@ describe('GeminiAdapter', () => {
     describe('Utility Functions', () => {
         describe('getTextFromResponse', () => {
             it('should return empty string for null/undefined response', () => {
-                expect(getTextFromResponse(null)).toBe('');
-                expect(getTextFromResponse(undefined)).toBe('');
+                expect(GeminiAdapter.getTextFromResponse(null)).toBe('');
+                expect(GeminiAdapter.getTextFromResponse(undefined)).toBe('');
             });
 
             it('should handle string response', () => {
                 // Note: the function doesn't actually handle string responses correctly
                 // due to early return without setting contentText
                 const response = 'Simple string response';
-                expect(getTextFromResponse(response)).toBe('');
+                expect(GeminiAdapter.getTextFromResponse(response)).toBe('');
             });
 
             it('should extract text from candidate response', () => {
@@ -613,7 +612,7 @@ describe('GeminiAdapter', () => {
                         }
                     }]
                 };
-                expect(getTextFromResponse(response)).toBe('Hello World!');
+                expect(GeminiAdapter.getTextFromResponse(response)).toBe('Hello World!');
             });
 
             it('should handle multiple responses', () => {
@@ -633,7 +632,7 @@ describe('GeminiAdapter', () => {
                         }]
                     }
                 ];
-                expect(getTextFromResponse(responses)).toBe('First Second');
+                expect(GeminiAdapter.getTextFromResponse(responses)).toBe('First Second');
             });
 
             it('should handle error responses', () => {
@@ -641,7 +640,7 @@ describe('GeminiAdapter', () => {
                     name: 'Error: Something went wrong',
                     message: 'Error: Something went wrong'
                 };
-                expect(getTextFromResponse(response)).toBe('Error: Something went wrong');
+                expect(GeminiAdapter.getTextFromResponse(response)).toBe('Error: Something went wrong');
             });
 
             it('should handle responses with prompt feedback', () => {
@@ -653,7 +652,7 @@ describe('GeminiAdapter', () => {
                         ]
                     }
                 };
-                expect(getTextFromResponse(response)).toBe('\nBlocked: HARM_CATEGORY_HATE_SPEECH is (HIGH)');
+                expect(GeminiAdapter.getTextFromResponse(response)).toBe('\nBlocked: HARM_CATEGORY_HATE_SPEECH is (HIGH)');
             });
 
             it('should use specified candidate index', () => {
@@ -671,7 +670,7 @@ describe('GeminiAdapter', () => {
                         }
                     ]
                 };
-                expect(getTextFromResponse(response, 1)).toBe('Second candidate');
+                expect(GeminiAdapter.getTextFromResponse(response, 1)).toBe('Second candidate');
             });
         });
     });
