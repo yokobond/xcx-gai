@@ -456,6 +456,15 @@ export class GeminiAdapter {
      */
     updateFunctionCallTool () {
         const declarations = Object.values(this.functionRegistry).map(func => func.declaration);
+        if (declarations.length === 0) {
+            if (this.generationConfig.tools) {
+                // Remove function declarations from tools
+                this.generationConfig.tools.forEach(tool => {
+                    delete tool.functionDeclarations;
+                });
+            }
+            return;
+        }
         if (!this.generationConfig.tools) {
             this.generationConfig.tools = [];
         }
@@ -483,16 +492,32 @@ export class GeminiAdapter {
 
     /**
      * Update tool config in generation config to include function calling mode.
+     * Remove unnecessary tool configurations.
      * @returns {void}
      */
     updateToolConfig () {
-        if (!this.generationConfig.toolConfig) {
-            this.generationConfig.toolConfig = {};
+        const generationConfig = this.generationConfig;
+        if (!generationConfig.tools) {
+            return;
         }
-        if (!this.generationConfig.toolConfig.functionCallingConfig) {
-            this.generationConfig.toolConfig.functionCallingConfig = {};
+        const functionCallExists =
+                generationConfig.tools
+                    .some(tool => tool.functionDeclarations &&
+                        tool.functionDeclarations.length > 0);
+            // Remove unnecessary tool configurations
+        if (functionCallExists) {
+            // Make toolConfig
+            if (!generationConfig.toolConfig) {
+                generationConfig.toolConfig = {};
+            }
+            if (!generationConfig.toolConfig.functionCallingConfig) {
+                generationConfig.toolConfig.functionCallingConfig = {};
+            }
+            generationConfig.toolConfig.functionCallingConfig.mode = this.functionCallingMode;
+        } else if (generationConfig.toolConfig &&
+                    generationConfig.toolConfig.functionCallingConfig) {
+            delete generationConfig.toolConfig.functionCallingConfig;
         }
-        this.generationConfig.toolConfig.functionCallingConfig.mode = this.functionCallingMode;
     }
 
     /**
