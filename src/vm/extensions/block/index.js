@@ -7,8 +7,7 @@ import blockIcon from './block-icon.png';
 import {DEBUG, checkDebugMode} from './dev-util.js';
 import {
     GeminiAdapter,
-    HarmCategory, HarmBlockThreshold, EmbeddingTaskType,
-    getTextFromResponse
+    HarmCategory, HarmBlockThreshold, EmbeddingTaskType
 } from './gemini-adapter.js';
 import {getCostumeByNameOrNumber, costumeToDataURL, addImageAsCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
@@ -117,6 +116,10 @@ class GeminiBlocks {
 
         this.functionNamePrefix = 'func_';
         this.functionArgPrefix = 'arg_';
+
+        // Default to Gemini adapter
+        this.currentAdapterType = 'Gemini';
+        this.AIAdapter = GeminiAdapter;
     }
 
     onExtensionAdded (extensionInfo) {
@@ -1226,7 +1229,7 @@ class GeminiBlocks {
      * @return {GeminiAdapter} - the AI for the target
      */
     getAI (target) {
-        return GeminiAdapter.getForTarget(target);
+        return this.AIAdapter.getForTarget(target);
     }
 
     /**
@@ -1237,15 +1240,15 @@ class GeminiBlocks {
      */
     partialResponseText (args, util) {
         const target = util.target;
-        if (!GeminiAdapter.existsForTarget(target)) {
+        if (!this.AIAdapter.existsForTarget(target)) {
             return '';
         }
-        const ai = GeminiAdapter.getForTarget(target);
+        const ai = this.AIAdapter.getForTarget(target);
         const response = ai.getLastPartialResponse();
         if (!response) {
             return '';
         }
-        return getTextFromResponse(response);
+        return ai.getTextFromResponse(response);
     }
 
     /**
@@ -1419,13 +1422,13 @@ class GeminiBlocks {
         if (stackFrame.isResponseReceived) {
             if (this.allFunctionCallsFinished(stackFrame.functionCalls)) {
                 this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
-                return getTextFromResponse(ai.getLastResponse());
+                return ai.getTextFromResponse(ai.getLastResponse());
             }
         }
 
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
             const partialResponseHandler = partialResponse => {
-                if (partialResponse && partialResponse.text) {
+                if (ai.getTextFromResponse(partialResponse) !== '') {
                     this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
                 }
                 if (DEBUG) {
@@ -1443,7 +1446,7 @@ class GeminiBlocks {
                     .then(([response, functionCalls]) => {
                         stackFrame.functionCalls = stackFrame.functionCalls || [];
                         stackFrame.functionCalls.push(...functionCalls);
-                        if (response && response.text) {
+                        if (ai.getTextFromResponse(response) !== '') {
                             this.runtime.startHats('gai_whenResponseReceived', null, target);
                         }
                         stackFrame.isResponseReceived = true;
@@ -1465,7 +1468,7 @@ class GeminiBlocks {
                 .then(([response, functionCalls]) => {
                     stackFrame.functionCalls = stackFrame.functionCalls || [];
                     stackFrame.functionCalls.push(...functionCalls);
-                    if (response && response.text) {
+                    if (ai.getTextFromResponse(response) !== '') {
                         this.runtime.startHats('gai_whenResponseReceived', null, target);
                     }
                     stackFrame.isResponseReceived = true;
@@ -1486,7 +1489,7 @@ class GeminiBlocks {
      * @returns {Promise<string>} - a Promise that resolves response text
      */
     generate (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
+        if (!this.AIAdapter.getApiKey()) {
             return 'API key is not set.';
         }
         const promptText = Cast.toString(args.PROMPT);
@@ -1502,7 +1505,7 @@ class GeminiBlocks {
      * @returns {Promise<string>} - a Promise that resolves response text
      */
     chat (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
+        if (!this.AIAdapter.getApiKey()) {
             return 'API key is not set.';
         }
         const promptText = Cast.toString(args.PROMPT);
@@ -1696,10 +1699,10 @@ class GeminiBlocks {
      */
     chatHistory (args, util) {
         const target = util.target;
-        if (!GeminiAdapter.existsForTarget(target)) {
+        if (!this.AIAdapter.existsForTarget(target)) {
             return '';
         }
-        const ai = GeminiAdapter.getForTarget(target);
+        const ai = this.AIAdapter.getForTarget(target);
         const history = ai.getChatHistory();
         return JSON.stringify(history).slice(1, -1);
     }
@@ -1732,10 +1735,10 @@ class GeminiBlocks {
      */
     responseText (args, util) {
         const target = util.target;
-        if (!GeminiAdapter.existsForTarget(target)) {
+        if (!this.AIAdapter.existsForTarget(target)) {
             return '';
         }
-        const ai = GeminiAdapter.getForTarget(target);
+        const ai = this.AIAdapter.getForTarget(target);
         const response = ai.getLastResponse();
         if (!response) {
             return '';
@@ -1749,9 +1752,9 @@ class GeminiBlocks {
                 // Streaming response has no candidates
                     return '';
                 }
-                responseText = getTextFromResponse(response);
+                responseText = ai.getTextFromResponse(response);
             } else {
-                responseText = getTextFromResponse(response, candidateIndex - 1);
+                responseText = ai.getTextFromResponse(response, candidateIndex - 1);
             }
             // Replace function names with procedureCode and argument names with their codes
             if (responseText && ai.functionRegistry) {
@@ -1789,10 +1792,10 @@ class GeminiBlocks {
      */
     responseSafetyRating (args, util) {
         const target = util.target;
-        if (!GeminiAdapter.existsForTarget(target)) {
+        if (!this.AIAdapter.existsForTarget(target)) {
             return '';
         }
-        const ai = GeminiAdapter.getForTarget(target);
+        const ai = this.AIAdapter.getForTarget(target);
         let response = ai.getLastResponse();
         if (!response) {
             return '';
@@ -2082,11 +2085,11 @@ class GeminiBlocks {
         const target = util.target;
         const ai = this.getAI(target);
         if (mode === 'NONE') {
-            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_NONE);
+            ai.setFunctionCallingMode(this.AIAdapter.FUNCTION_CALLING_NONE);
         } else if (mode === 'AUTO') {
-            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_AUTO);
+            ai.setFunctionCallingMode(this.AIAdapter.FUNCTION_CALLING_AUTO);
         } else if (mode === 'ANY') {
-            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_ANY);
+            ai.setFunctionCallingMode(this.AIAdapter.FUNCTION_CALLING_ANY);
         }
     }
 
@@ -2257,7 +2260,7 @@ class GeminiBlocks {
                 .then(([response, functionCalls]) => {
                     stackFrame.functionCalls = stackFrame.functionCalls || [];
                     stackFrame.functionCalls.push(...functionCalls);
-                    if (response && response.text) {
+                    if (ai.getTextFromResponse(response) !== '') {
                         this.runtime.startHats('gai_whenResponseReceived', null, target);
                     }
                     stackFrame.isResultResponseReceived = true;
@@ -2280,7 +2283,7 @@ class GeminiBlocks {
      * @returns {Promise<string>} - a Promise that resolves embedding
      */
     embeddingFor (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
+        if (!this.AIAdapter.getApiKey()) {
             return 'API key is not set.';
         }
         const target = util.target;
@@ -2340,8 +2343,8 @@ class GeminiBlocks {
      */
     setApiKey (args, util) {
         const apiKey = Cast.toString(args.KEY).trim();
-        GeminiAdapter.setApiKey(apiKey);
-        GeminiAdapter.removeAllAdapter();
+        this.AIAdapter.setApiKey(apiKey);
+        this.AIAdapter.removeAllAdapter();
         this.updateFunctionRegistry(util.target);
     }
 
@@ -2351,7 +2354,7 @@ class GeminiBlocks {
      * @deprecated
      */
     apiKey () {
-        const apiKey = GeminiAdapter.getApiKey();
+        const apiKey = this.AIAdapter.getApiKey();
         if (!apiKey) {
             return '';
         }
@@ -2383,7 +2386,7 @@ class GeminiBlocks {
      * @returns {string} - base URL
      */
     baseUrl () {
-        return GeminiAdapter.baseUrl;
+        return this.AIAdapter.baseUrl;
     }
 
     /**
@@ -2395,7 +2398,7 @@ class GeminiBlocks {
      * @returns {Promise<number>} - a Promise that resolves token count
      */
     countTokensAs (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
+        if (!this.AIAdapter.getApiKey()) {
             return 'API key is not set.';
         }
         const target = util.target;
@@ -2443,7 +2446,7 @@ class GeminiBlocks {
      * @returns {string} - model ID
      */
     getGenerativeModelID (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
+        if (!this.AIAdapter.getApiKey()) {
             return '';
         }
         const modelIndex = parseInt(args.MODEL_INDEX, 10);
@@ -2471,7 +2474,7 @@ class GeminiBlocks {
      * @returns {number} - max generative model number
      */
     getMaxGenerativeModelNumber (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
+        if (!this.AIAdapter.getApiKey()) {
             return 0;
         }
         const target = util.target;
@@ -2513,7 +2516,7 @@ class GeminiBlocks {
      * @returns {string} - model ID
      */
     getEmbeddingModelID (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
+        if (!this.AIAdapter.getApiKey()) {
             return '';
         }
         const modelIndex = parseInt(args.MODEL_INDEX, 10);
@@ -2541,7 +2544,7 @@ class GeminiBlocks {
      * @returns {number} - max embedding model number
      */
     getMaxEmbeddingModelNumber (args, util) {
-        if (!GeminiAdapter.getApiKey()) {
+        if (!this.AIAdapter.getApiKey()) {
             return 0;
         }
         const target = util.target;
@@ -2656,7 +2659,7 @@ class GeminiBlocks {
             util.yield();
             return;
         }
-        const prevApiKey = GeminiAdapter.getApiKey();
+        const prevApiKey = this.AIAdapter.getApiKey();
         return this.openApiKeyDialog(prevApiKey)
             .then(apiKey => {
                 if (apiKey === null) {
@@ -2673,11 +2676,11 @@ class GeminiBlocks {
                 }
                 
                 // Validate the new API key
-                return GeminiAdapter.validateApiKey(apiKey)
+                return this.AIAdapter.validateApiKey(apiKey)
                     .then(validation => {
                         if (validation.valid) {
-                            GeminiAdapter.setApiKey(apiKey);
-                            GeminiAdapter.removeAllAdapter();
+                            this.AIAdapter.setApiKey(apiKey);
+                            this.AIAdapter.removeAllAdapter();
                             this.updateFunctionRegistry(util.target);
                             return 'API key validated and set successfully';
                         }

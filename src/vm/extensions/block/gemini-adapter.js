@@ -70,78 +70,6 @@ export const EmbeddingTaskType = {
     CODE_RETRIEVAL_QUERY: 'CODE_RETRIEVAL_QUERY'
 };
 
-/**
- * Get text of the first candidate from response.
- * @param {object} responses - response from generative ai
- * @param {number} candidateIndex - index of the candidate
- * @return {?string} response text
- */
-export const getTextFromResponse = function (responses, candidateIndex = 0) {
-    if (!responses) {
-        return '';
-    }
-    if (!Array.isArray(responses)) {
-        responses = [responses];
-    }
-    let contentText = '';
-    responses.forEach(aResponse => {
-        if (typeof aResponse === 'string') {
-            return aResponse;
-        }
-        if (aResponse.name?.includes('Error')) {
-            contentText += aResponse.message || aResponse.name;
-            return contentText;
-        }
-        if (aResponse.promptFeedback) {
-            if (aResponse.promptFeedback.blockReason === 'SAFETY') {
-                const safetyRatings = aResponse.promptFeedback.safetyRatings;
-                let blockedMessages = '';
-                safetyRatings.forEach(safetyRating => {
-                    if (safetyRating.blocked) {
-                        blockedMessages += `\nBlocked: ${safetyRating.category} is (${safetyRating.probability})`;
-                    }
-                });
-                contentText += blockedMessages;
-                return;
-            }
-            contentText += aResponse.promptFeedback.blockReason;
-            return;
-        }
-        if (!aResponse.candidates || !Array.isArray(aResponse.candidates)) {
-            // sometimes response is empty
-            return;
-        }
-        if (aResponse.candidates.length === 0) {
-            // sometimes candidates are empty
-            return;
-        }
-        if (aResponse.candidates.length <= candidateIndex) {
-            return;
-        }
-        const candidate = aResponse.candidates[candidateIndex];
-        if (!candidate || !candidate.content || !candidate.content.parts) {
-            // sometimes content is empty
-            return;
-        }
-        for (const part of candidate.content.parts) {
-            if (part.text) {
-                contentText += part.text;
-            }
-            if (part.executableCode) {
-                contentText += (
-                    `\n\`\`\`python\n${part.executableCode.code}\n\`\`\`\n`
-                );
-            }
-            if (part.codeExecutionResult) {
-                contentText += (
-                    `\n\`\`\`\n${part.codeExecutionResult.output}\n\`\`\`\n`
-                );
-            }
-        }
-    });
-    return contentText;
-};
-
 const GEMINI_ADAPTERS = {};
 
 export class GeminiAdapter {
@@ -368,6 +296,78 @@ export class GeminiAdapter {
     getMaxEmbeddingModelNumber () {
         return this.getEmbeddingModelList()
             .then(modelList => modelList.length);
+    }
+
+    /**
+     * Get text of the first candidate from response.
+     * @param {object} responses - response from generative ai
+     * @param {number} candidateIndex - index of the candidate
+     * @return {string} response text
+     */
+    getTextFromResponse (responses, candidateIndex = 0) {
+        if (!responses) {
+            return '';
+        }
+        if (!Array.isArray(responses)) {
+            responses = [responses];
+        }
+        let contentText = '';
+        responses.forEach(aResponse => {
+            if (typeof aResponse === 'string') {
+                return aResponse;
+            }
+            if (aResponse.name?.includes('Error')) {
+                contentText += aResponse.message || aResponse.name;
+                return contentText;
+            }
+            if (aResponse.promptFeedback) {
+                if (aResponse.promptFeedback.blockReason === 'SAFETY') {
+                    const safetyRatings = aResponse.promptFeedback.safetyRatings;
+                    let blockedMessages = '';
+                    safetyRatings.forEach(safetyRating => {
+                        if (safetyRating.blocked) {
+                            blockedMessages += `\nBlocked: ${safetyRating.category} is (${safetyRating.probability})`;
+                        }
+                    });
+                    contentText += blockedMessages;
+                    return;
+                }
+                contentText += aResponse.promptFeedback.blockReason;
+                return;
+            }
+            if (!aResponse.candidates || !Array.isArray(aResponse.candidates)) {
+                // sometimes response is empty
+                return;
+            }
+            if (aResponse.candidates.length === 0) {
+                // sometimes candidates are empty
+                return;
+            }
+            if (aResponse.candidates.length <= candidateIndex) {
+                return;
+            }
+            const candidate = aResponse.candidates[candidateIndex];
+            if (!candidate || !candidate.content || !candidate.content.parts) {
+                // sometimes content is empty
+                return;
+            }
+            for (const part of candidate.content.parts) {
+                if (part.text) {
+                    contentText += part.text;
+                }
+                if (part.executableCode) {
+                    contentText += (
+                        `\n\`\`\`python\n${part.executableCode.code}\n\`\`\`\n`
+                    );
+                }
+                if (part.codeExecutionResult) {
+                    contentText += (
+                        `\n\`\`\`\n${part.codeExecutionResult.output}\n\`\`\`\n`
+                    );
+                }
+            }
+        });
+        return contentText;
     }
 
     /**
