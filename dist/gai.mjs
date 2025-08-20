@@ -19,7 +19,7 @@ var translations$1 = {
 }
 };
 
-var version$1 = "0.9.0";
+var version$1 = "0.9.1";
 
 /**
  * This is an extension for Xcratch.
@@ -19277,85 +19277,6 @@ var EmbeddingTaskType = {
   FACT_VERIFICATION: 'FACT_VERIFICATION',
   CODE_RETRIEVAL_QUERY: 'CODE_RETRIEVAL_QUERY'
 };
-
-/**
- * Get text of the first candidate from response.
- * @param {object} responses - response from generative ai
- * @param {number} candidateIndex - index of the candidate
- * @return {?string} response text
- */
-var getTextFromResponse = function getTextFromResponse(responses) {
-  var candidateIndex = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-  if (!responses) {
-    return '';
-  }
-  if (!Array.isArray(responses)) {
-    responses = [responses];
-  }
-  var contentText = '';
-  responses.forEach(function (aResponse) {
-    var _aResponse$name;
-    if (typeof aResponse === 'string') {
-      return aResponse;
-    }
-    if ((_aResponse$name = aResponse.name) !== null && _aResponse$name !== void 0 && _aResponse$name.includes('Error')) {
-      contentText += aResponse.message || aResponse.name;
-      return contentText;
-    }
-    if (aResponse.promptFeedback) {
-      if (aResponse.promptFeedback.blockReason === 'SAFETY') {
-        var safetyRatings = aResponse.promptFeedback.safetyRatings;
-        var blockedMessages = '';
-        safetyRatings.forEach(function (safetyRating) {
-          if (safetyRating.blocked) {
-            blockedMessages += "\nBlocked: ".concat(safetyRating.category, " is (").concat(safetyRating.probability, ")");
-          }
-        });
-        contentText += blockedMessages;
-        return;
-      }
-      contentText += aResponse.promptFeedback.blockReason;
-      return;
-    }
-    if (!aResponse.candidates || !Array.isArray(aResponse.candidates)) {
-      // sometimes response is empty
-      return;
-    }
-    if (aResponse.candidates.length === 0) {
-      // sometimes candidates are empty
-      return;
-    }
-    if (aResponse.candidates.length <= candidateIndex) {
-      return;
-    }
-    var candidate = aResponse.candidates[candidateIndex];
-    if (!candidate || !candidate.content || !candidate.content.parts) {
-      // sometimes content is empty
-      return;
-    }
-    var _iterator3 = _createForOfIteratorHelper$1(candidate.content.parts),
-      _step3;
-    try {
-      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-        var part = _step3.value;
-        if (part.text) {
-          contentText += part.text;
-        }
-        if (part.executableCode) {
-          contentText += "\n```python\n".concat(part.executableCode.code, "\n```\n");
-        }
-        if (part.codeExecutionResult) {
-          contentText += "\n```\n".concat(part.codeExecutionResult.output, "\n```\n");
-        }
-      }
-    } catch (err) {
-      _iterator3.e(err);
-    } finally {
-      _iterator3.f();
-    }
-  });
-  return contentText;
-};
 var GEMINI_ADAPTERS = {};
 var GeminiAdapter = /*#__PURE__*/function () {
   function GeminiAdapter(target) {
@@ -19568,6 +19489,87 @@ var GeminiAdapter = /*#__PURE__*/function () {
     }
 
     /**
+     * Get text of the first candidate from response.
+     * @param {object} responses - response from generative ai
+     * @param {number} candidateIndex - index of the candidate
+     * @return {string} response text
+     */
+  }, {
+    key: "getTextFromResponse",
+    value: function getTextFromResponse(responses) {
+      var candidateIndex = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      if (!responses) {
+        return '';
+      }
+      if (!Array.isArray(responses)) {
+        responses = [responses];
+      }
+      var contentText = '';
+      responses.forEach(function (aResponse) {
+        var _aResponse$name;
+        if (typeof aResponse === 'string') {
+          return aResponse;
+        }
+        if ((_aResponse$name = aResponse.name) !== null && _aResponse$name !== void 0 && _aResponse$name.includes('Error')) {
+          contentText += aResponse.message || aResponse.name;
+          return contentText;
+        }
+        if (aResponse.promptFeedback) {
+          if (aResponse.promptFeedback.blockReason === 'SAFETY') {
+            var safetyRatings = aResponse.promptFeedback.safetyRatings;
+            var blockedMessages = '';
+            safetyRatings.forEach(function (safetyRating) {
+              if (safetyRating.blocked) {
+                blockedMessages += "\nBlocked: ".concat(safetyRating.category, " is (").concat(safetyRating.probability, ")");
+              }
+            });
+            contentText += blockedMessages;
+            return;
+          }
+          contentText += aResponse.promptFeedback.blockReason;
+          return;
+        }
+        if (!aResponse.candidates || !Array.isArray(aResponse.candidates)) {
+          // sometimes response is empty
+          return;
+        }
+        if (aResponse.candidates.length === 0) {
+          // sometimes candidates are empty
+          return;
+        }
+        if (aResponse.candidates.length <= candidateIndex) {
+          return;
+        }
+        var candidate = aResponse.candidates[candidateIndex];
+        if (!candidate || !candidate.content || !candidate.content.parts) {
+          // sometimes content is empty
+          return;
+        }
+        var _iterator3 = _createForOfIteratorHelper$1(candidate.content.parts),
+          _step3;
+        try {
+          for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+            var part = _step3.value;
+            if (part.text) {
+              contentText += part.text;
+            }
+            if (part.executableCode) {
+              contentText += "\n```python\n".concat(part.executableCode.code, "\n```\n");
+            }
+            if (part.codeExecutionResult) {
+              contentText += "\n```\n".concat(part.codeExecutionResult.output, "\n```\n");
+            }
+          }
+        } catch (err) {
+          _iterator3.e(err);
+        } finally {
+          _iterator3.f();
+        }
+      });
+      return contentText;
+    }
+
+    /**
      * Count tokens by model.
      * @param {Array.<string | object>} contentParts - content to AI
      * @param {string} requestType - type of request {'generate' | 'chat'}
@@ -19698,6 +19700,15 @@ var GeminiAdapter = /*#__PURE__*/function () {
       var declarations = Object.values(this.functionRegistry).map(function (func) {
         return func.declaration;
       });
+      if (declarations.length === 0) {
+        if (this.generationConfig.tools) {
+          // Remove function declarations from tools
+          this.generationConfig.tools.forEach(function (tool) {
+            delete tool.functionDeclarations;
+          });
+        }
+        return;
+      }
       if (!this.generationConfig.tools) {
         this.generationConfig.tools = [];
       }
@@ -19729,18 +19740,32 @@ var GeminiAdapter = /*#__PURE__*/function () {
 
     /**
      * Update tool config in generation config to include function calling mode.
+     * Remove unnecessary tool configurations.
      * @returns {void}
      */
   }, {
     key: "updateToolConfig",
     value: function updateToolConfig() {
-      if (!this.generationConfig.toolConfig) {
-        this.generationConfig.toolConfig = {};
+      var generationConfig = this.generationConfig;
+      if (!generationConfig.tools) {
+        return;
       }
-      if (!this.generationConfig.toolConfig.functionCallingConfig) {
-        this.generationConfig.toolConfig.functionCallingConfig = {};
+      var functionCallExists = generationConfig.tools.some(function (tool) {
+        return tool.functionDeclarations && tool.functionDeclarations.length > 0;
+      });
+      // Remove unnecessary tool configurations
+      if (functionCallExists) {
+        // Make toolConfig
+        if (!generationConfig.toolConfig) {
+          generationConfig.toolConfig = {};
+        }
+        if (!generationConfig.toolConfig.functionCallingConfig) {
+          generationConfig.toolConfig.functionCallingConfig = {};
+        }
+        generationConfig.toolConfig.functionCallingConfig.mode = this.functionCallingMode;
+      } else if (generationConfig.toolConfig && generationConfig.toolConfig.functionCallingConfig) {
+        delete generationConfig.toolConfig.functionCallingConfig;
       }
-      this.generationConfig.toolConfig.functionCallingConfig.mode = this.functionCallingMode;
     }
 
     /**
@@ -20865,6 +20890,10 @@ var GeminiBlocks = /*#__PURE__*/function () {
     });
     this.functionNamePrefix = 'func_';
     this.functionArgPrefix = 'arg_';
+
+    // Default to Gemini adapter
+    this.currentAdapterType = 'Gemini';
+    this.AIAdapter = GeminiAdapter;
   }
   return _createClass$1(GeminiBlocks, [{
     key: "onExtensionAdded",
@@ -21892,7 +21921,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "getAI",
     value: function getAI(target) {
-      return GeminiAdapter.getForTarget(target);
+      return this.AIAdapter.getForTarget(target);
     }
 
     /**
@@ -21905,15 +21934,15 @@ var GeminiBlocks = /*#__PURE__*/function () {
     key: "partialResponseText",
     value: function partialResponseText(args, util) {
       var target = util.target;
-      if (!GeminiAdapter.existsForTarget(target)) {
+      if (!this.AIAdapter.existsForTarget(target)) {
         return '';
       }
-      var ai = GeminiAdapter.getForTarget(target);
+      var ai = this.AIAdapter.getForTarget(target);
       var response = ai.getLastPartialResponse();
       if (!response) {
         return '';
       }
-      return getTextFromResponse(response);
+      return ai.getTextFromResponse(response);
     }
 
     /**
@@ -22100,12 +22129,12 @@ var GeminiBlocks = /*#__PURE__*/function () {
       if (stackFrame.isResponseReceived) {
         if (this.allFunctionCallsFinished(stackFrame.functionCalls)) {
           this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
-          return getTextFromResponse(ai.getLastResponse());
+          return ai.getTextFromResponse(ai.getLastResponse());
         }
       }
       if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
         var partialResponseHandler = function partialResponseHandler(partialResponse) {
-          if (partialResponse && partialResponse.text) {
+          if (ai.getTextFromResponse(partialResponse) !== '') {
             _this4.runtime.startHats('gai_whenPartialResponseReceived', null, target);
           }
           if (DEBUG) {
@@ -22123,7 +22152,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
               functionCalls = _ref6[1];
             stackFrame.functionCalls = stackFrame.functionCalls || [];
             (_stackFrame$functionC = stackFrame.functionCalls).push.apply(_stackFrame$functionC, _toConsumableArray(functionCalls));
-            if (response && response.text) {
+            if (ai.getTextFromResponse(response) !== '') {
               _this4.runtime.startHats('gai_whenResponseReceived', null, target);
             }
             stackFrame.isResponseReceived = true;
@@ -22146,7 +22175,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
             functionCalls = _ref8[1];
           stackFrame.functionCalls = stackFrame.functionCalls || [];
           (_stackFrame$functionC2 = stackFrame.functionCalls).push.apply(_stackFrame$functionC2, _toConsumableArray(functionCalls));
-          if (response && response.text) {
+          if (ai.getTextFromResponse(response) !== '') {
             _this4.runtime.startHats('gai_whenResponseReceived', null, target);
           }
           stackFrame.isResponseReceived = true;
@@ -22168,7 +22197,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "generate",
     value: function generate(args, util) {
-      if (!GeminiAdapter.getApiKey()) {
+      if (!this.AIAdapter.getApiKey()) {
         return 'API key is not set.';
       }
       var promptText = Cast.toString(args.PROMPT);
@@ -22186,7 +22215,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "chat",
     value: function chat(args, util) {
-      if (!GeminiAdapter.getApiKey()) {
+      if (!this.AIAdapter.getApiKey()) {
         return 'API key is not set.';
       }
       var promptText = Cast.toString(args.PROMPT);
@@ -22402,10 +22431,10 @@ var GeminiBlocks = /*#__PURE__*/function () {
     key: "chatHistory",
     value: function chatHistory(args, util) {
       var target = util.target;
-      if (!GeminiAdapter.existsForTarget(target)) {
+      if (!this.AIAdapter.existsForTarget(target)) {
         return '';
       }
-      var ai = GeminiAdapter.getForTarget(target);
+      var ai = this.AIAdapter.getForTarget(target);
       var history = ai.getChatHistory();
       return JSON.stringify(history).slice(1, -1);
     }
@@ -22442,10 +22471,10 @@ var GeminiBlocks = /*#__PURE__*/function () {
     key: "responseText",
     value: function responseText(args, util) {
       var target = util.target;
-      if (!GeminiAdapter.existsForTarget(target)) {
+      if (!this.AIAdapter.existsForTarget(target)) {
         return '';
       }
-      var ai = GeminiAdapter.getForTarget(target);
+      var ai = this.AIAdapter.getForTarget(target);
       var response = ai.getLastResponse();
       if (!response) {
         return '';
@@ -22459,9 +22488,9 @@ var GeminiBlocks = /*#__PURE__*/function () {
             // Streaming response has no candidates
             return '';
           }
-          _responseText = getTextFromResponse(response);
+          _responseText = ai.getTextFromResponse(response);
         } else {
-          _responseText = getTextFromResponse(response, candidateIndex - 1);
+          _responseText = ai.getTextFromResponse(response, candidateIndex - 1);
         }
         // Replace function names with procedureCode and argument names with their codes
         if (_responseText && ai.functionRegistry) {
@@ -22504,10 +22533,10 @@ var GeminiBlocks = /*#__PURE__*/function () {
     key: "responseSafetyRating",
     value: function responseSafetyRating(args, util) {
       var target = util.target;
-      if (!GeminiAdapter.existsForTarget(target)) {
+      if (!this.AIAdapter.existsForTarget(target)) {
         return '';
       }
-      var ai = GeminiAdapter.getForTarget(target);
+      var ai = this.AIAdapter.getForTarget(target);
       var response = ai.getLastResponse();
       if (!response) {
         return '';
@@ -22814,11 +22843,11 @@ var GeminiBlocks = /*#__PURE__*/function () {
       var target = util.target;
       var ai = this.getAI(target);
       if (mode === 'NONE') {
-        ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_NONE);
+        ai.setFunctionCallingMode(this.AIAdapter.FUNCTION_CALLING_NONE);
       } else if (mode === 'AUTO') {
-        ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_AUTO);
+        ai.setFunctionCallingMode(this.AIAdapter.FUNCTION_CALLING_AUTO);
       } else if (mode === 'ANY') {
-        ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_ANY);
+        ai.setFunctionCallingMode(this.AIAdapter.FUNCTION_CALLING_ANY);
       }
     }
 
@@ -23015,7 +23044,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
             functionCalls = _ref10[1];
           stackFrame.functionCalls = stackFrame.functionCalls || [];
           (_stackFrame$functionC3 = stackFrame.functionCalls).push.apply(_stackFrame$functionC3, _toConsumableArray(functionCalls));
-          if (response && response.text) {
+          if (ai.getTextFromResponse(response) !== '') {
             _this1.runtime.startHats('gai_whenResponseReceived', null, target);
           }
           stackFrame.isResultResponseReceived = true;
@@ -23039,7 +23068,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "embeddingFor",
     value: function embeddingFor(args, util) {
-      if (!GeminiAdapter.getApiKey()) {
+      if (!this.AIAdapter.getApiKey()) {
         return 'API key is not set.';
       }
       var target = util.target;
@@ -23107,8 +23136,8 @@ var GeminiBlocks = /*#__PURE__*/function () {
     key: "setApiKey",
     value: function setApiKey(args, util) {
       var apiKey = Cast.toString(args.KEY).trim();
-      GeminiAdapter.setApiKey(apiKey);
-      GeminiAdapter.removeAllAdapter();
+      this.AIAdapter.setApiKey(apiKey);
+      this.AIAdapter.removeAllAdapter();
       this.updateFunctionRegistry(util.target);
     }
 
@@ -23120,7 +23149,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "apiKey",
     value: function apiKey() {
-      var apiKey = GeminiAdapter.getApiKey();
+      var apiKey = this.AIAdapter.getApiKey();
       if (!apiKey) {
         return '';
       }
@@ -23156,7 +23185,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "baseUrl",
     value: function baseUrl() {
-      return GeminiAdapter.baseUrl;
+      return this.AIAdapter.baseUrl;
     }
 
     /**
@@ -23170,7 +23199,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "countTokensAs",
     value: function countTokensAs(args, util) {
-      if (!GeminiAdapter.getApiKey()) {
+      if (!this.AIAdapter.getApiKey()) {
         return 'API key is not set.';
       }
       var target = util.target;
@@ -23224,7 +23253,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "getGenerativeModelID",
     value: function getGenerativeModelID(args, util) {
-      if (!GeminiAdapter.getApiKey()) {
+      if (!this.AIAdapter.getApiKey()) {
         return '';
       }
       var modelIndex = parseInt(args.MODEL_INDEX, 10);
@@ -23253,7 +23282,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "getMaxGenerativeModelNumber",
     value: function getMaxGenerativeModelNumber(args, util) {
-      if (!GeminiAdapter.getApiKey()) {
+      if (!this.AIAdapter.getApiKey()) {
         return 0;
       }
       var target = util.target;
@@ -23302,7 +23331,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "getEmbeddingModelID",
     value: function getEmbeddingModelID(args, util) {
-      if (!GeminiAdapter.getApiKey()) {
+      if (!this.AIAdapter.getApiKey()) {
         return '';
       }
       var modelIndex = parseInt(args.MODEL_INDEX, 10);
@@ -23331,7 +23360,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
   }, {
     key: "getMaxEmbeddingModelNumber",
     value: function getMaxEmbeddingModelNumber(args, util) {
-      if (!GeminiAdapter.getApiKey()) {
+      if (!this.AIAdapter.getApiKey()) {
         return 0;
       }
       var target = util.target;
@@ -23451,7 +23480,7 @@ var GeminiBlocks = /*#__PURE__*/function () {
         util.yield();
         return;
       }
-      var prevApiKey = GeminiAdapter.getApiKey();
+      var prevApiKey = this.AIAdapter.getApiKey();
       return this.openApiKeyDialog(prevApiKey).then(function (apiKey) {
         if (apiKey === null) {
           // canceled
@@ -23467,10 +23496,10 @@ var GeminiBlocks = /*#__PURE__*/function () {
         }
 
         // Validate the new API key
-        return GeminiAdapter.validateApiKey(apiKey).then(function (validation) {
+        return _this11.AIAdapter.validateApiKey(apiKey).then(function (validation) {
           if (validation.valid) {
-            GeminiAdapter.setApiKey(apiKey);
-            GeminiAdapter.removeAllAdapter();
+            _this11.AIAdapter.setApiKey(apiKey);
+            _this11.AIAdapter.removeAllAdapter();
             _this11.updateFunctionRegistry(util.target);
             return 'API key validated and set successfully';
           }
