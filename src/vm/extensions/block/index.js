@@ -2173,27 +2173,6 @@ class GeminiBlocks {
     }
 
     /**
-     * Set functions for AI function calling
-     * @param {object} args - the block's arguments
-     * @param {string} args.PATTERN - function name pattern to match
-     * @param {object} util - utility object provided by the runtime
-     * @returns {string} - result message
-     */
-    useMatchedProcedures (args, util) {
-        const target = util.target;
-        const codePattern = new RegExp(args.PATTERN.trim());
-        const ai = this.getAI(target);
-        const procedures = this.getUserProcedures(target)
-            .filter(proc => codePattern.test(proc.code));
-        if (procedures.length === 0) {
-            return 'No matching functions found.';
-        }
-        ai.clearRegisteredFunctions();
-        procedures.forEach(proc => this.registerFunction(target, proc));
-        return `Registered ["${procedures.map(proc => proc.code).join('", "')}"]`;
-    }
-
-    /**
      * Update function call registry for AI.
      * This will re-register all user-defined functions.
      * @param {Target} target - the target to update the function registry
