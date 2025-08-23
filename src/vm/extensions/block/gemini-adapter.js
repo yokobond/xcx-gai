@@ -184,7 +184,9 @@ export class GeminiAdapter {
     constructor (target) {
         this.target = target;
         GeminiAdapter.ADAPTERS[target.id] = this;
+        this.apiKey = GeminiAdapter.apiKey; // Set default API key
         this.sdk = null;
+        this.baseUrl = GeminiAdapter.baseUrl;
         this.modelCode = Object.assign({}, GeminiAdapter.MODEL_CODE);
         this.models = {};
         /**
@@ -209,14 +211,38 @@ export class GeminiAdapter {
     }
 
     /**
+     * Get API key.
+     * @returns {string} - API key
+     */
+    getApiKey () {
+        return this.apiKey;
+    }
+
+    /**
+     * Set API key.
+     * @param {string} apiKey - API key
+     */
+    setApiKey (apiKey) {
+        this.apiKey = apiKey;
+        this.sdk = null; // Reset SDK to reinitialize with new API key
+        GeminiAdapter.apiKey = apiKey; // Set default API key for later use
+    }
+
+    setBaseUrl (baseUrl) {
+        this.baseUrl = baseUrl;
+        this.sdk = null; // Reset SDK to reinitialize with new base URL
+        GeminiAdapter.baseUrl = baseUrl; // Set default base URL for later use
+    }
+
+    /**
      * Get SDK. Initialize if not exists.
      * @returns {GoogleGenAI} - SDK
      */
     getSDK () {
         if (!this.sdk) {
             this.sdk = new GoogleGenAI({
-                apiKey: GeminiAdapter.getApiKey(),
-                baseUrl: GeminiAdapter.baseUrl
+                apiKey: this.apiKey,
+                baseUrl: this.baseUrl
             });
         }
         return this.sdk;
@@ -882,53 +908,6 @@ export class GeminiAdapter {
         const embeddingValues = result.embeddings[0].values;
         cache[key] = embeddingValues;
         return embeddingValues;
-    }
-
-    /**
-     * Validate API key by testing access to models list (doesn't consume tokens).
-     * @param {string} apiKey - API key to validate
-     * @returns {Promise<object>} A promise that resolves to an object with validation results
-     * @returns {boolean} Promise.valid - Whether the API key is valid
-     * @returns {string} [Promise.error] - Error message if validation failed
-     * @static
-     */
-    static async validateApiKey (apiKey) {
-        if (!apiKey || !apiKey.trim()) {
-            return {valid: false, error: 'API key is empty'};
-        }
-
-        try {
-            const testSDK = new GoogleGenAI({
-                apiKey: apiKey.trim(),
-                baseUrl: GeminiAdapter.baseUrl
-            });
-            
-            // Test API key by listing models (this doesn't consume tokens)
-            const pager = await testSDK.models.list();
-            // Try to get at least one model to confirm access
-            const iterator = pager[Symbol.asyncIterator]();
-            const firstModel = await iterator.next();
-            
-            if (firstModel.done) {
-                return {valid: false, error: 'No models available with this API key'};
-            }
-            
-            return {valid: true};
-        } catch (error) {
-            let errorMessage = 'Invalid API key';
-            if (error.message) {
-                if (error.message.includes('API_KEY_INVALID')) {
-                    errorMessage = 'API key is invalid';
-                } else if (error.message.includes('permission')) {
-                    errorMessage = 'API key lacks required permissions';
-                } else if (error.message.includes('quota')) {
-                    errorMessage = 'API quota exceeded';
-                } else {
-                    errorMessage = `API error: ${error.message}`;
-                }
-            }
-            return {valid: false, error: errorMessage};
-        }
     }
 
     /**
