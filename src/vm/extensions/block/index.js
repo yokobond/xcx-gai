@@ -1453,8 +1453,11 @@ class GeminiBlocks {
                     })
                     .catch(e => {
                         console.error(e);
-                        return e.message;
+                        stackFrame.errorMessage = e.message;
                     });
+            }
+            if (stackFrame.errorMessage) {
+                return stackFrame.errorMessage;
             }
             util.yield();
             return;
@@ -1475,8 +1478,11 @@ class GeminiBlocks {
                 })
                 .catch(error => {
                     console.error(error);
-                    return error.message;
+                    stackFrame.errorMessage = error.message;
                 });
+        }
+        if (stackFrame.errorMessage) {
+            return stackFrame.errorMessage;
         }
         util.yield();
     }
