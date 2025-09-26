@@ -33136,7 +33136,6 @@ var AIAdapter = /*#__PURE__*/function () {
             case 4:
               _context6.prev = 4;
               _t6 = _context6["catch"](2);
-              console.error(_t6);
               if (!(_t6.name === 'AI_APICallError')) {
                 _context6.next = 5;
                 break;
@@ -34828,58 +34827,59 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "_requestAI",
     value: function _requestAI(prompt, isChat, util) {
-      var _stackFrame$functionC,
+      var _requestState$functio,
         _this2 = this;
       var target = util.target;
       var ai = this.aiForTarget(target);
       var stackFrame = util.stackFrame;
-      (_stackFrame$functionC = stackFrame.functionCalls) === null || _stackFrame$functionC === void 0 || _stackFrame$functionC.forEach(function (funcCall) {
+      var requestState = stackFrame.generatingState;
+      if (!requestState) {
+        requestState = stackFrame.generatingState = {};
+      }
+      (_requestState$functio = requestState.functionCalls) === null || _requestState$functio === void 0 || _requestState$functio.forEach(function (funcCall) {
         funcCall.updateStatusOn(util.runtime);
       });
-      if (stackFrame.requestFinished) {
-        if (!stackFrame.functionCalls || stackFrame.functionCalls.every(function (funcCall) {
+      if (requestState.finished) {
+        if (!requestState.functionCalls || requestState.functionCalls.every(function (funcCall) {
           return funcCall.isStopped();
         })) {
           // Request and all function calls finished
           return ai.getTextFromResponse(ai.getLastResponse());
         }
       }
-      if (stackFrame.requestError) {
+      if (requestState.error) {
         // Retrieve error message and finish the request
-        return stackFrame.requestError.message || stackFrame.requestError.name;
+        return requestState.error.message || requestState.error.name;
       }
-      if (stackFrame.isRequesting) {
-        // Still requesting
-        util.yield();
-        return; // Wait for the next step
-      }
-      // Start a new request
-      stackFrame.isRequesting = true;
-      this.updateFunctionRegistry(target);
-      var responseTextHandler = function responseTextHandler(responseText) {
-        if (responseText !== '') {
-          _this2.runtime.startHats('gai_whenResponseReceived', null, target);
-        }
-      };
-      var functionDispatcher = function functionDispatcher(call) {
-        stackFrame.functionCalls = stackFrame.functionCalls || [];
-        stackFrame.functionCalls.push(call);
-        return _this2._dispatchFunctionCall(call, target, util.runtime);
-      };
-      var partialTextHandler;
-      if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
-        partialTextHandler = function partialTextHandler(partialText) {
-          if (partialText !== '') {
-            _this2.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+      if (!requestState.requested) {
+        // Start a new request
+        requestState.requested = true;
+        this.updateFunctionRegistry(target);
+        var responseTextHandler = function responseTextHandler(responseText) {
+          if (responseText !== '') {
+            _this2.runtime.startHats('gai_whenResponseReceived', null, target);
           }
         };
+        var functionDispatcher = function functionDispatcher(call) {
+          requestState.functionCalls = requestState.functionCalls || [];
+          requestState.functionCalls.push(call);
+          return _this2._dispatchFunctionCall(call, target, util.runtime);
+        };
+        var partialTextHandler;
+        if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
+          partialTextHandler = function partialTextHandler(partialText) {
+            if (partialText !== '') {
+              _this2.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+            }
+          };
+        }
+        ai.requestGenerate(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat).then(function () {
+          requestState.finished = true;
+        }).catch(function (error) {
+          console.error(error);
+          requestState.error = error;
+        });
       }
-      ai.requestGenerate(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat).then(function () {
-        stackFrame.requestFinished = true;
-      }).catch(function (e) {
-        console.error(e);
-        stackFrame.requestError = e; // Leave it for the next step
-      });
       util.yield();
       return; // Wait for the next step
     }
@@ -35542,29 +35542,48 @@ var GAIBlocks = /*#__PURE__*/function () {
       if (!ai) {
         return "AI is not available";
       }
-      if (stackFrame.requestError) {
-        var error = stackFrame.requestError;
+
+      // Create a unique key for this content to avoid state conflicts
+      var contentText = Cast.toString(args.CONTENT).trim();
+      // Use a simple hash function to handle multi-byte characters properly
+      var contentHash = 0;
+      for (var i = 0; i < contentText.length; i++) {
+        var char = contentText.charCodeAt(i);
+        contentHash = (contentHash << 5) - contentHash + char;
+        contentHash = contentHash & contentHash; // Convert to 32bit integer
+      }
+      var contentKey = "embedding_".concat(contentText.length, "_").concat(Math.abs(contentHash));
+
+      // Initialize embedding requests storage if not exists
+      if (!stackFrame.embeddingRequests) {
+        stackFrame.embeddingRequests = {};
+      }
+
+      // Get or create state for this specific content
+      var requestState = stackFrame.embeddingRequests[contentKey];
+      if (!requestState) {
+        requestState = stackFrame.embeddingRequests[contentKey] = {};
+      }
+      if (requestState.requestError) {
+        var error = requestState.error;
         return error.message || error.name;
       }
-      if (stackFrame.requestResult) {
-        var jsonText = JSON.stringify(stackFrame.requestResult);
+      if (requestState.requestResult) {
+        var jsonText = JSON.stringify(requestState.requestResult);
         var result = jsonText.substring(1, jsonText.length - 1); // remove brackets
         return result;
       }
-      if (stackFrame.isRequesting) {
-        util.yield();
-        return;
+      if (!requestState.requested) {
+        // Start a new request
+        var content = interpretContentPartsText(contentText);
+        requestState.requested = true;
+        ai.requestEmbedding(content).then(function (embedding) {
+          requestState.requestResult = embedding;
+        }).catch(function (error) {
+          console.error(error);
+          requestState.error = error;
+        });
       }
-      // Start a new request
-      stackFrame.isRequesting = true;
-      stackFrame.requestResult = null;
-      var contentText = Cast.toString(args.CONTENT).trim();
-      var content = interpretContentPartsText(contentText);
-      ai.requestEmbedding(content).then(function (embedding) {
-        stackFrame.requestResult = embedding;
-      }).catch(function (error) {
-        stackFrame.requestError = error;
-      });
       util.yield();
       return;
     }
