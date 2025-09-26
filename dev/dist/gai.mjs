@@ -32162,7 +32162,7 @@ var PROVIDERS = {
     factory: PROVIDER_FACTORIES.Gemini,
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     defaultModels: {
-      generative: 'gemini-2.5-flash-lite',
+      generative: 'gemini-flash-latest',
       embedding: 'gemini-embedding-001'
     },
     supports: {
@@ -32191,7 +32191,7 @@ var PROVIDERS = {
     baseUrl: 'https://router.huggingface.co/v1',
     defaultModels: {
       generative: 'HuggingFaceTB/SmolLM3-3B:hf-inference',
-      embedding: 'text-embedding-nomic-embed-text-v1.5'
+      embedding: 'google/embeddinggemma-300m:hf-inference'
     },
     supports: {
       functionCalling: true,
