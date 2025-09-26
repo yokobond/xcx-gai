@@ -1,11 +1,13 @@
 {
   "name": "xcx-gai",
   "version": "0.9.1",
+  "type": "module",
   "scripts": {
     "setup-dev": "node ./scripts/setup-dev.mjs",
     "build": "rollup -c ./scripts/rollup.config.mjs",
     "watch": "rollup -c ./scripts/rollup.config.mjs --watch",
-    "test": "jest"
+    "test": "jest",
+    "test:integration": "jest --config ./jest.integration.config.cjs"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
@@ -30,10 +32,15 @@
     "eslint-plugin-jest": "^29.0.1",
     "fs-extra": "^11.3.0",
     "jest": "^30.0.5",
+    "dotenv": "^16.4.5",
     "rollup": "^4.46.1",
     "rollup-plugin-polyfill-node": "^0.13.0"
   },
   "dependencies": {
-    "@google/genai": "^1.11.0"
+    "@ai-sdk/anthropic": "^2.0.17",
+    "@ai-sdk/google": "^2.0.14",
+    "@ai-sdk/openai": "^2.0.30",
+    "@ai-sdk/openai-compatible": "^1.0.18",
+    "ai": "^5.0.44"
   }
 }

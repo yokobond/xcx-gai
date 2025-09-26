@@ -5,13 +5,60 @@ import translations from './translations.json';
 import blockIcon from './block-icon.png';
 
 import {DEBUG, checkDebugMode} from './dev-util.js';
-import {
-    GeminiAdapter,
-    HarmCategory, HarmBlockThreshold, EmbeddingTaskType
-} from './gemini-adapter.js';
+import {AIAdapter} from './ai-adapter.js';
 import {getCostumeByNameOrNumber, costumeToDataURL, addImageAsCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
-import {dotProduct, euclideanDistance} from './math-util.js';
+import {dotProduct, cosineDistance, euclideanDistance} from './math-util.js';
+
+
+/**
+ * Get all user-defined procedures from the target
+ * @param {Target} target - the target to get procedures from
+ * @returns {Array} - array of procedure information
+ */
+const getUserProcedures = target => {
+    const procedures = [];
+    const blocks = target.blocks._blocks;
+    for (const blockId in blocks) {
+        const block = blocks[blockId];
+        if (block.opcode === 'procedures_definition') {
+            // Get the procedure prototype
+            const prototypeId = block.inputs.custom_block.block;
+            const prototype = blocks[prototypeId];
+            if (prototype && prototype.mutation) {
+                const inputTypes = Object.values(prototype.inputs)
+                    .filter(input => blocks[input.shadow].parent === prototypeId)
+                    .map(input => {
+                        const inputBlock = blocks[input.shadow];
+                        let inputType;
+                        switch (inputBlock.opcode) {
+                        case 'argument_reporter_string_number':
+                            inputType = 'string';
+                            break;
+                        case 'argument_reporter_boolean':
+                            inputType = 'boolean';
+                            break;
+                        default:
+                            inputType = 'string';
+                        }
+                        return inputType;
+                    });
+                procedures.push({
+                    id: blockId,
+                    comment: block.comment,
+                    code: prototype.mutation.proccode,
+                    argumentNames: JSON.parse(prototype.mutation.argumentnames || '[]'),
+                    argumentIds: JSON.parse(prototype.mutation.argumentids || '[]'),
+                    argumentTypes: inputTypes,
+                    argumentDefaults: JSON.parse(prototype.mutation.argumentdefaults || '[]'),
+                    warp: prototype.mutation.warp === 'true'
+                });
+            }
+        }
+    }
+    
+    return procedures;
+};
 
 /**
  * Formatter which is used for translation.
@@ -44,10 +91,10 @@ const EXTENSION_ID = 'gai';
 let extensionURL = 'https://yokobond.github.io/xcx-gai/dist/gai.mjs';
 
 /**
- * Xcratch blocks for Gemini Generative AI (GAI).
- * This class provides blocks to interact with Gemini API.
+ * Xcratch blocks for Generative AI (GAI).
+ * This class provides blocks to interact with Generative AI APIs.
  */
-class GeminiBlocks {
+class GAIBlocks {
     /**
      * A translation object which is used in this class.
      * @param {FormatObject} formatter - translation object
@@ -93,7 +140,7 @@ class GeminiBlocks {
     }
 
     /**
-     * Construct a set of blocks for Gemini.
+     * Construct a set of blocks for Generative AI.
      * @param {Runtime} runtime - the Scratch 3.0 runtime.
      */
     constructor (runtime) {
@@ -118,8 +165,7 @@ class GeminiBlocks {
         this.functionArgPrefix = 'arg_';
 
         // Default to Gemini adapter
-        this.currentAdapterType = 'Gemini';
-        this.AIAdapter = GeminiAdapter;
+        this.AIAdapter = AIAdapter;
     }
 
     onExtensionAdded (extensionInfo) {
@@ -134,9 +180,9 @@ class GeminiBlocks {
     getInfo () {
         setupTranslations();
         return {
-            id: GeminiBlocks.EXTENSION_ID,
-            name: GeminiBlocks.EXTENSION_NAME,
-            extensionURL: GeminiBlocks.extensionURL,
+            id: GAIBlocks.EXTENSION_ID,
+            name: GAIBlocks.EXTENSION_NAME,
+            extensionURL: GAIBlocks.extensionURL,
             blockIconURI: blockIcon,
             showStatusButton: false,
             blocks: [
@@ -154,7 +200,7 @@ class GeminiBlocks {
                             type: ArgumentType.STRING,
                             defaultValue: formatMessage({
                                 id: 'gai.chatDefault',
-                                default: 'Hello Gemini!',
+                                default: 'Hello AI!',
                                 description: 'default chat prompt for GAI'
                             })
                         }
@@ -166,7 +212,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.chatHistory',
                         default: 'chat history',
-                        description: 'chat history block text for Gemini'
+                        description: 'chat history block text for GAI'
                     }),
                     disableMonitor: true,
                     func: 'chatHistory',
@@ -179,7 +225,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.startChat',
                         default: 'start chat with history [HISTORY]',
-                        description: 'start chat for Gemini'
+                        description: 'start chat for GAI'
                     }),
                     func: 'startChat',
                     arguments: {
@@ -204,7 +250,7 @@ class GeminiBlocks {
                             defaultValue: formatMessage({
                                 id: 'gai.generateDefault',
                                 default: 'What is AI?',
-                                description: 'default generate prompt for Gemini'
+                                description: 'default generate prompt for GAI'
                             })
                         }
                     }
@@ -216,7 +262,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.whenResponseReceived',
                         default: 'when response received',
-                        description: 'when response received for Gemini'
+                        description: 'when response received for GAI'
                     }),
                     isEdgeActivated: false,
                     shouldRestartExistingThreads: true
@@ -226,25 +272,19 @@ class GeminiBlocks {
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
                         id: 'gai.responseText',
-                        default: 'response draft #[CANDIDATE_INDEX]',
-                        description: 'last result of Gemini'
+                        default: 'response text'
                     }),
                     disableMonitor: true,
-                    func: 'responseText',
-                    arguments: {
-                        CANDIDATE_INDEX: {
-                            type: ArgumentType.NUMBER,
-                            menu: 'responseCandidateIndexMenu'
-                        }
-                    }
+                    func: 'responseText'
                 },
                 {
                     opcode: 'responseSafetyRating',
+                    hideFromPalette: true, // deprecated cause it's only available in Gemini
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
                         id: 'gai.responseSafetyRating',
                         default: 'response #[CANDIDATE_INDEX] safety rating [HARM_CATEGORY]',
-                        description: 'last result text for Gemini'
+                        description: 'last result text for GAI'
                     }),
                     disableMonitor: true,
                     func: 'responseSafetyRating',
@@ -265,7 +305,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.whenPartialResponseReceived',
                         default: 'when partial response received',
-                        description: 'when partial response received for Gemini'
+                        description: 'when partial response received for GAI'
                     }),
                     isEdgeActivated: false,
                     shouldRestartExistingThreads: true
@@ -276,7 +316,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.partialResponseText',
                         default: 'partial response text',
-                        description: 'partial response text of Gemini'
+                        description: 'partial response text of GAI'
                     }),
                     disableMonitor: true,
                     func: 'partialResponseText',
@@ -323,7 +363,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.snapshotData',
                         default: 'snapshot data',
-                        description: 'snapshotData block text for Gemini'
+                        description: 'snapshotData block text for GAI'
                     }),
                     func: 'snapshotData',
                     arguments: {
@@ -336,7 +376,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.soundData',
                         default: 'sound data [SOUND]',
-                        description: 'soundData block text for Gemini'
+                        description: 'soundData block text for GAI'
                     }),
                     func: 'soundData',
                     arguments: {
@@ -352,7 +392,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.startListening',
                         default: 'start listening',
-                        description: 'startListening block text for Gemini'
+                        description: 'startListening block text for GAI'
                     }),
                     func: 'startListening',
                     arguments: {
@@ -364,7 +404,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.stopListening',
                         default: 'stop listening',
-                        description: 'stopListening block text for Gemini'
+                        description: 'stopListening block text for GAI'
                     }),
                     func: 'stopListening',
                     arguments: {
@@ -377,7 +417,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.listenedData',
                         default: 'listened data',
-                        description: 'listenedData block text for Gemini'
+                        description: 'listenedData block text for GAI'
                     }),
                     func: 'listenedData',
                     arguments: {
@@ -386,11 +426,12 @@ class GeminiBlocks {
                 '---',
                 {
                     opcode: 'setSafetyRating',
+                    hideFromPalette: true, // deprecated cause it's only available in Gemini
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
                         id: 'gai.setSafetyRating',
                         default: 'set [HARM_CATEGORY] to [BLOCK_THRESHOLD]',
-                        description: 'set safety rating for Gemini'
+                        description: 'set safety rating for GAI'
                     }),
                     disableMonitor: true,
                     func: 'setSafetyRating',
@@ -411,7 +452,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.setGenerationConfig',
                         default: 'set generation [CONFIG] to [VALUE]',
-                        description: 'set generation config block text for Gemini'
+                        description: 'set generation config block text for GAI'
                     }),
                     func: 'setGenerationConfig',
                     arguments: {
@@ -432,7 +473,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.generationConfig',
                         default: 'generation [CONFIG]',
-                        description: 'generation config block text for Gemini'
+                        description: 'generation config block text for GAI'
                     }),
                     func: 'generationConfig',
                     arguments: {
@@ -449,7 +490,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.setFunctionCallingMode',
                         default: 'set function calling mode [MODE]',
-                        description: 'set function calling mode block text for Gemini'
+                        description: 'set function calling mode block text for GAI'
                     }),
                     func: 'setFunctionCallingMode',
                     arguments: {
@@ -466,7 +507,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.returnResultToAI',
                         default: 'return [RESULT] to AI',
-                        description: 'return result to AI block text for Gemini'
+                        description: 'return result to AI block text for GAI'
                     }),
                     arguments: {
                         RESULT: {
@@ -477,49 +518,90 @@ class GeminiBlocks {
                 },
                 '---',
                 {
-                    opcode: 'countTokensAs',
-                    blockType: BlockType.REPORTER,
+                    opcode: 'setModel',
+                    blockType: BlockType.COMMAND,
                     text: formatMessage({
-                        id: 'gai.countTokensAs',
-                        default: 'count tokens [CONTENT] as [REQUEST_TYPE]',
-                        description: 'count tokens block text for Gemini'
+                        id: 'gai.setModel',
+                        default: 'use model [MODEL_ID]',
+                        description: 'model code setting block for GAI'
                     }),
-                    func: 'countTokensAs',
+                    func: 'setModel',
                     arguments: {
-                        CONTENT: {
+                        MODEL_ID: {
                             type: ArgumentType.STRING,
-                            defaultValue: ' '
-                        },
-                        REQUEST_TYPE: {
-                            type: ArgumentType.STRING,
-                            menu: 'countTokensRequestTypeMenu'
+                            defaultValue: AIAdapter.DEFAULT_MODEL_ID.generative
                         }
                     }
                 },
                 {
+                    opcode: 'getModel',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getModel',
+                        default: 'model',
+                        description: 'model block text for GAI'
+                    }),
+                    func: 'getModel',
+                    arguments: {
+                    }
+                },
+                {
+                    opcode: 'getModelIDAtIndex',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getModelIDAtIndex',
+                        default: 'model ID at [MODEL_INDEX]',
+                        description: 'model ID block text for GAI'
+                    }),
+                    func: 'getModelIDAtIndex',
+                    arguments: {
+                        MODEL_INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'getMaxModelNumber',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getMaxModelNumber',
+                        default: 'max model number',
+                        description: 'max model number block text for GAI'
+                    }),
+                    func: 'getMaxModelNumber',
+                    arguments: {
+                    }
+                },
+                {
                     opcode: 'setGenerativeModel',
+                    hideFromPalette: true, // deprecated cause generative and embedding are unified
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
                         id: 'gai.setGenerativeModel',
-                        default: 'use model [MODEL_CODE] for generative',
-                        description: 'generative model code setting block for Gemini'
+                        default: 'use model [MODEL_ID] for generative',
+                        description: 'generative model code setting block for GAI'
                     }),
                     func: 'setGenerativeModel',
                     arguments: {
-                        MODEL_CODE: {
+                        MODEL_ID: {
                             type: ArgumentType.STRING,
-                            defaultValue: GeminiAdapter.MODEL_CODE.generative
+                            defaultValue: AIAdapter.DEFAULT_MODEL_ID.generative
                         }
                     }
                 },
                 {
                     opcode: 'getGenerativeModel',
+                    hideFromPalette: true, // deprecated cause generative and embedding are unified
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
                         id: 'gai.getGenerativeModel',
                         default: 'generative model',
-                        description: 'generative model block text for Gemini'
+                        description: 'generative model block text for GAI'
                     }),
                     func: 'getGenerativeModel',
                     arguments: {
@@ -527,12 +609,13 @@ class GeminiBlocks {
                 },
                 {
                     opcode: 'getGenerativeModelID',
+                    hideFromPalette: true, // deprecated cause generative and embedding are unified
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
                         id: 'gai.getGenerativeModelID',
                         default: 'generative model ID at [MODEL_INDEX]',
-                        description: 'generative model ID block text for Gemini'
+                        description: 'generative model ID block text for GAI'
                     }),
                     func: 'getGenerativeModelID',
                     arguments: {
@@ -544,12 +627,13 @@ class GeminiBlocks {
                 },
                 {
                     opcode: 'getMaxGenerativeModelNumber',
+                    hideFromPalette: true, // deprecated cause generative and embedding are unified
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
                         id: 'gai.getMaxGenerativeModelNumber',
                         default: 'max generative model number',
-                        description: 'max generative model number block text for Gemini'
+                        description: 'max generative model number block text for GAI'
                     }),
                     func: 'getMaxGenerativeModelNumber',
                     arguments: {
@@ -562,7 +646,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.getValueFromJson',
                         default: 'get [PATH] from JSON [JSON]',
-                        description: 'get value from JSON block text for Gemini'
+                        description: 'get value from JSON block text for GAI'
                     }),
                     func: 'getValueFromJson',
                     arguments: {
@@ -582,7 +666,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.getItemOfJsonArray',
                         default: 'item [INDEX] of JSON array [JSON]',
-                        description: 'get value from JSON array block text for Gemini'
+                        description: 'get value from JSON array block text for GAI'
                     }),
                     func: 'getItemOfJsonArray',
                     arguments: {
@@ -602,7 +686,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.lengthOfJsonArray',
                         default: 'length of JSON array [JSON]',
-                        description: 'length of JSON array block text for Gemini'
+                        description: 'length of JSON array block text for GAI'
                     }),
                     func: 'lengthOfJsonArray',
                     arguments: {
@@ -618,18 +702,14 @@ class GeminiBlocks {
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
                         id: 'gai.embeddingFor',
-                        default: 'embedding of [CONTENT] for [TASK_TYPE]',
-                        description: 'embed block text for Gemini'
+                        default: 'embedding of [CONTENT]',
+                        description: 'embed block text for GAI'
                     }),
                     func: 'embeddingFor',
                     arguments: {
                         CONTENT: {
                             type: ArgumentType.STRING,
                             defaultValue: ' '
-                        },
-                        TASK_TYPE: {
-                            type: ArgumentType.STRING,
-                            menu: 'embeddingTaskTypeMenu'
                         }
                     }
                 },
@@ -639,7 +719,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.embeddingDistanceOf',
                         default: '[METRIC] of [VECTOR_A] and [VECTOR_B]',
-                        description: 'vector distance block text for Gemini'
+                        description: 'vector distance block text for GAI'
                     }),
                     func: 'embeddingDistanceOf',
                     arguments: {
@@ -660,28 +740,30 @@ class GeminiBlocks {
                 '---',
                 {
                     opcode: 'setEmbeddingModel',
+                    hideFromPalette: true, // deprecated cause generative and embedding are unified
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
                         id: 'gai.setEmbeddingModel',
-                        default: 'use model [MODEL_CODE] for embedding',
-                        description: 'embedding model code setting block for Gemini'
+                        default: 'use model [MODEL_ID] for embedding',
+                        description: 'embedding model code setting block for GAI'
                     }),
                     func: 'setEmbeddingModel',
                     arguments: {
-                        MODEL_CODE: {
+                        MODEL_ID: {
                             type: ArgumentType.STRING,
-                            defaultValue: GeminiAdapter.MODEL_CODE.embedding
+                            defaultValue: AIAdapter.DEFAULT_MODEL_ID.embedding
                         }
                     }
                 },
                 {
                     opcode: 'getEmbeddingModel',
+                    hideFromPalette: true, // deprecated cause generative and embedding are unified
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
                         id: 'gai.getEmbeddingModel',
                         default: 'embedding model',
-                        description: 'embedding model block text for Gemini'
+                        description: 'embedding model block text for GAI'
                     }),
                     func: 'getEmbeddingModel',
                     arguments: {
@@ -689,12 +771,13 @@ class GeminiBlocks {
                 },
                 {
                     opcode: 'getEmbeddingModelID',
+                    hideFromPalette: true, // deprecated cause generative and embedding are unified
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
                         id: 'gai.getEmbeddingModelID',
                         default: 'embedding model ID at [MODEL_INDEX]',
-                        description: 'embedding model ID block text for Gemini'
+                        description: 'embedding model ID block text for GAI'
                     }),
                     func: 'getEmbeddingModelID',
                     arguments: {
@@ -706,12 +789,13 @@ class GeminiBlocks {
                 },
                 {
                     opcode: 'getMaxEmbeddingModelNumber',
+                    hideFromPalette: true, // deprecated cause generative and embedding are unified
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
                         id: 'gai.getMaxEmbeddingModelNumber',
                         default: 'max embedding model number',
-                        description: 'max embedding model number block text for Gemini'
+                        description: 'max embedding model number block text for GAI'
                     }),
                     func: 'getMaxEmbeddingModelNumber',
                     arguments: {
@@ -725,7 +809,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.askApiKey',
                         default: 'ask API key',
-                        description: 'ask API key for Gemini'
+                        description: 'ask API key for GAI'
                     }),
                     func: 'askApiKey',
                     arguments: {
@@ -738,7 +822,7 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.apiKey',
                         default: 'API key',
-                        description: 'API key for Gemini'
+                        description: 'API key for GAI'
                     }),
                     func: 'apiKey',
                     arguments: {
@@ -750,14 +834,14 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.setApiKey',
                         default: 'set API key to [KEY]',
-                        description: 'set API key for Gemini'
+                        description: 'set API key for GAI'
                     }),
                     func: 'setApiKey',
                     arguments: {
                         KEY: {
                             type: ArgumentType.STRING,
                             defaultValue: ' ',
-                            description: 'API key for Gemini'
+                            description: 'API key for GAI'
                         }
                     }
                 },
@@ -767,14 +851,14 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.setBaseUrl',
                         default: 'set base URL to [URL]',
-                        description: 'set base URL for Gemini'
+                        description: 'set base URL for AI service'
                     }),
                     func: 'setBaseUrl',
                     arguments: {
                         URL: {
                             type: ArgumentType.STRING,
-                            defaultValue: GeminiAdapter.baseUrl,
-                            description: 'default base URL for Gemini'
+                            defaultValue: 'https://generativelanguage.googleapis.com/v1beta',
+                            description: 'base URL for AI service'
                         }
                     }
                 },
@@ -785,9 +869,38 @@ class GeminiBlocks {
                     text: formatMessage({
                         id: 'gai.baseUrl',
                         default: 'base URL',
-                        description: 'base URL for Gemini'
+                        description: 'base URL for GAI'
                     }),
                     func: 'baseUrl',
+                    arguments: {
+                    }
+                },
+                {
+                    opcode: 'setApiType',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.setApiType',
+                        default: 'set API type to [API]',
+                        description: 'set API type for GAI'
+                    }),
+                    func: 'setApiType',
+                    arguments: {
+                        API: {
+                            type: ArgumentType.STRING,
+                            menu: 'adapterMenu'
+                        }
+                    }
+                },
+                {
+                    opcode: 'getApiType',
+                    blockType: BlockType.REPORTER,
+                    disableMonitor: true,
+                    text: formatMessage({
+                        id: 'gai.getApiType',
+                        default: 'API type',
+                        description: 'API type for GAI'
+                    }),
+                    func: 'getApiType',
                     arguments: {
                     }
                 }
@@ -807,39 +920,35 @@ class GeminiBlocks {
                 },
                 responseCandidateIndexMenu: {
                     acceptReporters: true,
-                    items: 'getResponseCandidateIndexMenu'
+                    items: [{text: '1', value: '1'}]
                 },
                 harmCategorySettingMenu: {
                     acceptReporters: false,
-                    items: 'getHarmCategorySettingMenu'
+                    items: [{text: 'DEPRECATED', value: 'DEPRECATED'}]
                 },
                 harmCategoryMenu: {
                     acceptReporters: false,
-                    items: 'getHarmCategoryMenu'
+                    items: [{text: 'DEPRECATED', value: 'DEPRECATED'}]
                 },
                 harmBlockThresholdMenu: {
                     acceptReporters: false,
-                    items: 'getHarmBlockThresholdMenu'
+                    items: [{text: 'DEPRECATED', value: 'DEPRECATED'}]
                 },
                 generationConfigMenu: {
                     acceptReporters: false,
-                    items: 'getGenerationConfigMenu'
+                    items: this.getGenerationConfigMenu()
                 },
                 functionCallingModeMenu: {
                     acceptReporters: false,
-                    items: 'getFunctionCallingModeMenu'
-                },
-                countTokensRequestTypeMenu: {
-                    acceptReporters: false,
-                    items: 'getCountTokensRequestTypeMenu'
+                    items: this.getFunctionCallingModeMenu()
                 },
                 distanceMetricMenu: {
                     acceptReporters: false,
-                    items: 'getEmbeddingDistanceMetricMenu'
+                    items: this.getEmbeddingDistanceMetricMenu()
                 },
-                embeddingTaskTypeMenu: {
+                adapterMenu: {
                     acceptReporters: false,
-                    items: 'getEmbeddingTaskTypeMenu'
+                    items: this.getAdapterMenu()
                 }
             }
         };
@@ -893,133 +1002,13 @@ class GeminiBlocks {
         return menu;
     }
 
-    getResponseCandidateIndexMenu () {
-        const menu = [{text: '1', value: '1'}];
-        const target = this.runtime.getEditingTarget();
-        if (!target) {
-            return menu;
-        }
-        const ai = this.aiForTarget(target);
-        if (!ai) {
-            return menu;
-        }
-        const candidateCount = ai.generationConfig.candidateCount;
-        if (!candidateCount) {
-            return menu;
-        }
-        for (let i = 1; i < candidateCount; i++) {
-            menu.push({
-                text: String(i + 1),
-                value: String(i + 1)
-            });
-        }
-        return menu;
-    }
-
-    getHarmCategoryMenu () {
-        const menu = [
-            {
-                text: formatMessage({
-                    id: 'gai.harmCategoryMenu.hateSpeech',
-                    default: 'Hate Speech',
-                    description: 'harm category menu item for hate speech in Gemini'
-                }),
-                value: HarmCategory.HARM_CATEGORY_HATE_SPEECH
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.harmCategoryMenu.sexuallyExplicit',
-                    default: 'Sexually Explicit',
-                    description: 'harm category menu item for sexually explicit in Gemini'
-                }),
-                value: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.harmCategoryMenu.harassment',
-                    default: 'Harassment',
-                    description: 'harm category menu item for harassment in Gemini'
-                }),
-                value: HarmCategory.HARM_CATEGORY_HARASSMENT
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.harmCategoryMenu.dangerousContent',
-                    default: 'Dangerous Content',
-                    description: 'harm category menu item for dangerous content in Gemini'
-                }),
-                value: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT
-            }
-        ];
-        return menu;
-    }
-
-    getHarmCategorySettingMenu () {
-        const menu = this.getHarmCategoryMenu();
-        menu.unshift({
-            text: formatMessage({
-                id: 'gai.harmCategorySettingMenu.all',
-                default: 'All Harm Categories',
-                description: 'harm category menu item for all in Gemini'
-            }),
-            value: 'ALL'
-        });
-        return menu;
-    }
-
-    getHarmBlockThresholdMenu () {
-        const menu = [
-            {
-                text: formatMessage({
-                    id: 'gai.harmBlockThresholdMenu.unspecified',
-                    default: 'Unspecified',
-                    description: 'harm block threshold menu item for unspecified in Gemini'
-                }),
-                value: HarmBlockThreshold.HARM_BLOCK_THRESHOLD_UNSPECIFIED
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.harmBlockThresholdMenu.blockMost',
-                    default: 'Block most',
-                    description: 'harm block threshold menu item for block most in Gemini'
-                }),
-                value: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.harmBlockThresholdMenu.blockSome',
-                    default: 'Block some',
-                    description: 'harm block threshold menu item for block some in Gemini'
-                }),
-                value: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.harmBlockThresholdMenu.blockFew',
-                    default: 'Block few',
-                    description: 'harm block threshold menu item for block few in Gemini'
-                }),
-                value: HarmBlockThreshold.BLOCK_ONLY_HIGH
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.harmBlockThresholdMenu.blockNone',
-                    default: 'Block None',
-                    description: 'harm block threshold menu item for block none in Gemini'
-                }),
-                value: HarmBlockThreshold.BLOCK_NONE
-            }
-        ];
-        return menu;
-    }
-
     getGenerationConfigMenu () {
         const menu = [
             {
                 text: formatMessage({
                     id: 'gai.generationConfigMenu.temperature',
                     default: 'Temperature',
-                    description: 'generation config menu item for temperature in Gemini'
+                    description: 'generation config menu item for temperature in GAI'
                 }),
                 value: 'temperature'
             },
@@ -1027,7 +1016,7 @@ class GeminiBlocks {
                 text: formatMessage({
                     id: 'gai.generationConfigMenu.topP',
                     default: 'Top P',
-                    description: 'generation config menu item for top P in Gemini'
+                    description: 'generation config menu item for top P in GAI'
                 }),
                 value: 'topP'
             },
@@ -1035,7 +1024,7 @@ class GeminiBlocks {
                 text: formatMessage({
                     id: 'gai.generationConfigMenu.topK',
                     default: 'Top K',
-                    description: 'generation config menu item for top K in Gemini'
+                    description: 'generation config menu item for top K in GAI'
                 }),
                 value: 'topK'
             },
@@ -1043,23 +1032,15 @@ class GeminiBlocks {
                 text: formatMessage({
                     id: 'gai.generationConfigMenu.maxOutputTokens',
                     default: 'Max Output Tokens',
-                    description: 'generation config menu item for max output tokens in Gemini'
+                    description: 'generation config menu item for max output tokens in GAI'
                 }),
                 value: 'maxOutputTokens'
             },
             {
                 text: formatMessage({
-                    id: 'gai.generationConfigMenu.candidateCount',
-                    default: 'Candidate Count',
-                    description: 'generation config menu item for candidate count in Gemini'
-                }),
-                value: 'candidateCount'
-            },
-            {
-                text: formatMessage({
                     id: 'gai.generationConfigMenu.stopSequences',
                     default: 'Stop Sequences',
-                    description: 'generation config menu item for stop sequences in Gemini'
+                    description: 'generation config menu item for stop sequences in GAI'
                 }),
                 value: 'stopSequences'
             },
@@ -1067,7 +1048,7 @@ class GeminiBlocks {
                 text: formatMessage({
                     id: 'gai.generationConfigMenu.systemInstruction',
                     default: 'System Instruction',
-                    description: 'generation config menu item for system instruction in Gemini'
+                    description: 'generation config menu item for system instruction in GAI'
                 }),
                 value: 'systemInstruction'
             },
@@ -1075,7 +1056,7 @@ class GeminiBlocks {
                 text: formatMessage({
                     id: 'gai.generationConfigMenu.responseSchema',
                     default: 'Response Schema',
-                    description: 'generation config menu item for response schema in Gemini'
+                    description: 'generation config menu item for response schema in GAI'
                 }),
                 value: 'responseSchema'
             }
@@ -1089,47 +1070,25 @@ class GeminiBlocks {
                 text: formatMessage({
                     id: 'gai.functionCallingModeMenu.auto',
                     default: 'Auto',
-                    description: 'function calling mode menu item for auto in Gemini'
+                    description: 'function calling mode menu item for auto in GAI'
                 }),
                 value: 'AUTO'
             },
             {
                 text: formatMessage({
-                    id: 'gai.functionCallingModeMenu.any',
-                    default: 'Any',
-                    description: 'function calling mode menu item for function calling mode in Gemini'
+                    id: 'gai.functionCallingModeMenu.required',
+                    default: 'Required',
+                    description: 'function calling mode menu item for function calling mode in GAI'
                 }),
-                value: 'ANY'
+                value: 'REQUIRED'
             },
             {
                 text: formatMessage({
                     id: 'gai.functionCallingModeMenu.none',
                     default: 'None',
-                    description: 'function calling mode menu item for none in Gemini'
+                    description: 'function calling mode menu item for none in GAI'
                 }),
                 value: 'NONE'
-            }
-        ];
-        return menu;
-    }
-
-    getCountTokensRequestTypeMenu () {
-        const menu = [
-            {
-                text: formatMessage({
-                    id: 'gai.countTokensRequestTypeMenu.generate',
-                    default: 'Generate',
-                    description: 'count tokens request type menu item for generate in Gemini'
-                }),
-                value: 'generate'
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.countTokensRequestTypeMenu.chat',
-                    default: 'Chat',
-                    description: 'count tokens request type menu item for chat in Gemini'
-                }),
-                value: 'chat'
             }
         ];
         return menu;
@@ -1141,15 +1100,23 @@ class GeminiBlocks {
                 text: formatMessage({
                     id: 'gai.distanceMetricMenu.dotProduct',
                     default: 'Dot Product',
-                    description: 'distance metric menu item for dot product in Gemini'
+                    description: 'distance metric menu item for dot product in GAI'
                 }),
                 value: 'dotProduct'
             },
             {
                 text: formatMessage({
+                    id: 'gai.distanceMetricMenu.cosine',
+                    default: 'Cosine Distance',
+                    description: 'distance metric menu item for cosine in GAI'
+                }),
+                value: 'cosine'
+            },
+            {
+                text: formatMessage({
                     id: 'gai.distanceMetricMenu.euclidean',
                     default: 'Euclidean Distance',
-                    description: 'distance metric menu item for euclidean in Gemini'
+                    description: 'distance metric menu item for euclidean in GAI'
                 }),
                 value: 'euclidean'
             }
@@ -1157,114 +1124,60 @@ class GeminiBlocks {
         return menu;
     }
 
-    getEmbeddingTaskTypeMenu () {
+    getAdapterMenu () {
         const menu = [
             {
                 text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.semanticSimilarity',
-                    default: 'Semantic Similarity',
-                    description: 'embedding task type menu item in Gemini'
+                    id: 'gai.adapterMenu.gemini',
+                    default: 'Gemini',
+                    description: 'Gemini AI adapter'
                 }),
-                value: EmbeddingTaskType.SEMANTIC_SIMILARITY
+                value: 'Gemini'
             },
             {
                 text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.classification',
-                    default: 'Classification',
-                    description: 'embedding task type menu item in Gemini'
+                    id: 'gai.adapterMenu.openai',
+                    default: 'OpenAI',
+                    description: 'OpenAI adapter'
                 }),
-                value: EmbeddingTaskType.CLASSIFICATION
+                value: 'OpenAI'
             },
             {
                 text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.clustering',
-                    default: 'Clustering',
-                    description: 'embedding task type menu item in Gemini'
+                    id: 'gai.adapterMenu.openaiCompatible',
+                    default: 'OpenAI Compatible',
+                    description: 'OpenAI Compatible adapter'
                 }),
-                value: EmbeddingTaskType.CLUSTERING
+                value: 'OpenAICompatible'
             },
             {
                 text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.retrievalDocument',
-                    default: 'Retrieval Document',
-                    description: 'embedding task type menu item in Gemini'
+                    id: 'gai.adapterMenu.anthropic',
+                    default: 'Anthropic',
+                    description: 'Anthropic adapter'
                 }),
-                value: EmbeddingTaskType.RETRIEVAL_DOCUMENT
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.retrievalQuery',
-                    default: 'Retrieval Query',
-                    description: 'embedding task type menu item in Gemini'
-                }),
-                value: EmbeddingTaskType.RETRIEVAL_QUERY
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.questionAnswering',
-                    default: 'Question Answering',
-                    description: 'embedding task type menu item in Gemini'
-                }),
-                value: EmbeddingTaskType.QUESTION_ANSWERING
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.factVerification',
-                    default: 'Fact Verification',
-                    description: 'embedding task type menu item in Gemini'
-                }),
-                value: EmbeddingTaskType.FACT_VERIFICATION
-            },
-            {
-                text: formatMessage({
-                    id: 'gai.embeddingTaskTypeMenu.codeRetrievalQuery',
-                    default: 'Code Retrieval Query',
-                    description: 'embedding task type menu item in Gemini'
-                }),
-                value: EmbeddingTaskType.CODE_RETRIEVAL_QUERY
+                value: 'Anthropic'
             }
         ];
         return menu;
     }
 
     /**
-     * Create a new AI adapter instance.
-     * @param {Target} target - the target to create the adapter for
-     * @param {string?} apiType - the API type to use
-     * @returns {GeminiAdapter} - the created AI adapter
-     */
-    createAIAdapter (target, apiType) {
-        let newAdapter;
-        switch (apiType) {
-        case 'Gemini':
-            newAdapter = new GeminiAdapter(target, 'Gemini');
-            break;
-        default:
-            newAdapter = new GeminiAdapter(target);
-        }
-        return newAdapter;
-    }
-
-    /**
      * Get the AI adapter for the target, with initialization if needed.
      * @param {Target} target - the target to get the AI
-     * @return {GeminiAdapter} - the AI adapter for the target
+     * @return {AIAdapter} - the AI adapter for the target
      */
     getAI (target) {
-        let ai = this.aiForTarget(target);
-        if (!ai) {
-            ai = this.createAIAdapter(target);
-        }
-        return ai;
+        return this.aiForTarget(target) || new AIAdapter(target);
     }
 
     /**
      * Retrieve AI adapter for target if exists.
      * @param {Target} target - the target to get the AI adapter
-     * @returns {?GeminiAdapter} - the AI adapter for the target
+     * @returns {?AIAdapter} - the AI adapter for the target
      */
     aiForTarget (target) {
-        return GeminiAdapter.ADAPTERS[target.id] || null;
+        return AIAdapter.ADAPTERS[target.id];
     }
 
     /**
@@ -1279,11 +1192,11 @@ class GeminiBlocks {
         if (!ai) {
             return '';
         }
-        const response = ai.getLastPartialResponse();
-        if (!response) {
+        const textPart = ai.getLastPartialText();
+        if (!textPart) {
             return '';
         }
-        return ai.getTextFromResponse(response);
+        return textPart;
     }
 
     /**
@@ -1303,88 +1216,89 @@ class GeminiBlocks {
     }
 
     /**
-     * Dispatch function calls from the prompt in new threads.
-     * @param {Array<object>} funcCalls - the function calls array
-     * @param {object} util - the utility object
-     * @returns {void}
+     * Dispatch a function call to the target's procedure definition.
+     * @param {FunctionCall} call - the function call to dispatch
+     * @param {Target} target - the target to dispatch the call to
+     * @param {Runtime} runtime - the runtime instance
      */
-    dispatchFunctionCalls (funcCalls, util) {
-        const target = util.target;
-        const ai = this.aiForTarget(target);
-        funcCalls.filter(funcCall => funcCall.status === 'PENDING')
-            .forEach(funcCall => {
-                funcCall.status = 'PROCESSING';
-                // Find the procedure definition
-                const functionSpec = ai.functionRegistry[funcCall.name];
-                if (!functionSpec) {
-                    console.warn(`Procedure not found: ${funcCall.name}`);
-                    funcCall.status = 'FAILED';
-                    return;
-                }
-                const procedureCode = functionSpec.procedureCode;
-                // Get the procedure definition block ID
-                const procedureDefinition = target.blocks.getProcedureDefinition(procedureCode);
-                if (!procedureDefinition) {
-                    console.warn(`Procedure definition not found: ${procedureCode}`);
-                    funcCall.status = 'FAILED';
-                    return;
-                }
-                const argumentMap = {};
-                Object.entries(funcCall.args).forEach(([key, value]) => {
-                    const paramName = functionSpec.argumentDict[key];
-                    if (paramName) {
+    _dispatchFunctionCall (call, target, runtime) {
+        // Find the procedure definition
+        const functionSpec = call.spec;
+        if (!functionSpec) {
+            console.error(`Procedure not found: ${call.name}`);
+            call.failed();
+            return;
+        }
+        const procedureCode = functionSpec.procedureCode;
+        // Get the procedure definition block ID
+        const procedureDefinition = target.blocks.getProcedureDefinition(procedureCode);
+        if (!procedureDefinition) {
+            console.error(`Procedure definition not found: ${procedureCode}`);
+            call.failed();
+            return;
+        }
+        try {
+            const argumentMap = {};
+            Object.entries(call.args).forEach(([key, value]) => {
+                const paramName = functionSpec.argumentDict[key];
+                if (paramName) {
                     // Type conversion
-                        switch (functionSpec.declaration.parameters.properties[key].type) {
-                        case 'string':
-                            value = String(value);
-                            break;
-                        case 'number':
-                            value = Number(value);
-                            break;
-                        case 'boolean':
-                            value = Boolean(value);
-                            break;
-                        }
-                        argumentMap[paramName] = value;
+                    switch (functionSpec.parameters.properties[key].type) {
+                    case 'string':
+                        value = String(value);
+                        break;
+                    case 'number':
+                        value = Number(value);
+                        break;
+                    case 'boolean':
+                        value = Boolean(value);
+                        break;
                     }
-                });
-
-                const procThread = this.runtime._pushThread(procedureDefinition, target);
-                procThread.persistentParams = argumentMap;
-                // Hook into the thread's getParam and pushStack methods to handle persistent parameters
-                const originalGetParam = procThread.getParam.bind(procThread);
-                procThread.getParam = function (paramName) {
-                    let value = originalGetParam(paramName);
-                    if (value === null && procThread.persistentParams &&
-                    Object.prototype.hasOwnProperty.call(procThread.persistentParams, paramName)) {
-                        value = procThread.persistentParams[paramName];
-                    }
-                
-                    return value;
-                };
-                const originalPushStack = procThread.pushStack.bind(procThread);
-                procThread.pushStack = function (blockId) {
-                    const result = originalPushStack(blockId);
-                    if (procThread.persistentParams) {
-                        if (procThread.initParams) {
-                            procThread.initParams();
-                            Object.entries(procThread.persistentParams).forEach(([paramName, value]) => {
-                                if (procThread.pushParam) {
-                                    procThread.pushParam(paramName, value);
-                                }
-                            });
-                        }
-                    }
-                
-                    return result;
-                };
-
-                // Use STATUS_YIELD_TICK to ensure parameter setup happens before actual execution
-                procThread.status = 3; // Thread.STATUS_YIELD_TICK
-
-                procThread.functionCall = funcCall;
-                funcCall.thread = procThread;
+                    argumentMap[paramName] = value;
+                }
             });
+
+            // Create a new thread for the procedure call
+            const procThread = runtime._pushThread(procedureDefinition, target);
+            procThread.persistentParams = argumentMap;
+            // Hook into the thread's getParam and pushStack methods to handle persistent parameters
+            const originalGetParam = procThread.getParam.bind(procThread);
+            procThread.getParam = function (paramName) {
+                let value = originalGetParam(paramName);
+                if (value === null && procThread.persistentParams &&
+                    Object.prototype.hasOwnProperty.call(procThread.persistentParams, paramName)) {
+                    value = procThread.persistentParams[paramName];
+                }
+                
+                return value;
+            };
+            const originalPushStack = procThread.pushStack.bind(procThread);
+            procThread.pushStack = function (blockId) {
+                const result = originalPushStack(blockId);
+                if (procThread.persistentParams) {
+                    if (procThread.initParams) {
+                        procThread.initParams();
+                        Object.entries(procThread.persistentParams).forEach(([paramName, value]) => {
+                            if (procThread.pushParam) {
+                                procThread.pushParam(paramName, value);
+                            }
+                        });
+                    }
+                }
+                
+                return result;
+            };
+
+            // Use STATUS_YIELD_TICK to ensure parameter setup happens before actual execution
+            procThread.status = 3; // Thread.STATUS_YIELD_TICK
+
+            procThread.functionCall = call;
+            call.thread = procThread;
+            call.status = 'PROCESSING';
+        } catch (e) {
+            console.error(e);
+            call.failed();
+        }
     }
 
     /**
@@ -1393,43 +1307,7 @@ class GeminiBlocks {
      * @returns {boolean} - true if all completed
      */
     allFunctionCallsFinished (funcCalls) {
-        return funcCalls.every(funcCall =>
-            funcCall.status === 'COMPLETED' ||
-        funcCall.status === 'FAILED' ||
-        (funcCall.thread && this.runtime.threads.indexOf(funcCall.thread) === -1)
-        );
-    }
-
-    /**
-     * Mark completed function calls and clean up
-     * @param {Array} funcCalls - array of function calls
-     */
-    cleanupStoppedFunctionCalls (funcCalls) {
-        if (!Array.isArray(funcCalls) || funcCalls.length === 0) {
-            return;
-        }
-        const indicesToRemove = [];
-        for (let i = 0; i < funcCalls.length; i++) {
-            const funcCall = funcCalls[i];
-            if (funcCall.thread && this.runtime.threads.indexOf(funcCall.thread) === -1) {
-                if (funcCall.status === 'PENDING' || funcCall.status === 'PROCESSING') {
-                    funcCall.status = 'STOPPED';
-                    if (DEBUG) {
-                        console.log(`Function call ${funcCall.name} marked as STOPPED`);
-                    }
-                }
-                delete funcCall.thread;
-                indicesToRemove.push(i);
-            }
-        }
-        for (let i = indicesToRemove.length - 1; i >= 0; i--) {
-            const indexToRemove = indicesToRemove[i];
-            funcCalls.splice(indexToRemove, 1);
-        }
-        
-        if (DEBUG && indicesToRemove.length > 0) {
-            console.log(`Cleaned up ${indicesToRemove.length} stopped function calls`);
-        }
+        return funcCalls.every(funcCall => funcCall.isStopped());
     }
 
     /**
@@ -1444,82 +1322,59 @@ class GeminiBlocks {
         const target = util.target;
         const ai = this.aiForTarget(target);
         const stackFrame = util.stackFrame;
-
-        if (stackFrame.functionCalls) {
-            const callsToStart = stackFrame.functionCalls.filter(funcCall => funcCall.status === 'PENDING');
-            if (callsToStart.length > 0) {
-                this.dispatchFunctionCalls(callsToStart, util);
-                util.yield();
-                return;
-            }
+        let requestState = stackFrame.generatingState;
+        if (!requestState) {
+            requestState = stackFrame.generatingState = {};
         }
+        requestState.functionCalls?.forEach(funcCall => {
+            funcCall.updateStatusOn(util.runtime);
+        });
 
-        if (stackFrame.isResponseReceived) {
-            if (this.allFunctionCallsFinished(stackFrame.functionCalls)) {
-                this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
+        if (requestState.finished) {
+            if (!requestState.functionCalls ||
+                requestState.functionCalls.every(funcCall => funcCall.isStopped())) {
+                // Request and all function calls finished
                 return ai.getTextFromResponse(ai.getLastResponse());
             }
         }
-
-        if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
-            const partialResponseHandler = partialResponse => {
-                if (ai.getTextFromResponse(partialResponse) !== '') {
-                    this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
-                }
-                if (DEBUG) {
-                    console.log(partialResponse);
-                }
-            };
-
-            if (!stackFrame.isRequesting) {
-                stackFrame.isRequesting = true;
-                this.updateFunctionRegistry(target);
-                const request = isChat ?
-                    ai.requestChatStream(prompt, partialResponseHandler) :
-                    ai.requestGenerateStream(prompt, partialResponseHandler);
-                request
-                    .then(([response, functionCalls]) => {
-                        stackFrame.functionCalls = stackFrame.functionCalls || [];
-                        stackFrame.functionCalls.push(...functionCalls);
-                        if (ai.getTextFromResponse(response) !== '') {
-                            this.runtime.startHats('gai_whenResponseReceived', null, target);
-                        }
-                        stackFrame.isResponseReceived = true;
-                    })
-                    .catch(e => {
-                        console.error(e);
-                        stackFrame.errorMessage = e.message;
-                    });
-            }
-            if (stackFrame.errorMessage) {
-                return stackFrame.errorMessage;
-            }
-            util.yield();
-            return;
+        if (requestState.error) {
+            // Retrieve error message and finish the request
+            return requestState.error.message || requestState.error.name;
         }
 
-        if (!stackFrame.isRequesting) {
-            stackFrame.isRequesting = true;
+        if (!requestState.requested) {
+            // Start a new request
+            requestState.requested = true;
             this.updateFunctionRegistry(target);
-            const request = isChat ? ai.requestChat(prompt) : ai.requestGenerate(prompt);
-            request
-                .then(([response, functionCalls]) => {
-                    stackFrame.functionCalls = stackFrame.functionCalls || [];
-                    stackFrame.functionCalls.push(...functionCalls);
-                    if (ai.getTextFromResponse(response) !== '') {
-                        this.runtime.startHats('gai_whenResponseReceived', null, target);
+            const responseTextHandler = responseText => {
+                if (responseText !== '') {
+                    this.runtime.startHats('gai_whenResponseReceived', null, target);
+                }
+            };
+            const functionDispatcher = call => {
+                requestState.functionCalls = requestState.functionCalls || [];
+                requestState.functionCalls.push(call);
+                return this._dispatchFunctionCall(call, target, util.runtime);
+            };
+            let partialTextHandler;
+            if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
+                partialTextHandler = partialText => {
+                    if (partialText !== '') {
+                        this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
                     }
-                    stackFrame.isResponseReceived = true;
+                };
+            }
+            ai.requestGenerate(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat)
+                .then(() => {
+                    requestState.finished = true;
                 })
                 .catch(error => {
                     console.error(error);
-                    stackFrame.errorMessage = error.message;
+                    requestState.error = error;
                 });
         }
-        if (stackFrame.errorMessage) {
-            return stackFrame.errorMessage;
-        }
         util.yield();
+        return; // Wait for the next step
     }
 
     /**
@@ -1757,10 +1612,11 @@ class GeminiBlocks {
      */
     startChat (args, util) {
         const target = util.target;
+        const ai = this.getAI(target);
         const historyText = String(args.HISTORY).trim();
         try {
             const history = JSON.parse(`[${historyText}]`);
-            this.getAI(target).startChat(history);
+            ai.startChat(history);
         } catch (error) {
             console.error(`startChat: ${error.message}`);
             return error.message;
@@ -1770,7 +1626,6 @@ class GeminiBlocks {
     /**
      * Get response text from last result.
      * @param {object} args - the block's arguments.
-     * @param {string} args.CANDIDATE_INDEX - index of candidate
      * @param {object} util - utility object provided by the runtime.
      * @returns {string} - response text
      */
@@ -1780,140 +1635,45 @@ class GeminiBlocks {
         if (!ai) {
             return '';
         }
-        const response = ai.getLastResponse();
-        if (!response) {
-            return '';
-        }
-        try {
-            const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-            let responseText;
-            if (Array.isArray(response)) {
-            // the response is streaming
-                if (candidateIndex !== 1) {
-                // Streaming response has no candidates
-                    return '';
-                }
-                responseText = ai.getTextFromResponse(response);
-            } else {
-                responseText = ai.getTextFromResponse(response, candidateIndex - 1);
-            }
-            // Replace function names with procedureCode and argument names with their codes
-            if (responseText && ai.functionRegistry) {
-                Object.values(ai.functionRegistry).forEach(functionSpec => {
-                    if (functionSpec.declaration && functionSpec.procedureCode) {
-                        const funcName = functionSpec.declaration.name;
-                        const procedureCode = functionSpec.procedureCode;
-                        // Replace function name with procedure code in the response text
-                        responseText = responseText.replace(new RegExp(funcName, 'g'), procedureCode);
+        let responseText = ai.getLastResponseText();
+        // Replace function names with procedureCode and argument names with their codes
+        if (responseText && ai.functionRegistry) {
+            Object.values(ai.functionRegistry).forEach(functionSpec => {
+                if (functionSpec.procedureCode) {
+                    const funcName = functionSpec.name;
+                    const procedureCode = functionSpec.procedureCode;
+                    // Replace function name with procedure code in the response text
+                    responseText = responseText.replace(new RegExp(funcName, 'g'), procedureCode);
                         
-                        // Replace argument names with their codes
-                        if (functionSpec.argumentDict) {
-                            Object.entries(functionSpec.argumentDict).forEach(([argName, argCode]) => {
-                                // Replace argument name with argument code in the response text
-                                responseText = responseText.replace(new RegExp(argName, 'g'), argCode);
-                            });
-                        }
+                    // Replace argument names with their codes
+                    if (functionSpec.argumentDict) {
+                        Object.entries(functionSpec.argumentDict).forEach(([argName, argCode]) => {
+                            // Replace argument name with argument code in the response text
+                            responseText = responseText.replace(new RegExp(argName, 'g'), argCode);
+                        });
                     }
-                });
-            }
-            return responseText;
-        } catch (error) {
-            console.error(`responseText: ${error.message}`);
-            return error.message;
+                }
+            });
         }
+        return responseText;
     }
 
     /**
      * Get response safety rating from last result.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.CANDIDATE_INDEX - index of candidate
-     * @param {string} args.HARM_CATEGORY - harm category
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {string} - response safety rating
+     * @returns {string} - error message
+     * @deprecated
      */
-    responseSafetyRating (args, util) {
-        const target = util.target;
-        const ai = this.aiForTarget(target);
-        if (!ai) {
-            return '';
-        }
-        let response = ai.getLastResponse();
-        if (!response) {
-            return '';
-        }
-        if (Array.isArray(response)) {
-            // the response is streaming
-            response = response[0];
-        }
-        try {
-            if (response.promptFeedback?.blockReason) {
-                const blockReason = response.promptFeedback.blockReason;
-                if (blockReason === 'SAFETY') {
-                    const blockReasons = response.promptFeedback
-                        .safetyRatings.filter(r => r.probability !== 'NEGLIGIBLE');
-                    return `prompt was blocked: ${blockReason} (${JSON.stringify(blockReasons)})`;
-                }
-                // Blocked by other reason
-                return `prompt was blocked: ${blockReason}`;
-            }
-            const candidateIndex = parseInt(args.CANDIDATE_INDEX, 10);
-            if (candidateIndex < 1 || candidateIndex > response.candidates.length) {
-                return '';
-            }
-            const candidate = response.candidates[candidateIndex - 1];
-            if (!candidate.finishReason || candidate.finishReason === 'STOP') {
-                return 'NEGLIGIBLE';
-            }
-            if (candidate.finishReason === 'SAFETY') {
-                const category = args.HARM_CATEGORY;
-                const rating = candidate.safetyRatings.find(r => r.category === category);
-                if (!rating) {
-                    return 'NEGLIGIBLE';
-                }
-                return rating.probability;
-            }
-            // Finished by other reason
-            return `finishReason: ${candidate.finishReason}`;
-        } catch (error) {
-            console.error(`responseSafetyRating: ${error.message}`);
-            return error.message;
-        }
+    responseSafetyRating () {
+        return 'DEPRECATED';
     }
 
     /**
      * Set safety rating.
-     * @param {object} args - the block's arguments.
-     * @param {string} args.HARM_CATEGORY - harm category
-     * @param {string} args.BLOCK_THRESHOLD - block threshold
-     * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
+     * @returns {string} - error message
+     * @deprecated
      */
-    setSafetyRating (args, util) {
-        const target = util.target;
-        const ai = this.getAI(target);
-        const harmCategory = args.HARM_CATEGORY;
-        const harmBlockThreshold = args.BLOCK_THRESHOLD;
-        const setParams = (category, threshold) => {
-            const safetyRating = {
-                category: category,
-                threshold: threshold
-            };
-            const index = ai.safetySettings.findIndex(r => r.category === category);
-            if (index >= 0) {
-                ai.safetySettings[index] = safetyRating;
-            } else {
-                ai.safetySettings.push(safetyRating);
-            }
-        };
-        if (harmCategory === 'ALL') {
-            Object.keys(HarmCategory)
-                .forEach(category => {
-                    if (category === 'HARM_CATEGORY_UNSPECIFIED') return;
-                    setParams(category, harmBlockThreshold);
-                });
-        } else {
-            setParams(harmCategory, harmBlockThreshold);
-        }
+    setSafetyRating () {
+        return 'DEPRECATED';
     }
 
     /**
@@ -1931,9 +1691,6 @@ class GeminiBlocks {
         let configValue = args.VALUE;
         switch (configKey) {
         case 'maxOutputTokens':
-            configValue = Math.max(1, parseInt(Cast.toString(configValue), 10));
-            break;
-        case 'candidateCount':
             configValue = Math.max(1, parseInt(Cast.toString(configValue), 10));
             break;
         case 'stopSequences':
@@ -1955,13 +1712,8 @@ class GeminiBlocks {
         case 'responseSchema':
             try {
                 configValue = JSON.parse(configValue);
-                // Also set responseMimeType to application/json for structured output
-                ai.generationConfig.responseMimeType = 'application/json';
             } catch (error) {
-                // If parsing fails, delete responseSchema
-                delete ai.generationConfig.responseSchema;
-                delete ai.generationConfig.responseMimeType;
-                return `delete ${configKey} due to error: ${error.message}`;
+                console.error(`responseSchema: ${error.message}`);
             }
             break;
         default:
@@ -1976,6 +1728,11 @@ class GeminiBlocks {
             return `delete ${configKey}`;
         }
         ai.generationConfig[configKey] = configValue;
+        if (configKey === 'responseSchema' && typeof configValue === 'object') {
+            // Also set responseMimeType when setting schema
+            ai.generationConfig.responseMimeType = 'application/json';
+        }
+        return;
     }
 
     /**
@@ -2027,28 +1784,32 @@ class GeminiBlocks {
         if (!path) {
             return '';
         }
-        const func = new Function('jsonObj', `return jsonObj.${path}`);
-        const value = func.call(this, jsonObject);
-        if (typeof value === 'undefined' || value === null) {
-            return '';
-        }
-        if (Array.isArray(value)) {
+        try {
+            const func = new Function('jsonObj', `return jsonObj.${path}`);
+            const value = func.call(this, jsonObject);
+            if (typeof value === 'undefined' || value === null) {
+                return '';
+            }
+            if (Array.isArray(value)) {
             // Convert array to JSON string
-            return JSON.stringify(value);
-        }
-        if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+            if (typeof value === 'object') {
             // Convert object to JSON string
-            return JSON.stringify(value);
-        }
-        if (typeof value === 'number') {
+                return JSON.stringify(value);
+            }
+            if (typeof value === 'number') {
             // Convert number to string
-            return String(value);
-        }
-        if (typeof value === 'boolean') {
+                return String(value);
+            }
+            if (typeof value === 'boolean') {
             // Convert boolean to string
-            return value ? 'true' : 'false';
+                return value ? 'true' : 'false';
+            }
+            return String(value);
+        } catch (error) {
+            return `error: ${error.message}`;
         }
-        return String(value);
     }
 
     getItemOfJsonArray (args) {
@@ -2126,85 +1887,12 @@ class GeminiBlocks {
         const target = util.target;
         const ai = this.getAI(target);
         if (mode === 'NONE') {
-            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_NONE);
+            ai.setFunctionCallingMode(AIAdapter.FUNCTION_CALLING_NONE);
         } else if (mode === 'AUTO') {
-            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_AUTO);
-        } else if (mode === 'ANY') {
-            ai.setFunctionCallingMode(GeminiAdapter.FUNCTION_CALLING_ANY);
+            ai.setFunctionCallingMode(AIAdapter.FUNCTION_CALLING_AUTO);
+        } else if (mode === 'REQUIRED') {
+            ai.setFunctionCallingMode(AIAdapter.FUNCTION_CALLING_REQUIRED);
         }
-    }
-
-    /**
-     * Get all user-defined procedures from the target
-     * @param {Target} target - the target to get procedures from
-     * @returns {Array} - array of procedure information
-     */
-    getUserProcedures (target) {
-        const procedures = [];
-        const blocks = target.blocks._blocks;
-        for (const blockId in blocks) {
-            const block = blocks[blockId];
-            if (block.opcode === 'procedures_definition') {
-            // Get the procedure prototype
-                const prototypeId = block.inputs.custom_block.block;
-                const prototype = blocks[prototypeId];
-                if (prototype && prototype.mutation) {
-                    const inputTypes = Object.values(prototype.inputs)
-                        .filter(input => blocks[input.shadow].parent === prototypeId)
-                        .map(input => {
-                            const inputBlock = blocks[input.shadow];
-                            let inputType;
-                            switch (inputBlock.opcode) {
-                            case 'argument_reporter_string_number':
-                                inputType = 'string';
-                                break;
-                            case 'argument_reporter_boolean':
-                                inputType = 'boolean';
-                                break;
-                            default:
-                                inputType = 'string';
-                            }
-                            return inputType;
-                        });
-                    procedures.push({
-                        id: blockId,
-                        comment: block.comment,
-                        code: prototype.mutation.proccode,
-                        argumentNames: JSON.parse(prototype.mutation.argumentnames || '[]'),
-                        argumentIds: JSON.parse(prototype.mutation.argumentids || '[]'),
-                        argumentTypes: inputTypes,
-                        argumentDefaults: JSON.parse(prototype.mutation.argumentdefaults || '[]'),
-                        warp: prototype.mutation.warp === 'true'
-                    });
-                }
-            }
-        }
-    
-        return procedures;
-    }
-
-    /**
-     * Register a user-defined function for AI function calling
-     * @param {Target} target - the target to register the function
-     * @param {object} procedure - the procedure information
-     */
-    registerFunction (target, procedure) {
-        const ai = this.getAI(target);
-        const functionDescription = `${procedure.code}: ${target.comments[procedure.comment]?.text || ''}`;
-        const functionArguments = procedure.argumentNames.map((name, index) => {
-            const reporterBlocks = Object.values(target.blocks._blocks).filter(aBlock =>
-                !aBlock.shadow && (aBlock.fields.VALUE?.value === name));
-            const comments = reporterBlocks.reduce((prev, aBlock) => {
-                const comment = target.comments[aBlock.comment];
-                return comment ? `${prev} ${comment.text};` : prev;
-            }, `${name}: `);
-            return {
-                code: name,
-                type: procedure.argumentTypes[index],
-                description: comments
-            };
-        });
-        ai.registerFunction(procedure.code, functionDescription, functionArguments);
     }
 
     /**
@@ -2216,9 +1904,23 @@ class GeminiBlocks {
     updateFunctionRegistry (target) {
         const ai = this.getAI(target);
         ai.clearRegisteredFunctions();
-        const procedures = this.getUserProcedures(target);
+        const procedures = getUserProcedures(target);
         procedures.forEach(proc => {
-            this.registerFunction(target, proc);
+            const functionDescription = `${proc.code}: ${target.comments[proc.comment]?.text || ''}`;
+            const functionArguments = proc.argumentNames.map((name, index) => {
+                const reporterBlocks = Object.values(target.blocks._blocks).filter(aBlock =>
+                    !aBlock.shadow && (aBlock.fields.VALUE?.value === name));
+                const comments = reporterBlocks.reduce((prev, aBlock) => {
+                    const comment = target.comments[aBlock.comment];
+                    return comment ? `${prev} ${comment.text};` : prev;
+                }, `${name}: `);
+                return {
+                    code: name,
+                    type: proc.argumentTypes[index],
+                    description: comments
+                };
+            });
+            ai.registerFunction(proc.code, functionDescription, functionArguments);
         });
     }
 
@@ -2233,64 +1935,36 @@ class GeminiBlocks {
         const target = util.target;
         const ai = this.getAI(target);
         const result = args.RESULT;
+        // Get the top-level block
         const blockId = util.thread.peekStack();
         const topBlockId = target.blocks.getTopLevelScript(blockId);
         const topBlock = target.blocks.getBlock(topBlockId);
+        // Check if the top block is a procedure definition
         if (!topBlock || topBlock.opcode !== 'procedures_definition') {
-            return 'Error: Not in a procedure definition block.';
+            console.info('returnResultToAI: Not in a procedure definition block.');
+            return;
         }
         const prototypeId = topBlock.inputs.custom_block.block;
         const prototype = target.blocks.getBlock(prototypeId);
         const procedureCode = prototype.mutation.proccode;
         const functionSpec = ai.getFunctionSpec(procedureCode);
         if (!functionSpec) {
-            console.log(`returnResultToAI: "${procedureCode}" is not registered.`);
+            console.error(`returnResultToAI: "${procedureCode}" is not registered.`);
             return `"${procedureCode}" is not registered.`;
         }
         const currentCall = util.thread.functionCall;
         if (!currentCall) {
+            console.info('returnResultToAI: No function call in progress.');
             return 'No function call in progress.';
         }
-        if (currentCall.name !== functionSpec.declaration.name) {
-            console.log(`returnResultToAI: "${functionSpec.declaration.name}" is not the current function call.`);
-            return `"${functionSpec.declaration.name}" is not the current function call.`;
+        if (currentCall.name !== functionSpec.name) {
+            console.info(`returnResultToAI: "${functionSpec.name}" is not the current function call.`);
+            return;
         }
-        const stackFrame = util.stackFrame;
-        if (stackFrame.functionCalls) {
-            const callsToStart = stackFrame.functionCalls.filter(funcCall => funcCall.status === 'PENDING');
-            if (callsToStart.length > 0) {
-                this.dispatchFunctionCalls(callsToStart, util);
-                util.yield();
-                return;
-            }
-            if (stackFrame.functionCalls
-                .every(funcCall => funcCall.thread &&
-                    this.runtime.threads.indexOf(funcCall.thread) === -1)) {
-            // All function calls are completed, exit this block
-                this.cleanupStoppedFunctionCalls(stackFrame.functionCalls);
-                console.log(
-                    `"function: ${functionSpec.declaration.name}, block: ${procedureCode}", result: ${result},`
-                );
-                return;
-            }
-        }
-        if (typeof currentCall.result === 'undefined') {
-            currentCall.result = result;
-            ai.returnFunctionResult(currentCall)
-                .then(([response, functionCalls]) => {
-                    stackFrame.functionCalls = stackFrame.functionCalls || [];
-                    stackFrame.functionCalls.push(...functionCalls);
-                    if (ai.getTextFromResponse(response) !== '') {
-                        this.runtime.startHats('gai_whenResponseReceived', null, target);
-                    }
-                    stackFrame.isResultResponseReceived = true;
-                })
-                .catch(error => {
-                    console.error(error);
-                    return error.message;
-                });
-        }
-        util.yield();
+        util.thread.functionCall.result = result;
+        console.debug(
+            `"function: ${functionSpec.name}, block: ${procedureCode}", result: ${result},`
+        );
         return;
     }
 
@@ -2298,28 +1972,63 @@ class GeminiBlocks {
      * Get embedding of content.
      * @param {object} args - the block's arguments.
      * @param {string} args.CONTENT - content
-     * @param {string} args.TASK_TYPE - task type
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves embedding
      */
     embeddingFor (args, util) {
         const ai = this.aiForTarget(util.target);
+        const stackFrame = util.stackFrame;
         if (!ai) {
-            return Promise.resolve(`AI is not available`);
+            return `AI is not available`;
         }
+
+        // Create a unique key for this content to avoid state conflicts
         const contentText = Cast.toString(args.CONTENT).trim();
-        const content = interpretContentPartsText(contentText);
-        const taskType = args.TASK_TYPE;
-        return ai.requestEmbedding(content, taskType)
-            .then(embedding => {
-                const jsonText = JSON.stringify(embedding);
-                const result = jsonText.substring(1, jsonText.length - 1); // remove brackets
-                return result;
-            })
-            .catch(error => {
-                console.error(`embeddingFor: ${error.message}`);
-                return '';
-            });
+        // Use a simple hash function to handle multi-byte characters properly
+        let contentHash = 0;
+        for (let i = 0; i < contentText.length; i++) {
+            const char = contentText.charCodeAt(i);
+            contentHash = ((contentHash << 5) - contentHash) + char;
+            contentHash = contentHash & contentHash; // Convert to 32bit integer
+        }
+        const contentKey = `embedding_${contentText.length}_${Math.abs(contentHash)}`;
+        
+        // Initialize embedding requests storage if not exists
+        if (!stackFrame.embeddingRequests) {
+            stackFrame.embeddingRequests = {};
+        }
+        
+        // Get or create state for this specific content
+        let requestState = stackFrame.embeddingRequests[contentKey];
+        if (!requestState) {
+            requestState = stackFrame.embeddingRequests[contentKey] = {};
+        }
+
+        if (requestState.requestError) {
+            const error = requestState.error;
+            return error.message || error.name;
+        }
+        if (requestState.requestResult) {
+            const jsonText = JSON.stringify(requestState.requestResult);
+            const result = jsonText.substring(1, jsonText.length - 1); // remove brackets
+            return result;
+        }
+
+        if (!requestState.requested) {
+            // Start a new request
+            const content = interpretContentPartsText(contentText);
+            requestState.requested = true;
+            ai.requestEmbedding(content)
+                .then(embedding => {
+                    requestState.requestResult = embedding;
+                })
+                .catch(error => {
+                    console.error(error);
+                    requestState.error = error;
+                });
+        }
+        util.yield();
+        return;
     }
 
     /**
@@ -2343,6 +2052,9 @@ class GeminiBlocks {
         case 'dotProduct':
             result = dotProduct(vectorA, vectorB);
             break;
+        case 'cosine':
+            result = cosineDistance(vectorA, vectorB);
+            break;
         case 'euclidean':
             result = euclideanDistance(vectorA, vectorB);
             break;
@@ -2361,9 +2073,6 @@ class GeminiBlocks {
      */
     setApiKey (args, util) {
         const apiKey = Cast.toString(args.KEY).trim();
-        if (!apiKey) {
-            return;
-        }
         const ai = this.getAI(util.target);
         ai.setApiKey(apiKey);
     }
@@ -2379,44 +2088,37 @@ class GeminiBlocks {
         if (!ai) {
             return '';
         }
-        const apiKey = ai.getApiKey();
+        const apiKey = ai.apiKey;
         if (!apiKey) {
             return '';
         }
+        if (apiKey.length <= 8) {
+            return '*'.repeat(apiKey.length);
+        }
+        // Show only first 4 and last 4 characters
+        // e.g., abcd********wxyz
+        const firstFourChars = apiKey.slice(0, 4);
         const lastFourChars = apiKey.slice(-4);
-        const maskedPortion = '*'.repeat(apiKey.length - 4);
-        return maskedPortion + lastFourChars;
+        const maskedPortion = '*'.repeat(apiKey.length - 8);
+        return firstFourChars + maskedPortion + lastFourChars;
     }
 
     /**
      * Set base URL and optionally switch AI adapter.
      * @param {object} args - the block's arguments.
-     * @param {string} args.API - API type ('Gemini' or 'OpenAI')
      * @param {string} args.URL - base URL
      * @param {object} util - utility object provided by the runtime.
      * @returns {string} - message
      */
     setBaseUrl (args, util) {
         const baseUrl = Cast.toString(args.URL).trim();
-        const apiType = Cast.toString(args.API).trim();
         
         if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
             return 'error: invalid URL';
         }
-        let ai = this.aiForTarget(util.target);
-        if (ai) {
-            if (ai.apiType !== apiType) {
-                // If the API type is different, create a new adapter
-                const oldAI = ai;
-                GeminiAdapter.removeForTarget(util.target);
-                ai = this.createAIAdapter(util.target, apiType);
-                ai.setApiKey(oldAI.getApiKey());
-            }
-        } else {
-            ai = this.createAIAdapter(util.target, apiType);
-        }
+        const ai = this.getAI(util.target);
         ai.setBaseUrl(baseUrl);
-        return `set base URL to ${baseUrl} as ${apiType}`;
+        return `set base URL to ${baseUrl}`;
     }
 
     /**
@@ -2434,41 +2136,114 @@ class GeminiBlocks {
     }
 
     /**
-     * Count tokens as request type.
+     * Set API type.
      * @param {object} args - the block's arguments.
-     * @param {string} args.CONTENT - content
-     * @param {string} args.REQUEST_TYPE - request type {'generate' | 'chat'}
+     * @param {string} args.API - API type
      * @param {object} util - utility object provided by the runtime.
-     * @returns {Promise<number>} - a Promise that resolves token count
+     * @returns {void}
      */
-    countTokensAs (args, util) {
+    setApiType (args, util) {
+        const apiType = Cast.toString(args.API).trim();
+        const ai = this.getAI(util.target);
+        ai.setApiType(apiType);
+    }
+
+    /**
+     * Get API type.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - API type
+     */
+    getApiType (args, util) {
         const ai = this.aiForTarget(util.target);
         if (!ai) {
-            return Promise.resolve(0);
+            return '';
         }
-        const contentText = Cast.toString(args.CONTENT);
-        const content = interpretContentPartsText(contentText);
-        const requestType = args.REQUEST_TYPE;
-        return ai.countTokensAs(content, requestType)
-            .catch(error => {
-                console.error(error);
-                return error.message;
+        return ai.getApiType();
+    }
+
+    /**
+     * Set model code.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_ID - model code
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - validation result message
+     */
+    setModel (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        const modelCode = Cast.toString(args.MODEL_ID).trim();
+        return ai.setModel(modelCode)
+            .catch(error => `Error setting model: ${error.message}`);
+    }
+
+    /**
+     * Get model code.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model code
+     */
+    getModel (args, util) {
+        const target = util.target;
+        const ai = this.aiForTarget(target);
+        if (!ai) {
+            return '';
+        }
+        return ai.getModel();
+    }
+
+    /**
+     * Get model ID at index.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - model ID
+     */
+    getModelIDAtIndex (args, util) {
+        const modelIndex = parseInt(args.MODEL_INDEX, 10);
+        if (isNaN(modelIndex)) {
+            return '';
+        }
+        if (modelIndex < 1) {
+            return '';
+        }
+        const ai = this.aiForTarget(util.target);
+        if (!ai) {
+            return '';
+        }
+        return ai.getModelIDs()
+            .then(modelIDs => {
+                if (!modelIDs || modelIndex > modelIDs.length) {
+                    return '';
+                }
+                return modelIDs[modelIndex - 1];
             });
+    }
+
+    /**
+     * Get max model number.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {number} - max model number
+     */
+    getMaxModelNumber (args, util) {
+        const ai = this.aiForTarget(util.target);
+        if (!ai) {
+            return 0;
+        }
+        return ai.getModelIDs()
+            .then(modelIDs => (modelIDs ? modelIDs.length : 0));
     }
 
     /**
      * Set generative model code.
      * @param {object} args - the block's arguments.
-     * @param {string} args.MODEL_CODE - model code
+     * @param {string} args.MODEL_ID - model code
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - validation result message
+     * @deprecated Use setModel instead.
      */
     setGenerativeModel (args, util) {
-        const target = util.target;
-        const ai = this.getAI(target);
-        const modelCode = Cast.toString(args.MODEL_CODE).trim();
-        return ai.setGenerativeModel(modelCode)
-            .catch(error => `Error setting model: ${error.message}`);
+        return this.setModel(args, util);
     }
 
     /**
@@ -2476,37 +2251,20 @@ class GeminiBlocks {
      * @param {object} args - the block's arguments.
      * @param {object} util - utility object provided by the runtime.
      * @returns {string} - model code
+     * @deprecated Use getModel instead.
      */
     getGenerativeModel (args, util) {
-        const target = util.target;
-        const ai = this.getAI(target);
-        return ai.modelCode.generative;
+        return this.getModel(args, util);
     }
     /**
      * Get generative model ID.
      * @param {object} args - the block's arguments.
      * @param {object} util - utility object provided by the runtime.
      * @returns {string} - model ID
+     * @deprecated Use getModelIDAtIndex instead.
      */
     getGenerativeModelID (args, util) {
-        const modelIndex = parseInt(args.MODEL_INDEX, 10);
-        if (isNaN(modelIndex)) {
-            return '';
-        }
-        if (modelIndex < 1) {
-            return '';
-        }
-        const ai = this.aiForTarget(util.target);
-        if (!ai) {
-            return '';
-        }
-        return ai.getGenerativeModelID(modelIndex - 1)
-            .then(modelID => {
-                if (!modelID) {
-                    return '';
-                }
-                return modelID;
-            });
+        return this.getModelIDAtIndex(args, util);
     }
 
     /**
@@ -2514,28 +2272,22 @@ class GeminiBlocks {
      * @param {object} args - the block's arguments.
      * @param {object} util - utility object provided by the runtime.
      * @returns {number} - max generative model number
+     * @deprecated Use getMaxModelNumber instead.
      */
     getMaxGenerativeModelNumber (args, util) {
-        const ai = this.aiForTarget(util.target);
-        if (!ai) {
-            return 0;
-        }
-        return ai.getMaxGenerativeModelNumber();
+        return this.getMaxModelNumber(args, util);
     }
 
     /**
      * Set embedding model code.
      * @param {object} args - the block's arguments.
-     * @param {string} args.MODEL_CODE - model code
+     * @param {string} args.MODEL_ID - model code
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - validation result message
+     * @deprecated Use setModel instead.
      */
     setEmbeddingModel (args, util) {
-        const target = util.target;
-        const ai = this.getAI(target);
-        const modelCode = Cast.toString(args.MODEL_CODE).trim();
-        return ai.setEmbeddingModel(modelCode)
-            .catch(error => `Error setting model: ${error.message}`);
+        return this.setModel(args, util);
     }
 
     /**
@@ -2543,11 +2295,10 @@ class GeminiBlocks {
      * @param {object} args - the block's arguments.
      * @param {object} util - utility object provided by the runtime.
      * @returns {string} - model code
+     * @deprecated Use getModel instead.
      */
     getEmbeddingModel (args, util) {
-        const target = util.target;
-        const ai = this.getAI(target);
-        return ai.modelCode.embedding;
+        return this.getModel(args, util);
     }
 
     /**
@@ -2555,26 +2306,10 @@ class GeminiBlocks {
      * @param {object} args - the block's arguments.
      * @param {object} util - utility object provided by the runtime.
      * @returns {string} - model ID
+     * @deprecated Use getModelIDAtIndex instead.
      */
     getEmbeddingModelID (args, util) {
-        const modelIndex = parseInt(args.MODEL_INDEX, 10);
-        if (isNaN(modelIndex)) {
-            return '';
-        }
-        if (modelIndex < 1) {
-            return '';
-        }
-        const ai = this.aiForTarget(util.target);
-        if (!ai) {
-            return '';
-        }
-        return ai.getEmbeddingModelID(modelIndex - 1)
-            .then(modelID => {
-                if (!modelID) {
-                    return '';
-                }
-                return modelID;
-            });
+        return this.getModelIDAtIndex(args, util);
     }
 
     /**
@@ -2582,21 +2317,19 @@ class GeminiBlocks {
      * @param {object} args - the block's arguments.
      * @param {object} util - utility object provided by the runtime.
      * @returns {number} - max embedding model number
+     * @deprecated Use getMaxModelNumber instead.
      */
     getMaxEmbeddingModelNumber (args, util) {
-        const ai = this.aiForTarget(util.target);
-        if (!ai) {
-            return 0;
-        }
-        return ai.getMaxEmbeddingModelNumber();
+        return this.getMaxModelNumber(args, util);
     }
 
     /**
      * Open dialog to input API key by user.
+     * @param {string} [targetName] - target name to show in the dialog
      * @param {string} [defaultApiKey] - default API key
      * @returns {Promise<string>?} - a Promise that resolves API key or null if canceled
      */
-    openApiKeyDialog (defaultApiKey = '') {
+    openApiKeyDialog (targetName = '', defaultApiKey = '') {
         if (this.apiKeyDialogOpened) {
             // prevent to open multiple dialogs
             return null;
@@ -2609,9 +2342,9 @@ class GeminiBlocks {
         inputDialog.appendChild(dialogFace);
         const label = document.createTextNode(formatMessage({
             id: 'gai.apiKeyDialog.message',
-            default: 'set API key',
-            description: 'label of API key input dialog for gemini'
-        }));
+            default: 'set API key for AI of [targetName]',
+            description: 'label of API key input dialog for GAI'
+        }).replace('[targetName]', targetName));
         dialogFace.appendChild(label);
         // Dialog form
         const apiKeyForm = document.createElement('form');
@@ -2621,7 +2354,7 @@ class GeminiBlocks {
             e.preventDefault();
         });
         dialogFace.appendChild(apiKeyForm);
-        // API select
+        // API key input
         const apiKeyInput = document.createElement('input');
         apiKeyInput.setAttribute('type', 'text');
         apiKeyInput.setAttribute('id', 'apiKeyInput');
@@ -2633,7 +2366,7 @@ class GeminiBlocks {
         cancelButton.textContent = formatMessage({
             id: 'gai.apiKeyDialog.cancel',
             default: 'cancel',
-            description: 'cancel button on groupID input dialog for gemini'
+            description: 'cancel button on groupID input dialog for GAI'
         });
         cancelButton.style.margin = '8px';
         dialogFace.appendChild(cancelButton);
@@ -2642,22 +2375,10 @@ class GeminiBlocks {
         confirmButton.textContent = formatMessage({
             id: 'gai.apiKeyDialog.set',
             default: 'set',
-            description: 'set button on API key input dialog for gemini'
+            description: 'set button on API key input dialog for GAI'
         });
         confirmButton.style.margin = '8px';
         dialogFace.appendChild(confirmButton);
-        dialogFace.appendChild(document.createElement('br'));
-        dialogFace.appendChild(document.createTextNode(' ('));
-        const getApiKeyLink = document.createElement('a');
-        getApiKeyLink.textContent = formatMessage({
-            id: 'gai.apiKeyDialog.howToGetApiKey',
-            default: 'get API key',
-            description: 'link to get API key for gemini'
-        });
-        getApiKeyLink.setAttribute('href', 'https://ai.google.dev/gemini-api/docs/api-key');
-        getApiKeyLink.setAttribute('target', '_blank');
-        dialogFace.appendChild(getApiKeyLink);
-        dialogFace.appendChild(document.createTextNode(')'));
         return new Promise(
             resolve => {
                 // Add onClick action
@@ -2689,16 +2410,24 @@ class GeminiBlocks {
 
     /**
      * Ask user to input API key.
-     * @param {object} args - the block's arguments.
+     * @param {object} _args - the block's arguments.
      * @param {object} util - utility object provided by the runtime.
-     * @returns {void}
+     * @returns {Promise<string>} - a Promise that resolves status message
+     * 'canceled by user' if canceled, 'API key is empty' if empty key,
+     * or 'API key is set' if API key is set.
      */
-    askApiKey (args, util) {
+    askApiKey (_args, util) {
         if (this.apiKeyDialogOpened) {
             util.yield();
             return;
         }
-        return this.openApiKeyDialog()
+        const target = util.target;
+        const ai = this.getAI(target);
+        const targetName = target.isStage ? formatMessage({
+            id: 'gui.stageSelector.stage',
+            default: 'Stage'
+        }) : target.getName();
+        return this.openApiKeyDialog(targetName)
             .then(apiKey => {
                 if (apiKey === null) {
                     // canceled
@@ -2708,13 +2437,10 @@ class GeminiBlocks {
                     // empty key
                     return 'API key is empty';
                 }
-                let ai = this.aiForTarget(util.target);
-                if (!ai) {
-                    ai = this.createAIAdapter(util.target);
-                }
                 ai.setApiKey(apiKey);
+                return 'API key is set';
             });
     }
 }
 
-export {GeminiBlocks as default, GeminiBlocks as blockClass};
+export {GAIBlocks as default, GAIBlocks as blockClass};

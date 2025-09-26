@@ -6,6 +6,7 @@
         "targets": {
           "node": true
         },
+        "modules": "auto",
         "useBuiltIns": "entry",
         "corejs": {
           "version": "3",
@@ -14,5 +15,20 @@
       }
     ],
     "@babel/preset-react"
-  ]
+  ],
+  "env": {
+    "test": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "node": "current"
+            },
+            "modules": "commonjs"
+          }
+        ]
+      ]
+    }
+  }
 }

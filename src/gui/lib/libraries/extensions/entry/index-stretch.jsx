@@ -15,15 +15,15 @@ const translations =
 {
     'en': {
         'gai.entry.name': 'GAI',
-        'gai.entry.description': `Play with Google generative AI, Gemini! (${version})`
+        'gai.entry.description': `Play with generative AI! (${version})`
     },
     'ja': {
         'gai.entry.name': 'GAI',
-        'gai.entry.description': `Google生成AI、Geminiと遊ぼう! (${version})`
+        'gai.entry.description': `生成AIと遊ぼう! (${version})`
     },
     'ja-Hira': {
         'gai.entry.name': 'GAI',
-        'gai.entry.description': `GoogleせいせいAI、Geminiとあそぼう! (${version})`
+        'gai.entry.description': `生成AIとあそぼう! (${version})`
     }
 };
 
@@ -36,12 +36,12 @@ const entry = {
     ),
     extensionId: 'gai',
     extensionURL: null,
-    collaborator: 'Yengawa Lab',
+    collaborator: 'Koji Yokokawa',
     iconURL: iconURL,
     insetIconURL: insetIconURL,
     description: (
         <FormattedMessage
-            defaultMessage="Play with Google generative AI, Gemini!"
+            defaultMessage="Play with generative AI!"
             description="Description for this extension"
             id="gai.entry.description"
         />

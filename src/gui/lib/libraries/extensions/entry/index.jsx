@@ -27,12 +27,12 @@ const entry = {
     },
     extensionId: 'gai',
     extensionURL: 'https://yokobond.github.io/xcx-gai/dist/gai.mjs',
-    collaborator: 'Yengawa Lab',
+    collaborator: 'Koji Yokokawa',
     iconURL: iconURL,
     insetIconURL: insetIconURL,
     get description () {
         return `${formatMessage({
-            defaultMessage: 'Play with Google generative AI, Gemini!',
+            defaultMessage: 'Play with generative AI!',
             description: 'Description for this extension',
             id: 'gai.entry.description'
         })} (${version})`;

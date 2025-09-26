@@ -78,6 +78,28 @@ Open this page from [https://yokobond.github.io/xcx-gai/](https://yokobond.githu
 
 Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/yokobond/xcx-gai/issues).
 
+### Running Integration Tests
+
+To run integration tests with actual AI APIs:
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` and add your actual API keys:
+   ```bash
+   GEMINI_API_KEY=your_actual_gemini_api_key
+   OPENAI_API_KEY=your_actual_openai_api_key
+   ```
+
+3. Run the integration tests:
+   ```bash
+   npm test -- ai-adapter.integration.test.js
+   ```
+
+**Note:** Integration tests will be skipped if API keys are not set. This is normal behavior when API keys are not configured.
+
 ## 📝 License
 
 This software is licensed under the [GNU Affero General Public License Version 3](LICENSE).
