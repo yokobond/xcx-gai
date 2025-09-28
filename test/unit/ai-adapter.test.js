@@ -188,6 +188,7 @@ describe('AIAdapter', () => {
                 expect(adapter.functionArgPrefix).toBe('arg_');
                 expect(adapter.functionNamePrefix).toBe('func_');
                 expect(adapter.functionCallingMode).toBe(AIAdapter.FUNCTION_CALLING_AUTO);
+                expect(adapter.abortControllers).toEqual([]);
             });
 
             it('should register itself in static adapters', () => {
@@ -793,10 +794,13 @@ describe('AIAdapter', () => {
                 const contentParts = ['Hello world'];
                 const result = await adapter.requestEmbedding(contentParts);
                 
-                expect(embed).toHaveBeenCalledWith({
-                    model: { modelID: 'test-embedding-model' },
-                    value: 'Hello world'
-                });
+                expect(embed).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        model: { modelID: 'test-embedding-model' },
+                        value: 'Hello world',
+                        abortSignal: expect.any(Object)
+                    })
+                );
                 expect(result).toEqual([0.1, 0.2, 0.3]);
             });            it('should request embedding for OpenAI', async () => {
                 const openAIAdapter = new AIAdapter(mockTarget);
@@ -805,10 +809,13 @@ describe('AIAdapter', () => {
                 const contentParts = ['Hello world'];
                 const result = await openAIAdapter.requestEmbedding(contentParts);
                 
-                expect(embed).toHaveBeenCalledWith({
-                    model: { modelID: 'test-embedding-model' },
-                    value: 'Hello world'
-                });
+                expect(embed).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        model: { modelID: 'test-embedding-model' },
+                        value: 'Hello world',
+                        abortSignal: expect.any(Object)
+                    })
+                );
                 expect(result).toEqual([0.1, 0.2, 0.3]);
             });
 
@@ -822,10 +829,13 @@ describe('AIAdapter', () => {
                 const contentParts = 'Hello world';
                 const result = await adapter.requestEmbedding(contentParts);
                 
-                expect(embed).toHaveBeenCalledWith({
-                    model: { modelID: 'test-embedding-model' },
-                    value: 'Hello world'
-                });
+                expect(embed).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        model: { modelID: 'test-embedding-model' },
+                        value: 'Hello world',
+                        abortSignal: expect.any(Object)
+                    })
+                );
                 expect(result).toEqual([0.1, 0.2, 0.3]);
             });
 
@@ -876,6 +886,250 @@ describe('AIAdapter', () => {
                 it('should return error for empty model ID', async () => {
                     const result = await adapter.setModel('');
                     expect(result).toBe('Model ID is empty');
+                });
+            });
+        });
+
+        describe('Abort functionality', () => {
+            beforeEach(() => {
+                // Mock AbortController
+                global.AbortController = jest.fn().mockImplementation(() => ({
+                    signal: { aborted: false },
+                    abort: jest.fn()
+                }));
+            });
+
+            afterEach(() => {
+                delete global.AbortController;
+            });
+
+            describe('abortRequests', () => {
+                it('should abort all existing controllers and clear array', () => {
+                    const mockController1 = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    const mockController2 = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    adapter.abortControllers = [mockController1, mockController2];
+
+                    adapter.abortRequests();
+
+                    expect(mockController1.abort).toHaveBeenCalled();
+                    expect(mockController2.abort).toHaveBeenCalled();
+                    expect(adapter.abortControllers).toEqual([]);
+                });
+
+                it('should do nothing if no controllers exist', () => {
+                    adapter.abortControllers = [];
+                    
+                    expect(() => adapter.abortRequests()).not.toThrow();
+                });
+            });
+
+            describe('_createAbortController', () => {
+                it('should create new AbortController without aborting existing ones', () => {
+                    const mockOldController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    adapter.abortControllers = [mockOldController];
+
+                    const newController = adapter._createAbortController();
+
+                    expect(mockOldController.abort).not.toHaveBeenCalled();
+                    expect(global.AbortController).toHaveBeenCalled();
+                    expect(adapter.abortControllers).toContain(newController);
+                    expect(adapter.abortControllers).toContain(mockOldController);
+                });
+
+                it('should create new AbortController when none exists', () => {
+                    adapter.abortControllers = [];
+
+                    const controller = adapter._createAbortController();
+
+                    expect(global.AbortController).toHaveBeenCalled();
+                    expect(adapter.abortControllers).toContain(controller);
+                    expect(adapter.abortControllers).toHaveLength(1);
+                });
+
+                it('should filter out aborted controllers during cleanup', () => {
+                    const mockAbortedController = {
+                        signal: { aborted: true },
+                        abort: jest.fn()
+                    };
+                    const mockActiveController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    adapter.abortControllers = [mockAbortedController, mockActiveController];
+
+                    const newController = adapter._createAbortController();
+
+                    expect(adapter.abortControllers).not.toContain(mockAbortedController);
+                    expect(adapter.abortControllers).toContain(mockActiveController);
+                    expect(adapter.abortControllers).toContain(newController);
+                });
+            });
+
+            describe('_removeAbortController', () => {
+                it('should remove specific controller from array', () => {
+                    const mockController1 = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    const mockController2 = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    adapter.abortControllers = [mockController1, mockController2];
+
+                    adapter._removeAbortController(mockController1);
+
+                    expect(adapter.abortControllers).not.toContain(mockController1);
+                    expect(adapter.abortControllers).toContain(mockController2);
+                    expect(adapter.abortControllers).toHaveLength(1);
+                });
+
+                it('should do nothing if controller is not in array', () => {
+                    const mockController1 = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    const mockController2 = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    adapter.abortControllers = [mockController1];
+
+                    adapter._removeAbortController(mockController2);
+
+                    expect(adapter.abortControllers).toContain(mockController1);
+                    expect(adapter.abortControllers).toHaveLength(1);
+                });
+            });
+
+            describe('requestGenerate with AbortSignal', () => {
+                beforeEach(() => {
+                    adapter.setApiKey('test-api-key');
+                    adapter.models = [{id: 'test-model'}];
+                });
+
+                it('should pass abortSignal to generateText', async () => {
+                    const mockController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    global.AbortController.mockReturnValue(mockController);
+
+                    await adapter.requestGenerate(['test prompt'], jest.fn(), jest.fn(), null, false);
+
+                    expect(generateText).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            abortSignal: mockController.signal
+                        })
+                    );
+                });
+
+                it('should pass abortSignal to streamText when partialTextHandler is provided', async () => {
+                    const mockController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    global.AbortController.mockReturnValue(mockController);
+
+                    await adapter.requestGenerate(['test prompt'], jest.fn(), jest.fn(), jest.fn(), false);
+
+                    expect(streamText).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            abortSignal: mockController.signal
+                        })
+                    );
+                });
+
+                it('should remove abortController after successful request', async () => {
+                    const mockController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    global.AbortController.mockReturnValue(mockController);
+                    jest.spyOn(adapter, '_removeAbortController');
+
+                    await adapter.requestGenerate(['test prompt'], jest.fn(), jest.fn(), null, false);
+
+                    expect(adapter._removeAbortController).toHaveBeenCalledWith(mockController);
+                });
+
+                it('should remove abortController after failed request', async () => {
+                    const mockController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    global.AbortController.mockReturnValue(mockController);
+                    jest.spyOn(adapter, '_removeAbortController');
+
+                    // Make generateText throw an error
+                    generateText.mockRejectedValueOnce(new Error('API Error'));
+
+                    await expect(adapter.requestGenerate(['test prompt'], jest.fn(), jest.fn(), null, false))
+                        .rejects.toThrow('API Error');
+
+                    expect(adapter._removeAbortController).toHaveBeenCalledWith(mockController);
+                });
+            });
+
+            describe('requestEmbedding with AbortSignal', () => {
+                beforeEach(() => {
+                    adapter.setApiKey('test-api-key');
+                    adapter.models = [{id: 'test-embedding-model'}];
+                });
+
+                it('should pass abortSignal to embed', async () => {
+                    const mockController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    global.AbortController.mockReturnValue(mockController);
+
+                    await adapter.requestEmbedding(['test content']);
+
+                    expect(embed).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            abortSignal: mockController.signal
+                        })
+                    );
+                });
+
+                it('should remove abortController after successful embedding request', async () => {
+                    const mockController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    global.AbortController.mockReturnValue(mockController);
+                    jest.spyOn(adapter, '_removeAbortController');
+
+                    await adapter.requestEmbedding(['test content']);
+
+                    expect(adapter._removeAbortController).toHaveBeenCalledWith(mockController);
+                });
+
+                it('should remove abortController after failed embedding request', async () => {
+                    const mockController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    global.AbortController.mockReturnValue(mockController);
+                    jest.spyOn(adapter, '_removeAbortController');
+
+                    // Make embed throw an error
+                    embed.mockRejectedValueOnce(new Error('Embedding API Error'));
+
+                    await expect(adapter.requestEmbedding(['test content']))
+                        .rejects.toThrow('Embedding API Error');
+
+                    expect(adapter._removeAbortController).toHaveBeenCalledWith(mockController);
                 });
             });
         });

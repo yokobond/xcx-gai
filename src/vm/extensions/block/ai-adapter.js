@@ -163,6 +163,7 @@ const PROVIDERS = {
     }
 };
 
+// Map of target.id to AIAdapter instances
 const AI_ADAPTERS = {};
 
 /**
@@ -173,7 +174,7 @@ export class AIAdapter {
 
     /**
      * Get adapters map.
-     * @returns {object} - adapters with target.id as key
+     * @returns {object.<string, AIAdapter>} - adapters with target.id as key
      * @static
      */
     static get ADAPTERS () {
@@ -275,6 +276,16 @@ export class AIAdapter {
     }
 
     /**
+     * Abort all requests for all adapters.
+     * @param {string} reason - reason for aborting requests
+     */
+    static abortAllRequests (reason) {
+        Object.values(AIAdapter.ADAPTERS).forEach(adapter => {
+            adapter.abortRequests(reason);
+        });
+    }
+
+    /**
      * Constructor for AIAdapter.
      * @param {Target} target - target for the adapter
      */
@@ -298,6 +309,9 @@ export class AIAdapter {
         this.functionArgPrefix = 'arg_';
         this.functionNamePrefix = 'func_';
         this.functionCallingMode = AIAdapter.FUNCTION_CALLING_AUTO;
+        
+        // Abort controllers for cancelling requests
+        this.abortControllers = [];
     }
 
     /**
@@ -867,6 +881,9 @@ export class AIAdapter {
         const promptMessage = this._convertToMessage(prompt);
         const messages = isChat ? this.messages : [];
         messages.push(promptMessage);
+        // Create abort controller for this request
+        const abortController = this._createAbortController();
+        
         try {
             const client = this.getClient();
             const tools = this._buildTools(functionDispatcher);
@@ -883,6 +900,10 @@ export class AIAdapter {
                 messages: messages,
                 ...(toolExists && {tools, toolChoice: this.functionCallingMode}),
                 ...generationParams,
+                abortSignal: abortController.signal,
+                onAbort: abortEvent => {
+                    console.debug(abortEvent);
+                },
                 stopWhen: stepCountIs(5),
                 onStepFinish: step => {
                     this.setLastResponseText(step.text);
@@ -914,6 +935,9 @@ export class AIAdapter {
         } catch (error) {
             this.setLastResponse(error);
             throw error;
+        } finally {
+            // Remove the abort controller from the array when request is finished
+            this._removeAbortController(abortController);
         }
     }
 
@@ -961,11 +985,16 @@ export class AIAdapter {
 
         const modelId = this.getModel('embedding');
 
+        // Create abort controller for this request
+        const abortController = this._createAbortController();
+
         try {
             const client = this.getClient();
+            
             const {embedding} = await embed({
                 model: client.textEmbeddingModel(modelId),
-                value: text
+                value: text,
+                abortSignal: abortController.signal
             });
             return embedding;
         } catch (error) {
@@ -973,6 +1002,9 @@ export class AIAdapter {
                 throw new Error(`API call error: ${error.responseBody} URL: ${error.url}`);
             }
             throw error;
+        } finally {
+            // Remove the abort controller from the array when request is finished
+            this._removeAbortController(abortController);
         }
     }
 
@@ -1000,6 +1032,54 @@ export class AIAdapter {
         }
         this.modelID = modelID;
         return Promise.resolve(`Model "${modelID}" set successfully`);
+    }
+
+    /**
+     * Abort all ongoing requests for this adapter.
+     * This will cancel all in-flight requests.
+     * @param {string} reason - reason for aborting requests
+     * @returns {void}
+     */
+    abortRequests (reason) {
+        this.abortControllers.forEach(controller => {
+            if (controller) {
+                controller.abort(reason);
+            }
+        });
+        this.abortControllers = [];
+    }
+
+    /**
+     * Create a new abort controller for requests.
+     * @returns {AbortController} - new abort controller
+     * @private
+     */
+    _createAbortController () {
+        // Create new abort controller without aborting existing requests
+        const abortController = new AbortController();
+        
+        // Add to the list of controllers
+        this.abortControllers.push(abortController);
+        
+        // Clean up completed controllers (optional optimization)
+        this.abortControllers = this.abortControllers.filter(controller =>
+            controller && !controller.signal.aborted
+        );
+        
+        return abortController;
+    }
+
+    /**
+     * Remove a specific abort controller from the array.
+     * @param {AbortController} abortController - controller to remove
+     * @returns {void}
+     * @private
+     */
+    _removeAbortController (abortController) {
+        const index = this.abortControllers.indexOf(abortController);
+        if (index !== -1) {
+            this.abortControllers.splice(index, 1);
+        }
     }
 }
 

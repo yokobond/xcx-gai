@@ -157,8 +157,14 @@ class GAIBlocks {
 
         runtime.on('EXTENSION_ADDED', this.onExtensionAdded.bind(this));
 
-        this.runtime.on('PROJECT_STOP_ALL', () => {
+        runtime.on('PROJECT_STOP_ALL', () => {
             this.stopListening();
+            AIAdapter.abortAllRequests(`Project stopped`);
+        });
+
+        runtime.on('STOP_FOR_TARGET', target => {
+            this.stopListening();
+            this.abortRequestsForTarget(target, `Request stopped for ${target.sprite.name}`);
         });
 
         this.functionNamePrefix = 'func_';
@@ -1308,6 +1314,18 @@ class GAIBlocks {
      */
     allFunctionCallsFinished (funcCalls) {
         return funcCalls.every(funcCall => funcCall.isStopped());
+    }
+
+    /**
+     * Stop all ongoing requests for the specific target.
+     * @param {Target} target - the target to abort requests for
+     * @param {string} reason - reason for aborting
+     */
+    abortRequestsForTarget (target, reason) {
+        const ai = this.aiForTarget(target);
+        if (ai) {
+            ai.abortRequests(reason);
+        }
     }
 
     /**
