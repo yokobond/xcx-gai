@@ -163,7 +163,6 @@ class GAIBlocks {
         });
 
         runtime.on('STOP_FOR_TARGET', target => {
-            this.stopListening();
             this.abortRequestsForTarget(target, `Request stopped for ${target.sprite.name}`);
         });
 
