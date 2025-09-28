@@ -333,7 +333,7 @@ class GAIBlocks {
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
                         id: 'gai.getFileDataAtIndex',
-                        default: 'file data at [INDEX]',
+                        default: 'generated file data at [INDEX]',
                         description: 'file data at index block text for GAI'
                     }),
                     disableMonitor: true,
@@ -350,7 +350,7 @@ class GAIBlocks {
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
                         id: 'gai.getFileMediaTypeAtIndex',
-                        default: 'file media type at [INDEX]',
+                        default: 'generated file media type at [INDEX]',
                         description: 'file media type at index block text for GAI'
                     }),
                     disableMonitor: true,
@@ -367,8 +367,8 @@ class GAIBlocks {
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
                         id: 'gai.getMaxFileNumber',
-                        default: 'max file count',
-                        description: 'max file count block text for GAI'
+                        default: 'max generated file count',
+                        description: 'max generated file count block text for GAI'
                     }),
                     disableMonitor: true,
                     func: 'getMaxFileNumber',
