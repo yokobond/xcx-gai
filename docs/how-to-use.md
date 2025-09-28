@@ -28,7 +28,41 @@ AI responses can be retrieved with ```response candidate (candidate number)```. 
 
 When the ```when partial response received``` block is used in the code area, partially sent responses can be retrieved with the ```partial response``` block before the complete response is returned.
 
-To specify the model used for generation, use the ```use (model name) for generation model``` block before executing the ```generate (prompt)``` or ```chat (prompt)``` block. For ```(model name)```, specify the model code of the generation model found in [Gemini model names](https://ai.google.dev/gemini-api/docs/models/gemini).
+
+## Model Management
+
+The following blocks are available for retrieving and managing information about models provided by AI providers.
+
+### Specifying Models
+
+To specify the model used for generation, use the ```use (model name)``` block before executing the ```generate (prompt)``` or ```chat (prompt)``` block. For ```(model name)```, specify the model code available for your chosen AI provider.
+
+### Retrieving Model Information
+
+- The ```model``` block retrieves the currently specified model ID. This allows you to check which model is being used.
+
+- The ```max model number``` block returns the total number of available models obtained by querying the current AI provider. You can use this information to know the range of available models.
+
+- The ```model ID at (index)``` block retrieves the model ID at the specified index (starting from 1) from the list of available models obtained by querying the provider. You can use this feature to sequentially retrieve all available models.
+
+### Usage Examples
+
+To list all available models:
+
+1. Use the ```max model number``` block to get the total count
+2. Repeat from 1 to the total count, executing the ```model ID at (index)``` block
+3. Display or store each model ID in a list
+
+To check the currently used model:
+
+- Execute the ```model``` block to display the currently set model ID
+
+### Notes
+
+- Retrieving the model list may require communication with the AI provider
+- Some providers require setting up an API key before using the ```max model number``` or ```model ID at (index)``` blocks
+- Available models vary depending on the provider
+- Model indices start from 1 (not 0)
 
 
 ## Function Calls
@@ -86,25 +120,20 @@ The ```dataURL``` of images in Scratch can be obtained using the following block
 - The ```snapshot data``` block retrieves the ```dataURL``` of a snapshot image of the stage and displayed sprites.
 
 
+## Retrieving Generated Files
+
+Some AI models can generate and return files (images, audio, etc.) as part of their response. You can access these generated files using the following blocks:
+
+- The ```generated file data at (index)``` block retrieves the data URL of the generated file at the specified index. The index starts from 1. Returns an empty string if no file exists at that index.
+- The ```generated file media type at (index)``` block retrieves the media type (MIME type) of the generated file at the specified index. Returns an empty string if no file exists at that index.
+- The ```max generated file count``` block returns the total number of files generated in the last AI response. Returns 0 if no files were generated.
+
+These blocks are useful when working with AI models that can generate images, audio files, or other media content as part of their response.
+
+
 ## Safety Settings
 
-You can set the safety of AI generation results with the ```(safety category) (setting level)``` block.
-
-```(safety category)``` can specify the following:
-
-- ```All harm categories```
-- ```Hate speech```
-- ```Sexual explicit```
-- ```Harassment```
-- ```Dangerous content```
-
-```(setting level)``` can specify the following:
-
-- ```Unspecified```
-- ```Block most```
-- ```Block some```
-- ```Block few```
-- ```Block none```
+_※ The safety settings feature is currently deprecated. This feature was only available with the Gemini API but has been removed to support multiple AI providers._
 
 
 ## Generation Parameter Settings
@@ -119,28 +148,123 @@ Parameter settings use the ```set generation (parameter) to ( )``` block.
 - ```Top P```
 - ```Top K```
 - ```Max output tokens```
-- ```Candidate count```
 - ```Stop sequence```
 - ```System instruction```
 - ```Response schema```
 
+_※ The ```Candidate count``` parameter has been removed. This parameter is no longer available to support multiple AI providers._
+
 The ```generation (parameter)``` block retrieves the generation model parameters used by that sprite.
+
+
+## Structured Output (Response Schema)
+
+You can make AI generate responses in a specific format (JSON format). This allows you to obtain structured data that is easy to process programmatically.
+
+### Usage
+
+1. Use the ```set generation (Response Schema) to ( )``` block to set a JSON schema
+2. Execute the ```generate (prompt)``` or ```chat (prompt)``` block
+3. AI will generate JSON responses according to the schema
+
+### Writing JSON Schema
+
+A JSON schema defines the structure of the expected response. Here's a basic example:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Person's name"
+    },
+    "age": {
+      "type": "number",
+      "description": "Age"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of skills"
+    }
+  },
+  "required": ["name", "age"]
+}
+```
+
+### Processing JSON Data
+
+Generated JSON format responses can be processed with the following blocks:
+
+- ```get (path) from JSON ( )``` block - Retrieve specific values from JSON objects
+- ```item (index) of JSON array ( )``` block - Retrieve specific elements from JSON arrays
+- ```length of JSON array ( )``` block - Get the number of elements in JSON arrays
+
+### Practical Example
+
+For example, when asking "Create 3 characters" with the following schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "characters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "role": {"type": "string"},
+          "description": {"type": "string"}
+        }
+      }
+    }
+  }
+}
+```
+
+AI will generate a structured response like this:
+
+```json
+{
+  "characters": [
+    {
+      "name": "Hero Alex",
+      "role": "Warrior",
+      "description": "Strong sense of justice, serves as a shield to protect companions"
+    },
+    {
+      "name": "Wizard Luna",
+      "role": "Mage",
+      "description": "A sage well-versed in ancient magic"
+    },
+    {
+      "name": "Thief Jin",
+      "role": "Rogue",
+      "description": "Quick movements and dexterity are their weapons"
+    }
+  ]
+}
+```
+
+### Notes
+
+- When response schema is set, AI will always respond in JSON format
+- To disable schema settings, set an empty value
+- This feature may not be available with some AI providers that don't support it
 
 
 ## Embeddings
 
-The ```embedding of ( ) for (task type)``` block retrieves embeddings for the specified task type for the input text.
+The ```embedding of ( )``` block retrieves embeddings for the input text.
 
-```(task type)``` can specify the following:
+_※ The task type specification feature has been removed. To support multiple AI providers, the system now retrieves general-purpose embeddings without specifying task types._
 
-- ```Retrieval Query``` retrieves from AI an embedded expression that can be used as a search question.
-- ```Retrieval Document``` retrieves from the AI an embedded expression that can be used as a search target document.
-- ```Semantic Similarity``` retrieves embedded expressions from the AI that can be used to search for similar meanings.
-- ```Classification``` retrieves embedded expressions from the AI for classification.
-- ```Clustering``` retrieves an embedded representation from the AI for clustering.
+Embeddings can calculate similarity using the ```(Vector A) and (Vector B) (calculation method)``` block. Vector A and Vector B specify embeddings retrieved with the ```embedding of ( )``` block.
 
-Embeddings can calculate similarity using the ```(Vector A) and (Vector B) (calculation method)``` block. Vector A and Vector B specify embeddings retrieved with the ```embedding of ( ) for (task type)``` block.
+```(calculation method)``` can specify ```Dot product```, ```Cosine distance```, or ```Euclidean distance```.
 
-```(calculation method)``` can specify ```Dot product``` or ```Euclidean distance```.
-
-To specify the model used for embeddings, use the ```use (model name) for embedding model``` block before executing the ```embedding of ( ) for (task type)``` block. For ```(model name)```, specify the text embedding model code found in [Gemini model names](https://ai.google.dev/gemini-api/docs/models/gemini).
+To specify the model used for embeddings, use the ```use (model name)``` block before executing the ```embedding of ( )``` block. For ```(model name)```, specify the embedding model code available for your chosen AI provider.

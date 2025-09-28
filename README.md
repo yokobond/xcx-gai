@@ -1,13 +1,13 @@
 # GAI
 
-Google generative AI, Gemini extension for Xcratch
+Multi-AI Provider Extension for Xcratch
 
-This extension add extra-blocks for [Google Gemini AI](https://deepmind.google/technologies/gemini/#introduction) to [Xcratch](https://xcratch.github.io/).
+This extension adds extra-blocks for multiple AI providers including [Google Gemini AI](https://deepmind.google/technologies/gemini/#introduction), [OpenAI](https://openai.com/), and [Anthropic Claude](https://www.anthropic.com/claude) to [Xcratch](https://xcratch.github.io/).
 
 
 ## ✨ What You Can Do With This Extension
 
-This extension enables you to query the generative AI with images and sentences in Scratch.
+This extension enables you to query multiple AI providers (Google Gemini, OpenAI, Anthropic Claude) with images and sentences in Scratch.
 
 Please read the document for details. 
 - [xcx-gai docs](https://yokobond.github.io/xcx-gai/docs)
@@ -91,6 +91,7 @@ To run integration tests with actual AI APIs:
    ```bash
    GEMINI_API_KEY=your_actual_gemini_api_key
    OPENAI_API_KEY=your_actual_openai_api_key
+   ANTHROPIC_API_KEY=your_actual_anthropic_api_key
    ```
 
 3. Run the integration tests:

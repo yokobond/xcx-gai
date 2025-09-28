@@ -11,6 +11,8 @@
 6. 交互にマークを置いていき、先に縦、横、斜めのいずれかに自分のマークを3つ並べた方が勝ちです。
 7. ゲームが終了したら、再びネコをクリックすると新しいゲームを始められます。
 
+[別画面で開く](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/docs/ja/gai-tic_tac_toe-ja.sb3)
+
 <iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/ja/gai-tic_tac_toe-ja.sb3" width="540px" height="460px"></iframe>
 
 
