@@ -5,6 +5,8 @@ Geminiを使ったAIエージェント同士が対話をするプロジェクト
 1. 緑の旗を押してプロジェクトを開始します。
 2. その後で、スペースキーを押すごとに、対話が進行します。
 
+[別画面で開く](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/docs/ja/gai-comic_dialogue-ja.sb3)
+
 <iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/ja/gai-comic_dialogue-ja.sb3" width="540px" height="460px"></iframe>
 
 ### プロジェクトの説明

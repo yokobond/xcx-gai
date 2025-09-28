@@ -1,17 +1,17 @@
 # What is GAI
 
-Google generative AI, Gemini extension for Xcratch
+Multi-AI Provider Extension for Xcratch
 
-This extension add extra-blocks for [Google Gemini AI](https://deepmind.google/technologies/gemini/#introduction) into [Xcratch](https://xcratch.github.io/).
+This extension adds extra-blocks for multiple AI providers including [Google Gemini AI](https://deepmind.google/technologies/gemini/#introduction), [OpenAI](https://openai.com/), and [Anthropic Claude](https://www.anthropic.com/claude) into [Xcratch](https://xcratch.github.io/).
 
 
 ## ✨ What You Can Do With This Extension
 
-This extension enables you to query the generative AI with images and sentences in Scratch.
+This extension enables you to query multiple AI providers (Google Gemini, OpenAI, Anthropic Claude) with images and sentences in Scratch.
 
 Play the example project to look at what you can do with "GAI" extension. 
-This project is an example of sending camera images to Gemini to generate text.
-(You need API key of the Gemini (ref. [Set API key](how-to-use?id=set-api-key)) and allow camera access to play this project.)
+This project is an example of sending camera images to AI providers to generate text.
+(You need API key of your chosen AI provider (ref. [Set API key](how-to-use?id=set-api-key)) and allow camera access to play this project.)
 
 Example Project
 ([open in a new window](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/example.sb3))
@@ -21,11 +21,21 @@ Example Project
 Refer to [How to Use](how-to-use) for more details.
 
 
-## Supported AI Models
-This extension supports the Google Gemini generative models, and embedding models.
-The default model is set to the latest model at the time of release but you can change it in the block.
+## Supported AI Providers
+This extension supports multiple AI providers and their models:
 
-You can check the available models in the [Gemini API documentation](https://ai.google.dev/gemini-api/docs/models).
+### Google Gemini
+- Supports generative models and embedding models
+- Available models can be checked in the [Gemini API documentation](https://ai.google.dev/gemini-api/docs/models)
+
+### OpenAI
+- Supports GPT-4, GPT-3.5-turbo, text-embedding-ada-002, and other models
+- Also supports OpenAI-compatible API endpoints
+
+### Anthropic Claude
+- Supports Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku, and other models
+
+The default model is set to the latest model at the time of release but you can change it in the block.
 
 This extension has model listing block, so you can check the available models like this project.
 ([gai-model_listing](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/projects/gai-model_listing.sb3))

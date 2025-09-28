@@ -6,6 +6,8 @@ AIが利用できる関数は、Scratchのブロック定義としてユーザ�
 1. 緑の旗を押してプロジェクトを開始します。
 2. キャラクターに指示を送ると、AIが現在の位置を確認してから目標位置へ移動します。
 
+[別画面で開く](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/docs/ja/gai-sprite_control-ja.sb3)
+
 <iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/ja/gai-sprite_control-ja.sb3" width="540px" height="460px"></iframe>
 
 ### プロジェクトの説明

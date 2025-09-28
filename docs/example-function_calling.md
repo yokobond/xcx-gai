@@ -6,6 +6,8 @@ Functions that AI can use can be freely defined by users as Scratch block defini
 1. Press the green flag to start the project.
 2. When you send instructions to the character, AI will check the current position and then move to the target position.
 
+[open in a new window](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/docs/gai-sprite_control.sb3)
+
 <iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/gai-sprite_control.sb3" width="540px" height="460px"></iframe>
 
 ### Project Description

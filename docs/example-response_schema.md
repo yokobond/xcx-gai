@@ -12,6 +12,8 @@ This is an example of a Tic-Tac-Toe project that plays against a generative AI, 
 6. Take turns placing marks. The first player to get three of their marks in a row (vertically, horizontally, or diagonally) wins.
 7. Once the game is over, click the cat again to start a new game.
 
+[open in a new window](https://xcratch.github.io/editor#https://yokobond.github.io/xcx-gai/docs/gai-response_schema.sb3)
+
 <iframe src="https://xcratch.github.io/editor/player#https://yokobond.github.io/xcx-gai/docs/gai-response_schema.sb3" width="540px" height="460px"></iframe>
 
 ### Project Description
