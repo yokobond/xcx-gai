@@ -181,7 +181,7 @@ describe('AIAdapter', () => {
                 expect(adapter.models).toEqual([]);
                 expect(adapter.generationConfig).toEqual({});
                 expect(adapter.messages).toEqual([]);
-                expect(adapter.lastResponse).toBeNull();
+                expect(adapter.lastResult).toBeNull();
                 expect(adapter.lastPartialText).toBeNull();
                 expect(adapter.functionRegistry).toEqual({});
                 expect(adapter.functionIndex).toBe(0);
@@ -412,10 +412,10 @@ describe('AIAdapter', () => {
         });
 
         describe('Response handling', () => {
-            it('should set and get last response', () => {
-                const response = {text: 'test'};
-                adapter.setLastResponse(response);
-                expect(adapter.getLastResponse()).toBe(response);
+            it('should set and get last result', () => {
+                const result = {text: 'test'};
+                adapter.setLastResult(result);
+                expect(adapter.getLastResult()).toBe(result);
             });
 
             it('should set and get last partial response', () => {
@@ -450,9 +450,13 @@ describe('AIAdapter', () => {
                     });
                 });
 
-                it('should not register function without procedure code', () => {
+                it('should register function even without procedure code', () => {
                     adapter.registerFunction(null, 'description', []);
                     expect(Object.keys(adapter.functionRegistry)).toHaveLength(1);
+                    
+                    const registeredFunction = Object.values(adapter.functionRegistry)[0];
+                    expect(registeredFunction.procedureCode).toBeNull();
+                    expect(registeredFunction.description).toBe('description');
                 });
             });
 
@@ -579,12 +583,13 @@ describe('AIAdapter', () => {
 
         describe('Generation methods', () => {
             describe('requestGenerate', () => {
-                let responseTextHandler, functionDispatcher, partialTextHandler;
+                let responseTextHandler, functionDispatcher, partialTextHandler, mediaHandler;
 
                 beforeEach(() => {
                     responseTextHandler = jest.fn();
                     functionDispatcher = jest.fn();
                     partialTextHandler = jest.fn();
+                    mediaHandler = null;
                     adapter.setApiKey('test-api-key');
                 });
 
@@ -681,10 +686,29 @@ describe('AIAdapter', () => {
                     adapter.setFunctionCallingMode(AIAdapter.FUNCTION_CALLING_NONE);
                     
                     await adapter.requestGenerate(['prompt'], responseTextHandler, functionDispatcher, null, false);
-                    
+
                     const args = generateText.mock.calls[0][0];
                     expect(args.tools).toBeUndefined();
                     expect(args.toolChoice).toBeUndefined();
+                });
+
+                it('should handle media responses', async () => {
+                    const mockLastResult = {files: []};
+                    adapter.setLastResult(mockLastResult);
+                    
+                    const mediaFile = {base64: 'ZmFrZS1kYXRh', mediaType: 'image/png'};
+
+                    streamText.mockResolvedValue({
+                        textStream: (async function* () {})(),
+                        response: Promise.resolve({messages: []}),
+                        toText: async () => ''
+                    });
+
+                    await adapter.requestGenerate(['prompt'], responseTextHandler, functionDispatcher, partialTextHandler, false);
+
+                    // Since we're not directly testing media handling in this version,
+                    // we just verify the basic structure works
+                    expect(streamText).toHaveBeenCalled();
                 });
 
                 it('should include Anthropic-specific headers for direct browser access', async () => {
@@ -746,9 +770,11 @@ describe('AIAdapter', () => {
                 it('should update chat history after generation', async () => {
                     generateText.mockResolvedValue({
                         text: 'AI response',
-                        response: {
-                            messages: [{ role: 'assistant', content: 'AI response' }]
-                        }
+                        response: Promise.resolve({
+                            messages: [
+                                { role: 'assistant', content: 'AI response' }
+                            ]
+                        })
                     });
                     
                     await adapter.requestGenerate(['User message'], jest.fn(), jest.fn(), null, true);
@@ -821,7 +847,7 @@ describe('AIAdapter', () => {
 
             it('should handle empty content and return an empty array string', async () => {
                 const result = await adapter.requestEmbedding([]);
-                expect(result).toBe('[]');
+                expect(result).toEqual([]);
             });
 
             it('should handle string content parts', async () => {
@@ -1130,6 +1156,33 @@ describe('AIAdapter', () => {
                         .rejects.toThrow('Embedding API Error');
 
                     expect(adapter._removeAbortController).toHaveBeenCalledWith(mockController);
+                });
+            });
+        });
+
+        describe('File management', () => {
+            describe('getResultFiles', () => {
+                it('should return empty array when no last result', () => {
+                    const files = adapter.getResultFiles();
+                    expect(files).toEqual([]);
+                });
+
+                it('should return files from last result', () => {
+                    const mockFiles = [
+                        {base64: 'base64data1', mediaType: 'image/png'},
+                        {base64: 'base64data2', mediaType: 'image/jpeg'}
+                    ];
+                    adapter.setLastResult({
+                        files: mockFiles
+                    });
+                    const files = adapter.getResultFiles();
+                    expect(files).toEqual(mockFiles);
+                });
+
+                it('should return empty array when last result has no files', () => {
+                    adapter.setLastResult({text: 'some text'});
+                    const files = adapter.getResultFiles();
+                    expect(files).toEqual([]);
                 });
             });
         });

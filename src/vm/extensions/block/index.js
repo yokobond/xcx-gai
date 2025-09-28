@@ -6,7 +6,7 @@ import blockIcon from './block-icon.png';
 
 import {DEBUG, checkDebugMode} from './dev-util.js';
 import {AIAdapter} from './ai-adapter.js';
-import {getCostumeByNameOrNumber, costumeToDataURL, addImageAsCostume} from './costume-util.js';
+import {getCostumeByNameOrNumber, costumeToDataURL, insertImageAsSvgCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
 import {dotProduct, cosineDistance, euclideanDistance} from './math-util.js';
 
@@ -326,6 +326,53 @@ class GAIBlocks {
                     }),
                     disableMonitor: true,
                     func: 'partialResponseText',
+                    arguments: {
+                    }
+                },
+                {
+                    opcode: `getFileDataAtIndex`,
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.getFileDataAtIndex',
+                        default: 'file data at [INDEX]',
+                        description: 'file data at index block text for GAI'
+                    }),
+                    disableMonitor: true,
+                    func: 'getFileDataAtIndex',
+                    arguments: {
+                        INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'getFileMediaTypeAtIndex',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.getFileMediaTypeAtIndex',
+                        default: 'file media type at [INDEX]',
+                        description: 'file media type at index block text for GAI'
+                    }),
+                    disableMonitor: true,
+                    func: 'getFileMediaTypeAtIndex',
+                    arguments: {
+                        INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
+                {
+                    opcode: 'getMaxFileNumber',
+                    blockType: BlockType.REPORTER,
+                    text: formatMessage({
+                        id: 'gai.getMaxFileNumber',
+                        default: 'max file count',
+                        description: 'max file count block text for GAI'
+                    }),
+                    disableMonitor: true,
+                    func: 'getMaxFileNumber',
                     arguments: {
                     }
                 },
@@ -1352,7 +1399,7 @@ class GAIBlocks {
             if (!requestState.functionCalls ||
                 requestState.functionCalls.every(funcCall => funcCall.isStopped())) {
                 // Request and all function calls finished
-                return ai.getTextFromResponse(ai.getLastResponse());
+                return ai.getLastResponseText();
             }
         }
         if (requestState.error) {
@@ -1382,7 +1429,12 @@ class GAIBlocks {
                     }
                 };
             }
-            ai.requestGenerate(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat)
+            ai.requestGenerate(
+                prompt,
+                responseTextHandler,
+                functionDispatcher,
+                partialTextHandler,
+                isChat)
                 .then(() => {
                     requestState.finished = true;
                 })
@@ -1474,12 +1526,14 @@ class GAIBlocks {
         return new Promise(resolve => {
             this.runtime.renderer.requestSnapshot(imageDataURL => {
                 if (DEBUG) {
-                    addImageAsCostume(
+                    insertImageAsSvgCostume(
+                        runtime,
                         requester,
                         imageDataURL,
-                        runtime,
+                        null,
+                        null,
                         'snapshot',
-                        runtime.vm
+                        requester.currentCostume + 1
                     ).catch(e => {
                         console.error(e);
                     });
@@ -2250,6 +2304,80 @@ class GAIBlocks {
         }
         return ai.getModelIDs()
             .then(modelIDs => (modelIDs ? modelIDs.length : 0));
+    }
+
+    /**
+     * Get file data at index from last result.
+     * @param {object} args - the block's arguments.
+     * @param {number} args.INDEX - file index (1-based)
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - file data URL in format "data:mediaType;base64,base64Data"
+     */
+    getFileDataAtIndex (args, util) {
+        const ai = this.aiForTarget(util.target);
+        if (!ai) {
+            return '';
+        }
+        const files = ai.getResultFiles();
+        if (!files || files.length === 0) {
+            return '';
+        }
+        const inputIndex = Math.floor(Number(args.INDEX));
+        if (inputIndex < 1) {
+            return ''; // Invalid index (less than 1)
+        }
+        const index = inputIndex - 1; // Convert to 0-based index
+        if (index < files.length) {
+            const file = files[index];
+            const base64 = file.base64 || '';
+            const mediaType = file.mediaType || 'application/octet-stream';
+            if (base64) {
+                return `data:${mediaType};base64,${base64}`;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Get file media type at index from last result.
+     * @param {object} args - the block's arguments.
+     * @param {number} args.INDEX - file index (1-based)
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {string} - file media type
+     */
+    getFileMediaTypeAtIndex (args, util) {
+        const ai = this.aiForTarget(util.target);
+        if (!ai) {
+            return '';
+        }
+        const files = ai.getResultFiles();
+        if (!files || files.length === 0) {
+            return '';
+        }
+        const inputIndex = Math.floor(Number(args.INDEX));
+        if (inputIndex < 1) {
+            return ''; // Invalid index (less than 1)
+        }
+        const index = inputIndex - 1; // Convert to 0-based index
+        if (index < files.length) {
+            return files[index].mediaType || '';
+        }
+        return '';
+    }
+
+    /**
+     * Get max file number from last result.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {number} - max file number
+     */
+    getMaxFileNumber (args, util) {
+        const ai = this.aiForTarget(util.target);
+        if (!ai) {
+            return 0;
+        }
+        const files = ai.getResultFiles();
+        return files ? files.length : 0;
     }
 
     /**

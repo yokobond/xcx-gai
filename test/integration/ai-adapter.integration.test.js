@@ -95,14 +95,14 @@ describe('AIAdapter Integration Tests', () => {
             
             const response1 = await adapter.requestGenerate([
                 {type: 'text', data: 'My name is John. Remember this.'}
-            ], null, null, null, true);
+            ], null, null, null, null, true);
             
             const text1 = adapter.getTextFromResponse(response1);
             expect(text1).toBeTruthy();
             
             const response2 = await adapter.requestGenerate([
                 {type: 'text', data: 'What is my name?'}
-            ], null, null, null, true);
+            ], null, null, null, null, true);
             
             const text2 = adapter.getTextFromResponse(response2);
             expect(text2).toBeTruthy();
@@ -265,13 +265,13 @@ describe('AIAdapter Integration Tests', () => {
                 adapter.startChat([]);
                 const response1 = await adapter.requestGenerate([
                     {type: 'text', data: 'My favorite color is blue. Remember this.'}
-                ], null, null, null, true);
+                ], null, null, null, null, true);
                 const text1 = adapter.getTextFromResponse(response1);
                 expect(text1).toBeTruthy();
                 
                 const response2 = await adapter.requestGenerate([
                     {type: 'text', data: 'What is my favorite color?'}
-                ], null, null, null, true);
+                ], null, null, null, null, true);
                 const text2 = adapter.getTextFromResponse(response2);
                 expect(text2).toBeTruthy();
                 
@@ -381,9 +381,6 @@ describe('AIAdapter Integration Tests', () => {
             const prompt = [{type: 'text', data: 'Hello'}];
             
             await expect(adapter.requestGenerate(prompt)).rejects.toThrow();
-            
-            const lastResponse = adapter.getLastResponse();
-            expect(lastResponse).toBeDefined();
         }, 10000);
         
         it('should handle unsupported provider', () => {

@@ -300,7 +300,7 @@ export class AIAdapter {
         this.client = null;
         this.models = [];
         this.messages = [];
-        this.lastResponse = null;
+        this.lastResult = null;
         this.lastPartialText = null;
         
         // Function calling setup
@@ -729,20 +729,31 @@ export class AIAdapter {
     }
 
     /**
-     * Get last response object from AI.
-     * @returns {object} - last response
+     * Get last result object from AI.
+     * @returns {object} - last result
      */
-    getLastResponse () {
-        return this.lastResponse;
+    getLastResult () {
+        return this.lastResult;
     }
 
     /**
-     * Set last response from AI.
-     * @param {object} response - last response
+     * Set last result from AI.
+     * @param {object} result - last result
      * @returns {void}
      */
-    setLastResponse (response) {
-        this.lastResponse = response;
+    setLastResult (result) {
+        this.lastResult = result;
+    }
+
+    /**
+     * Get result files from last result.
+     * @returns {Array.<{base64: string, mediaType: string}>} - array of result files
+     */
+    getResultFiles () {
+        if (!this.lastResult) {
+            return [];
+        }
+        return this.lastResult.files || [];
     }
 
     /**
@@ -877,7 +888,13 @@ export class AIAdapter {
      * @returns {Promise<[object, Array.<object>]>} - a Promise that resolves
      *  to an array with response and function calls
      */
-    async requestGenerate (prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
+    async requestGenerate (
+        prompt,
+        responseTextHandler,
+        functionDispatcher,
+        partialTextHandler,
+        isChat
+    ) {
         const promptMessage = this._convertToMessage(prompt);
         const messages = isChat ? this.messages : [];
         messages.push(promptMessage);
@@ -926,14 +943,14 @@ export class AIAdapter {
                 }
             }
 
-            const response = await result.response;
-            this.setLastResponse(response);
+            this.setLastResult(result);
             if (isChat) {
+                const response = await result.response;
                 this.messages.push(...response.messages);
             }
             return result;
         } catch (error) {
-            this.setLastResponse(error);
+            this.setLastResult(error);
             throw error;
         } finally {
             // Remove the abort controller from the array when request is finished
@@ -966,7 +983,7 @@ export class AIAdapter {
     async requestEmbedding (contentParts) {
         
         if (!contentParts || !contentParts.length) {
-            return JSON.stringify([]);
+            return [];
         }
         
         if (typeof contentParts === 'string') {
