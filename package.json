@@ -1,6 +1,6 @@
 {
   "name": "xcx-gai",
-  "version": "0.9.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "setup-dev": "node ./scripts/setup-dev.mjs",
