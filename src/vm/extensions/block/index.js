@@ -864,11 +864,19 @@ class GAIBlocks {
                     blockAllThreads: true,
                     text: formatMessage({
                         id: 'gai.askApiKey',
-                        default: 'ask API key',
+                        default: 'ask API key with message [MESSAGE]',
                         description: 'ask API key for GAI'
                     }),
                     func: 'askApiKey',
                     arguments: {
+                        MESSAGE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: formatMessage({
+                                id: 'gai.askApiKeyDefault',
+                                default: 'Please enter API key',
+                                description: 'default message for ask API key dialog'
+                            })
+                        }
                     }
                 },
                 {
@@ -2476,9 +2484,10 @@ class GAIBlocks {
      * Open dialog to input API key by user.
      * @param {string} [targetName] - target name to show in the dialog
      * @param {string} [defaultApiKey] - default API key
+     * @param {string} [customMessage] - custom message to show in the dialog
      * @returns {Promise<string>?} - a Promise that resolves API key or null if canceled
      */
-    openApiKeyDialog (targetName = '', defaultApiKey = '') {
+    openApiKeyDialog (targetName = '', defaultApiKey = '', customMessage = '') {
         if (this.apiKeyDialogOpened) {
             // prevent to open multiple dialogs
             return null;
@@ -2489,11 +2498,12 @@ class GAIBlocks {
         const dialogFace = document.createElement('div');
         dialogFace.style.padding = '16px';
         inputDialog.appendChild(dialogFace);
-        const label = document.createTextNode(formatMessage({
+        const message = customMessage || formatMessage({
             id: 'gai.apiKeyDialog.message',
             default: 'set API key for AI of [targetName]',
             description: 'label of API key input dialog for GAI'
-        }).replace('[targetName]', targetName));
+        }).replace('[targetName]', targetName);
+        const label = document.createTextNode(message);
         dialogFace.appendChild(label);
         // Dialog form
         const apiKeyForm = document.createElement('form');
@@ -2559,24 +2569,22 @@ class GAIBlocks {
 
     /**
      * Ask user to input API key.
-     * @param {object} _args - the block's arguments.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MESSAGE - message to show in the dialog
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves status message
      * 'canceled by user' if canceled, 'API key is empty' if empty key,
      * or 'API key is set' if API key is set.
      */
-    askApiKey (_args, util) {
+    askApiKey (args, util) {
         if (this.apiKeyDialogOpened) {
             util.yield();
             return;
         }
         const target = util.target;
         const ai = this.getAI(target);
-        const targetName = target.isStage ? formatMessage({
-            id: 'gui.stageSelector.stage',
-            default: 'Stage'
-        }) : target.getName();
-        return this.openApiKeyDialog(targetName)
+        const message = args.MESSAGE || 'Please enter API key';
+        return this.openApiKeyDialog('', '', message)
             .then(apiKey => {
                 if (apiKey === null) {
                     // canceled
