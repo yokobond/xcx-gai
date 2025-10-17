@@ -236,7 +236,11 @@ class GAIBlocks {
                     arguments: {
                         HISTORY: {
                             type: ArgumentType.STRING,
-                            defaultValue: ' '
+                            defaultValue: `{"role":"user","content":"${formatMessage({
+                                id: 'gai.startChatDefault',
+                                default: 'Hello AI!',
+                                description: 'default start chat history for GAI'
+                            })}"}`
                         }
                     }
                 },
