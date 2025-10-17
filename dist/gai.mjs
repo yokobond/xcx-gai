@@ -837,6 +837,7 @@ var en$1 = {
 	"gai.chatDefault": "Hello AI!",
 	"gai.chatHistory": "chat history",
 	"gai.startChat": "start chat with history [HISTORY]",
+	"gai.startChatDefault": "Hello AI!",
 	"gai.embeddingFor": "embedding of [CONTENT]",
 	"gai.embeddingDistanceOf": "[METRIC] of [VECTOR_A] and [VECTOR_B]",
 	"gai.distanceMetricMenu.dotProduct": "Dot product",
@@ -883,7 +884,8 @@ var en$1 = {
 	"gai.harmBlockThresholdMenu.blockSome": "Block some",
 	"gai.harmBlockThresholdMenu.blockFew": "Block few",
 	"gai.harmBlockThresholdMenu.blockNone": "Block none",
-	"gai.askApiKey": "ask API key",
+	"gai.askApiKey": "ask API key with message [MESSAGE]",
+	"gai.askApiKeyDefault": "Please enter API key",
 	"gai.setApiKey": "set API key to [KEY]",
 	"gai.apiKey": "API key",
 	"gai.apiKeyDialog.message": "set API key for AI of [targetName]",
@@ -916,6 +918,7 @@ var ja$1 = {
 	"gai.chat": "チャット[PROMPT]",
 	"gai.chatDefault": "こんにちはAI!",
 	"gai.chatHistory": "チャットの履歴",
+	"gai.startChatDefault": "こんにちはAI!",
 	"gai.startChat": "[HISTORY]に続けてチャットを始める",
 	"gai.embeddingFor": "[CONTENT]のエンベディング",
 	"gai.embeddingDistanceOf": "[VECTOR_A]と[VECTOR_B]の[METRIC]",
@@ -963,7 +966,8 @@ var ja$1 = {
 	"gai.harmBlockThresholdMenu.blockSome": "一部をブロックする",
 	"gai.harmBlockThresholdMenu.blockFew": "少しをブロックする",
 	"gai.harmBlockThresholdMenu.blockNone": "ブロックをしない",
-	"gai.askApiKey": "APIキーを聞く",
+	"gai.askApiKey": "[MESSAGE]とメッセージを出してAPIキーを聞く",
+	"gai.askApiKeyDefault": "APIキーを入力してください",
 	"gai.setApiKey": "APIキーを[KEY]にする",
 	"gai.apiKey": "APIキー",
 	"gai.apiKeyDialog.message": "[targetName] のAIのAPIキーを設定してください",
@@ -1000,6 +1004,7 @@ var translations = {
 	"gai.chatDefault": "こんにちはAI!",
 	"gai.chatHistory": "チャット の きろく",
 	"gai.startChat": "[HISTORY]に つづけて チャット を はじめる",
+	"gai.startChatDefault": "こんにちはAI!",
 	"gai.embeddingFor": "[CONTENT]の エンベディング",
 	"gai.embeddingDistanceOf": "[VECTOR_A]と[VECTOR_B]の[METRIC]",
 	"gai.distanceMetricMenu.dotProduct": "ないせき",
@@ -1046,7 +1051,8 @@ var translations = {
 	"gai.harmBlockThresholdMenu.blockSome": "いちぶ を ブロックする",
 	"gai.harmBlockThresholdMenu.blockFew": "すこし を ブロックする",
 	"gai.harmBlockThresholdMenu.blockNone": "ブロック を しない",
-	"gai.askApiKey": "APIキー を きく",
+	"gai.askApiKey": "[MESSAGE]と メッセージ を だして APIキー を きく",
+	"gai.askApiKeyDefault": "APIキー を にゅうりょく してください",
 	"gai.setApiKey": "APIキー を[KEY]に する",
 	"gai.apiKey": "APIキー",
 	"gai.apiKeyDialog.message": "[targetName] の AI の APIキー を せってい してください",
@@ -33970,7 +33976,11 @@ var GAIBlocks = /*#__PURE__*/function () {
           arguments: {
             HISTORY: {
               type: ArgumentType.STRING,
-              defaultValue: ' '
+              defaultValue: "{\"role\":\"user\",\"content\":\"".concat(formatMessage({
+                id: 'gai.startChatDefault',
+                default: 'Hello AI!',
+                description: 'default start chat history for GAI'
+              }), "\"}")
             }
           }
         }, {
@@ -34544,11 +34554,20 @@ var GAIBlocks = /*#__PURE__*/function () {
           blockAllThreads: true,
           text: formatMessage({
             id: 'gai.askApiKey',
-            default: 'ask API key',
+            default: 'ask API key with message [MESSAGE]',
             description: 'ask API key for GAI'
           }),
           func: 'askApiKey',
-          arguments: {}
+          arguments: {
+            MESSAGE: {
+              type: ArgumentType.STRING,
+              defaultValue: formatMessage({
+                id: 'gai.askApiKeyDefault',
+                default: 'Please enter API key',
+                description: 'default message for ask API key dialog'
+              })
+            }
+          }
         }, {
           opcode: 'apiKey',
           blockType: BlockType.REPORTER,
@@ -36256,6 +36275,7 @@ var GAIBlocks = /*#__PURE__*/function () {
      * Open dialog to input API key by user.
      * @param {string} [targetName] - target name to show in the dialog
      * @param {string} [defaultApiKey] - default API key
+     * @param {string} [customMessage] - custom message to show in the dialog
      * @returns {Promise<string>?} - a Promise that resolves API key or null if canceled
      */
   }, {
@@ -36264,6 +36284,7 @@ var GAIBlocks = /*#__PURE__*/function () {
       var _this7 = this;
       var targetName = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var defaultApiKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+      var customMessage = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
       if (this.apiKeyDialogOpened) {
         // prevent to open multiple dialogs
         return null;
@@ -36274,11 +36295,12 @@ var GAIBlocks = /*#__PURE__*/function () {
       var dialogFace = document.createElement('div');
       dialogFace.style.padding = '16px';
       inputDialog.appendChild(dialogFace);
-      var label = document.createTextNode(formatMessage({
+      var message = customMessage || formatMessage({
         id: 'gai.apiKeyDialog.message',
         default: 'set API key for AI of [targetName]',
         description: 'label of API key input dialog for GAI'
-      }).replace('[targetName]', targetName));
+      }).replace('[targetName]', targetName);
+      var label = document.createTextNode(message);
       dialogFace.appendChild(label);
       // Dialog form
       var apiKeyForm = document.createElement('form');
@@ -36342,7 +36364,8 @@ var GAIBlocks = /*#__PURE__*/function () {
 
     /**
      * Ask user to input API key.
-     * @param {object} _args - the block's arguments.
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MESSAGE - message to show in the dialog
      * @param {object} util - utility object provided by the runtime.
      * @returns {Promise<string>} - a Promise that resolves status message
      * 'canceled by user' if canceled, 'API key is empty' if empty key,
@@ -36350,18 +36373,15 @@ var GAIBlocks = /*#__PURE__*/function () {
      */
   }, {
     key: "askApiKey",
-    value: function askApiKey(_args, util) {
+    value: function askApiKey(args, util) {
       if (this.apiKeyDialogOpened) {
         util.yield();
         return;
       }
       var target = util.target;
       var ai = this.getAI(target);
-      var targetName = target.isStage ? formatMessage({
-        id: 'gui.stageSelector.stage',
-        default: 'Stage'
-      }) : target.getName();
-      return this.openApiKeyDialog(targetName).then(function (apiKey) {
+      var message = args.MESSAGE || 'Please enter API key';
+      return this.openApiKeyDialog('', '', message).then(function (apiKey) {
         if (apiKey === null) {
           // canceled
           return 'canceled by user';
