@@ -758,14 +758,18 @@ class GAIBlocks {
                     blockType: BlockType.REPORTER,
                     text: formatMessage({
                         id: 'gai.embeddingFor',
-                        default: 'embedding of [CONTENT]',
+                        default: 'embedding for [CONTENT]',
                         description: 'embed block text for GAI'
                     }),
                     func: 'embeddingFor',
                     arguments: {
                         CONTENT: {
                             type: ArgumentType.STRING,
-                            defaultValue: ' '
+                            defaultValue: formatMessage({
+                                id: 'gai.embeddingForDefault',
+                                default: 'cat',
+                                description: 'default embedding content for GAI'
+                            })
                         }
                     }
                 },
