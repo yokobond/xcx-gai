@@ -7,7 +7,8 @@
     "build": "rollup -c ./scripts/rollup.config.mjs",
     "watch": "rollup -c ./scripts/rollup.config.mjs --watch",
     "test": "jest",
-    "test:integration": "jest --config ./jest.integration.config.cjs"
+    "test:integration": "jest --config ./jest.integration.config.cjs",
+    "version": "node ./scripts/version-build.mjs && git add dist"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
