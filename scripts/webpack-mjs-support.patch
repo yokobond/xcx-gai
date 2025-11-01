@@ -1,0 +1,13 @@
+diff --git a/webpack.config.js b/webpack.config.js
+index 32e8246ce..ecb137e3f 100644
+--- a/webpack.config.js
++++ b/webpack.config.js
+@@ -32,7 +32,7 @@ const base = {
+     },
+     module: {
+         rules: [{
+-            test: /\.jsx?$/,
++            test: /\.(jsx?|mjs)$/,
+             loader: 'babel-loader',
+             include: [
+                 path.resolve(__dirname, 'src'),

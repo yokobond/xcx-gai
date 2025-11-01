@@ -9,21 +9,21 @@ import {FormattedMessage} from 'react-intl';
 import iconURL from './entry-icon.png';
 import insetIconURL from './inset-icon.svg';
 
-const version = 'v0.7.0';
+const version = 'v1.1.0';
 
 const translations =
 {
     'en': {
         'gai.entry.name': 'GAI',
-        'gai.entry.description': `Play with generative AI! (${version})`
+        'gai.entry.description': `Create programs using generative AI. Supports Gemini, ChatGPT, Claude, and more. (${version})`
     },
     'ja': {
         'gai.entry.name': 'GAI',
-        'gai.entry.description': `生成AIと遊ぼう! (${version})`
+        'gai.entry.description': `生成AIを利用したプログラムをつくれます。Gemini,ChatGPT、Claudeなどに対応しています。 (${version})`
     },
     'ja-Hira': {
         'gai.entry.name': 'GAI',
-        'gai.entry.description': `生成AIとあそぼう! (${version})`
+        'gai.entry.description': `せいせいAI を りよう した プログラム を つくれます。Gemini, ChatGPT, Claude など に たいおう しています。 (${version})`
     }
 };
 
