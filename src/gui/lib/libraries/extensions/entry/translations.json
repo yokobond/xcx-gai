@@ -1,14 +1,14 @@
 {
   "en": {
     "gai.entry.name": "GAI",
-    "gai.entry.description": "Play with Google generative AI, Gemini!"
+    "gai.entry.description": "Create programs using generative AI. Supports Gemini, ChatGPT, Claude, and more."
   },
   "ja": {
     "gai.entry.name": "GAI",
-    "gai.entry.description": "Google生成AI、Geminiと遊ぼう!"
+    "gai.entry.description": "生成AIを利用したプログラムをつくれます。Gemini,ChatGPT、Claudeなどに対応しています。"
   },
   "ja-Hira": {
     "gai.entry.name": "GAI",
-    "gai.entry.description": "GoogleせいせいAI、Geminiとあそぼう!"
+    "gai.entry.description": "せいせいAI を りよう した プログラム を つくれます。Gemini, ChatGPT, Claude など に たいおう しています。"
   }
 }
