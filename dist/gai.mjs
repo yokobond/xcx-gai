@@ -4,22 +4,22 @@ var img$1 = "data:image/svg+xml,%3c%3fxml version='1.0' encoding='UTF-8' standal
 
 var en$2 = {
 	"gai.entry.name": "GAI",
-	"gai.entry.description": "Play with Google generative AI, Gemini!"
+	"gai.entry.description": "Create programs using generative AI. Supports Gemini, ChatGPT, Claude, and more."
 };
 var ja$2 = {
 	"gai.entry.name": "GAI",
-	"gai.entry.description": "Google生成AI、Geminiと遊ぼう!"
+	"gai.entry.description": "生成AIを利用したプログラムをつくれます。Gemini,ChatGPT、Claudeなどに対応しています。"
 };
 var translations$1 = {
 	en: en$2,
 	ja: ja$2,
 	"ja-Hira": {
 	"gai.entry.name": "GAI",
-	"gai.entry.description": "GoogleせいせいAI、Geminiとあそぼう!"
+	"gai.entry.description": "せいせいAI を りよう した プログラム を つくれます。Gemini, ChatGPT, Claude など に たいおう しています。"
 }
 };
 
-var version$2 = "1.0.0";
+var version$2 = "1.1.0";
 
 /**
  * This is an extension for Xcratch.
