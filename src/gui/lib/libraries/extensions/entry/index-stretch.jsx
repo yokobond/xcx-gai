@@ -19,11 +19,11 @@ const translations =
     },
     'ja': {
         'gai.entry.name': 'GAI',
-        'gai.entry.description': `生成AIを利用したプログラムをつくれます。Gemini,ChatGPT、Claudeなどに対応しています。 (${version})`
+        'gai.entry.description': `生成AIを利用したプログラムをつくれます。Gemini, ChatGPT, Claude, ローカルLLM などに対応しています。 (${version})`
     },
     'ja-Hira': {
         'gai.entry.name': 'GAI',
-        'gai.entry.description': `せいせいAI を りよう した プログラム を つくれます。Gemini, ChatGPT, Claude など に たいおう しています。 (${version})`
+        'gai.entry.description': `せいせいAI を りよう した プログラム を つくれます。Gemini, ChatGPT, Claude, ローカルLLM など に たいおう しています。 (${version})`
     }
 };
 
