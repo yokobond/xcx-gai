@@ -4,22 +4,22 @@ var img$1 = "data:image/svg+xml,%3c%3fxml version='1.0' encoding='UTF-8' standal
 
 var en$2 = {
 	"gai.entry.name": "GAI",
-	"gai.entry.description": "Play with Google generative AI, Gemini!"
+	"gai.entry.description": "Create programs using generative AI. Supports Gemini, ChatGPT, Claude, and more."
 };
 var ja$2 = {
 	"gai.entry.name": "GAI",
-	"gai.entry.description": "Google生成AI、Geminiと遊ぼう!"
+	"gai.entry.description": "生成AIを利用したプログラムをつくれます。Gemini,ChatGPT、Claudeなどに対応しています。"
 };
 var translations$1 = {
 	en: en$2,
 	ja: ja$2,
 	"ja-Hira": {
 	"gai.entry.name": "GAI",
-	"gai.entry.description": "GoogleせいせいAI、Geminiとあそぼう!"
+	"gai.entry.description": "せいせいAI を りよう した プログラム を つくれます。Gemini, ChatGPT, Claude など に たいおう しています。"
 }
 };
 
-var version$2 = "1.0.0";
+var version$2 = "1.1.0";
 
 /**
  * This is an extension for Xcratch.
@@ -838,7 +838,8 @@ var en$1 = {
 	"gai.chatHistory": "chat history",
 	"gai.startChat": "start chat with history [HISTORY]",
 	"gai.startChatDefault": "Hello AI!",
-	"gai.embeddingFor": "embedding of [CONTENT]",
+	"gai.embeddingFor": "embedding for [CONTENT]",
+	"gai.embeddingForDefault": "cat",
 	"gai.embeddingDistanceOf": "[METRIC] of [VECTOR_A] and [VECTOR_B]",
 	"gai.distanceMetricMenu.dotProduct": "Dot product",
 	"gai.distanceMetricMenu.cosine": "Cosine distance",
@@ -921,6 +922,7 @@ var ja$1 = {
 	"gai.startChatDefault": "こんにちはAI!",
 	"gai.startChat": "[HISTORY]に続けてチャットを始める",
 	"gai.embeddingFor": "[CONTENT]のエンベディング",
+	"gai.embeddingForDefault": "ねこ",
 	"gai.embeddingDistanceOf": "[VECTOR_A]と[VECTOR_B]の[METRIC]",
 	"gai.distanceMetricMenu.dotProduct": "内積",
 	"gai.distanceMetricMenu.cosine": "コサイン距離",
@@ -1006,6 +1008,7 @@ var translations = {
 	"gai.startChat": "[HISTORY]に つづけて チャット を はじめる",
 	"gai.startChatDefault": "こんにちはAI!",
 	"gai.embeddingFor": "[CONTENT]の エンベディング",
+	"gai.embeddingForDefault": "ねこ",
 	"gai.embeddingDistanceOf": "[VECTOR_A]と[VECTOR_B]の[METRIC]",
 	"gai.distanceMetricMenu.dotProduct": "ないせき",
 	"gai.distanceMetricMenu.cosine": "コサイン きょり",
@@ -34454,14 +34457,18 @@ var GAIBlocks = /*#__PURE__*/function () {
           blockType: BlockType.REPORTER,
           text: formatMessage({
             id: 'gai.embeddingFor',
-            default: 'embedding of [CONTENT]',
+            default: 'embedding for [CONTENT]',
             description: 'embed block text for GAI'
           }),
           func: 'embeddingFor',
           arguments: {
             CONTENT: {
               type: ArgumentType.STRING,
-              defaultValue: ' '
+              defaultValue: formatMessage({
+                id: 'gai.embeddingForDefault',
+                default: 'cat',
+                description: 'default embedding content for GAI'
+              })
             }
           }
         }, {
