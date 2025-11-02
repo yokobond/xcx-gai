@@ -18,7 +18,6 @@ const entryFile = path.resolve(entrySrcDir, 'index.jsx');
 // path for output
 const moduleName = 'gai';
 const outputDir = path.resolve(process.cwd(), './dist');
-fs.emptyDirSync(outputDir);
 const moduleFile = path.resolve(outputDir, `${moduleName}.mjs`);
 
 const rollupOptions = {
