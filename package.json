@@ -2,6 +2,7 @@
   "name": "xcx-gai",
   "version": "1.0.0",
   "type": "module",
+  "extensionId": "gai",
   "scripts": {
     "setup-dev": "node ./scripts/setup-dev.mjs",
     "build": "rollup -c ./scripts/rollup.config.mjs",
