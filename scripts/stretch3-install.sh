@@ -30,4 +30,4 @@ mv src/lib/libraries/extensions/index.jsx src/lib/libraries/extensions/index.jsx
 sed -e "s|^export default \[$|import ${EXTENSION_ID}Entry from './${EXTENSION_ID}/index.jsx';${LF}${LF}export default [${LF}    ${EXTENSION_ID}Entry,|g" src/lib/libraries/extensions/index.jsx_orig > src/lib/libraries/extensions/index.jsx
 
 ### apply webpack-mjs-support patch
-patch -p1 < ${EXTENSION_REP}/scripts/webpack-mjs-support.patch
+patch -p1 < ${EXTENSION_REP}/scripts/webpack-mjs-support.patch || true
