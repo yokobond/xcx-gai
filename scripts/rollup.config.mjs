@@ -15,10 +15,18 @@ const blockFile = path.resolve(blockSrcDir, 'index.js');
 // path for entry
 const entrySrcDir = path.resolve(process.cwd(), './src/gui/lib/libraries/extensions/entry');
 const entryFile = path.resolve(entrySrcDir, 'index.jsx');
+// Read package.json to get extensionId
+const packageJsonPath = path.resolve(process.cwd(), './package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+const EXTENSION_ID = packageJson.extensionId;
+if (!EXTENSION_ID) {
+    console.error('Error: extensionId not found in package.json');
+    process.exit(1);
+}
+
 // path for output
-const moduleName = 'gai';
 const outputDir = path.resolve(process.cwd(), './dist');
-const moduleFile = path.resolve(outputDir, `${moduleName}.mjs`);
+const moduleFile = path.resolve(outputDir, `${EXTENSION_ID}.mjs`);
 
 const rollupOptions = {
     input: [entryFile, blockFile],

@@ -38,11 +38,52 @@ npm install
 
 ### Setup Development Environment
 
-Change ```vmSrcOrg``` to your local ```scratch-vm``` directory in ```./scripts/setup-dev.js``` then run setup-dev script to setup development environment.
+Run the setup-dev script to link the local `scratch-vm` sources into this project. By default it
+looks for `scratch-vm` at `../scratch-editor/packages/scratch-vm`. Pass a different path as an
+argument if your `scratch-vm` lives elsewhere.
 
 ```sh
+# Use the default path (../scratch-editor/packages/scratch-vm)
 npm run setup-dev
+
+# Or specify your own scratch-vm location
+node ./scripts/setup-dev.mjs ../scratch-vm
 ```
+
+### Install xcratch-skills via APM
+
+This project bundles a set of agent skills for developing Xcratch extensions, managed with
+[APM (Agent Package Manager)](https://github.com/microsoft/apm). After installing the `apm` CLI, run:
+
+```sh
+apm install
+```
+
+This deploys the skills into `.claude/skills/` (target is declared in `apm.yml`). Once installed,
+you can use natural-language trigger phrases such as:
+
+| Trigger phrase | Skill invoked |
+|---|---|
+| `xcratch-create`, `scaffold extension`, `setup-dev` | `xcratch-extension-create` — scaffold a new extension repo and set up the dev environment |
+| `breakpoints not hit`, `live server HTTPS` | `xcratch-extension-debug` — fix source maps and local HTTPS debugging issues |
+| `verify extension loads`, `check console errors` | `xcratch-extension-debug-auto` — autonomously navigate to the editor and inspect the loaded extension |
+| `variable not showing until tab switch`, `refresh toolbox flyout` | `xcratch-extension-palette-refresh` — force the editor block palette to refresh after programmatic variable/list changes |
+| `add to stretch3`, `stretch3-install` | `xcratch-extension-stretch3` — generate the stretch3 install script and entry files |
+
+### Debug in VS Code
+
+A VS Code debug configuration is included for loading the built extension into the public
+[Xcratch editor](https://xcratch.github.io/editor) over a local HTTPS server.
+
+1. Generate local certificates with [mkcert](https://github.com/FiloSottile/mkcert) (once):
+   ```sh
+   mkcert -install
+   cd .vscode && mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 0.0.0.0 ::1
+   ```
+2. Build (or watch) the extension so `dist/gai.mjs` exists.
+3. From the Run and Debug panel, start **"debug extension on xcratch.github.io editor"**. This runs
+   the `start live server` task (serving this repo at `https://0.0.0.0:5500` with CORS) and opens
+   the editor with the extension loaded from `https://0.0.0.0:5500/dist/gai.mjs`.
 
 ### Bundle into a Module
 

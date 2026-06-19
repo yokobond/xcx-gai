@@ -1,0 +1,15 @@
+lockfile_version: '1'
+generated_at: '2026-06-19T05:11:48.406660+00:00'
+apm_version: 0.16.1
+dependencies:
+- repo_url: xcratch/xcratch-skills
+  host: github.com
+  resolved_commit: 68f5103e662f7830d25e2c40dbdcb57f9608b285
+  package_type: skill_bundle
+  deployed_files:
+  - .claude/skills/xcratch-extension-create
+  - .claude/skills/xcratch-extension-debug
+  - .claude/skills/xcratch-extension-debug-auto
+  - .claude/skills/xcratch-extension-palette-refresh
+  - .claude/skills/xcratch-extension-stretch3
+  content_hash: sha256:dcb9f28a3d757de688dc9f04ece06dd0596e4b3e8bbd9b5760e34ba2269c36ce
