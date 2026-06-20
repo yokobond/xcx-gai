@@ -693,11 +693,14 @@ export class AIAdapter {
             return response;
         }
         
-        if (response.text) {
+        // Only return text/content when it is a plain string. On a streamText
+        // result, `.text` and `.content` are Promises (v6), so guarding by type
+        // avoids returning a Promise object as if it were the response text.
+        if (typeof response.text === 'string') {
             return response.text;
         }
 
-        if (response.content) {
+        if (typeof response.content === 'string') {
             return response.content;
         }
         
