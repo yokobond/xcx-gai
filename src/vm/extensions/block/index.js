@@ -1418,8 +1418,8 @@ class GAIBlocks {
             }
         }
         if (requestState.error) {
-            // Retrieve error message and finish the request
-            return requestState.error.message || requestState.error.name;
+            // Retrieve the localized error message and finish the request
+            return this._formatAIError(requestState.error);
         }
 
         if (!requestState.requested) {
@@ -1456,6 +1456,9 @@ class GAIBlocks {
                 .catch(error => {
                     console.error(error);
                     requestState.error = error;
+                    // Surface the same localized error through the `response text`
+                    // reporter so both blocks show a consistent message on failure.
+                    ai.setLastResponseText(this._formatAIError(error));
                 });
         }
         util.yield();
@@ -1708,6 +1711,49 @@ class GAIBlocks {
             console.error(`startChat: ${error.message}`);
             return error.message;
         }
+    }
+
+    /**
+     * Convert an error from an AI request into a user-friendly, localized message.
+     * AI SDK API errors expose `name === 'AI_APICallError'` and a numeric `statusCode`;
+     * map common cases (model not found, auth, rate limit) to clear text and append the
+     * original message for detail. Anything else falls back to the raw message.
+     * @param {Error} error - the error thrown by the AI request
+     * @returns {string} - localized message to show to the Scratch user
+     * @private
+     */
+    _formatAIError (error) {
+        if (!error) {
+            return '';
+        }
+        const detail = (error.message || error.name || '').trim();
+        const status = error.statusCode;
+        if (error.name === 'AI_APICallError' || typeof status === 'number') {
+            switch (status) {
+            case 404:
+                return `${formatMessage({
+                    id: 'gai.error.modelNotFound',
+                    default: 'Model not found or not supported. Check the model name.'
+                })} (${detail})`;
+            case 401:
+            case 403:
+                return formatMessage({
+                    id: 'gai.error.unauthorized',
+                    default: 'Authentication failed. Check your API key.'
+                });
+            case 429:
+                return formatMessage({
+                    id: 'gai.error.rateLimit',
+                    default: 'Rate limit or quota exceeded. Please wait and try again.'
+                });
+            default:
+                return `${formatMessage({
+                    id: 'gai.error.apiCall',
+                    default: 'AI request failed.'
+                })}${typeof status === 'number' ? ` [${status}]` : ''} (${detail})`;
+            }
+        }
+        return detail;
     }
 
     /**
@@ -2091,9 +2137,9 @@ class GAIBlocks {
             requestState = stackFrame.embeddingRequests[contentKey] = {};
         }
 
-        if (requestState.requestError) {
-            const error = requestState.error;
-            return error.message || error.name;
+        if (requestState.error) {
+            // Retrieve the localized error message and finish the request
+            return this._formatAIError(requestState.error);
         }
         if (requestState.requestResult) {
             const jsonText = JSON.stringify(requestState.requestResult);

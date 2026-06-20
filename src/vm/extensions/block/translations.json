@@ -80,7 +80,11 @@
     "gai.getItemOfJsonArray": "item [INDEX] of JSON array [JSON]",
     "gai.lengthOfJsonArray": "length of JSON array [JSON]",
     "gai.setApiType": "set API to [API]",
-    "gai.getApiType": "API"
+    "gai.getApiType": "API",
+    "gai.error.modelNotFound": "Model not found or not supported. Check the model name.",
+    "gai.error.unauthorized": "Authentication failed. Check your API key.",
+    "gai.error.rateLimit": "Rate limit or quota exceeded. Please wait and try again.",
+    "gai.error.apiCall": "AI request failed."
   },
   "ja": {
     "gai.name": "GAI",
@@ -163,7 +167,11 @@
     "gai.getItemOfJsonArray": "JSON配列[JSON]の[INDEX]番目",
     "gai.lengthOfJsonArray": "JSON配列[JSON]の長さ",
     "gai.setApiType": "APIを[API]にする",
-    "gai.getApiType": "API"
+    "gai.getApiType": "API",
+    "gai.error.modelNotFound": "モデルが見つからないか、サポートされていません。モデル名を確認してください。",
+    "gai.error.unauthorized": "認証に失敗しました。APIキーを確認してください。",
+    "gai.error.rateLimit": "リクエスト制限または利用上限に達しました。しばらくしてから再試行してください。",
+    "gai.error.apiCall": "AIリクエストに失敗しました。"
   },
   "ja-Hira": {
     "gai.name": "GAI",
@@ -246,6 +254,10 @@
     "gai.getItemOfJsonArray": "JSONはいれつ[JSON]の[INDEX]ばんめ",
     "gai.lengthOfJsonArray": "JSONはいれつ[JSON]の ながさ",
     "gai.setApiType": "APIを[API]にする",
-    "gai.getApiType": "API"
+    "gai.getApiType": "API",
+    "gai.error.modelNotFound": "モデルが みつからないか、サポートされていません。モデルめい を かくにん してください。",
+    "gai.error.unauthorized": "にんしょう に しっぱい しました。APIキー を かくにん してください。",
+    "gai.error.rateLimit": "リクエスト せいげん または りようじょうげん に たっしました。しばらく してから もういちど ためして ください。",
+    "gai.error.apiCall": "AIリクエスト に しっぱい しました。"
   }
 }
