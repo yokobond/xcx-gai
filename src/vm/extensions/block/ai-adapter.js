@@ -3,6 +3,7 @@ import {createOpenAI} from '@ai-sdk/openai';
 import {createOpenAICompatible} from '@ai-sdk/openai-compatible';
 import {createAnthropic} from '@ai-sdk/anthropic';
 import {generateText, streamText, tool, jsonSchema, stepCountIs, embed, Output} from 'ai';
+import {buildSkillsPrompt, composeSkillsPrompt, discoverSkills, loadSkillBody} from './skill-store.js';
 
 /**
  * Function Call class for AI adapter function calling.
@@ -292,6 +293,7 @@ export class AIAdapter {
     constructor (target) {
         AIAdapter.ADAPTERS[target.id] = this;
 
+        this.target = target;
         this.apiType = null;
         this.apiKey = null;
         this.baseUrl = null;
@@ -599,17 +601,105 @@ export class AIAdapter {
             params.stopSequences = this.generationConfig.stopSequences;
         }
         
-        // Handle system instruction - add to system parameter if present
-        if (Object.prototype.hasOwnProperty.call(this.generationConfig, 'systemInstruction')) {
-            params.system = this.generationConfig.systemInstruction;
+        // Handle system instruction - merge base instruction with the Agent
+        // Skills section (when the target owns skills). Only set when non-empty
+        // so behavior is unchanged when there is neither a base instruction nor
+        // any skills.
+        const system = this._composeSystemInstruction();
+        if (system) {
+            params.system = system;
         }
-        
+
         // Handle response schema - structured output (v6 stable `output`)
         if (Object.prototype.hasOwnProperty.call(this.generationConfig, 'responseSchema')) {
             params.output = Output.object({schema: jsonSchema(this.generationConfig.responseSchema)});
         }
         
         return params;
+    }
+
+    /**
+     * Whether Agent Skills can be exposed through the `loadSkill` tool
+     * (progressive disclosure). Requires a provider that supports function
+     * calling and a function-calling mode other than NONE. When false, skills
+     * are inlined into the system instruction instead.
+     * @returns {boolean} - true if the `loadSkill` tool can be used
+     * @private
+     */
+    _canUseSkillTool () {
+        const provider = PROVIDERS[this.getApiType()];
+        if (!provider || !provider.supports.functionCalling) {
+            return false;
+        }
+        return this.functionCallingMode !== AIAdapter.FUNCTION_CALLING_NONE;
+    }
+
+    /**
+     * Compose the system instruction by merging the configured base instruction
+     * with the Agent Skills section. With tool calling available, only skill
+     * name/description are listed (the model fetches bodies via `loadSkill`);
+     * otherwise the full skill bodies are inlined.
+     * @returns {string} - the composed system instruction, or '' if empty
+     * @private
+     */
+    _composeSystemInstruction () {
+        const base = this.generationConfig.systemInstruction;
+        const skills = this.target ?
+            (this._canUseSkillTool() ?
+                buildSkillsPrompt(this.target) :
+                composeSkillsPrompt(this.target)) :
+            '';
+        const sections = [];
+        if (base && String(base).trim()) {
+            sections.push(String(base).trim());
+        }
+        if (skills) {
+            sections.push(skills);
+        }
+        return sections.join('\n\n');
+    }
+
+    /**
+     * Build the `loadSkill` tool for progressive disclosure of Agent Skills.
+     * Returns an empty object when skills cannot be exposed as a tool (no
+     * target, unsupported provider/mode, or no skills defined).
+     * @returns {object} - tools map containing `loadSkill`, or {} when unavailable
+     * @private
+     */
+    _buildSkillTools () {
+        if (!this.target || !this._canUseSkillTool()) {
+            return {};
+        }
+        if (discoverSkills(this.target).length === 0) {
+            return {};
+        }
+        return {
+            loadSkill: tool({
+                description:
+                    'Load the full instructions for one of the available Agent Skills by its ' +
+                    'name. Call this when the user request matches a skill description, before ' +
+                    'following that skill\'s instructions.',
+                // Preserve v5 (non-strict) tool-schema behavior; v6 OpenAI defaults strict to true.
+                strict: false,
+                inputSchema: jsonSchema({
+                    type: 'object',
+                    properties: {
+                        name: {
+                            type: 'string',
+                            description: 'The name of the skill to load.'
+                        }
+                    },
+                    required: ['name']
+                }),
+                execute: ({name}) => {
+                    const instructions = loadSkillBody(this.target, name);
+                    if (!instructions) {
+                        return {success: false, error: `No skill named "${name}".`};
+                    }
+                    return {success: true, name, instructions};
+                }
+            })
+        };
     }
 
     /**
@@ -916,7 +1006,7 @@ export class AIAdapter {
         
         try {
             const client = this.getClient();
-            const tools = this._buildTools(functionDispatcher);
+            const tools = {...this._buildTools(functionDispatcher), ...this._buildSkillTools()};
             const functionCallingEnabled = this.functionCallingMode !== AIAdapter.FUNCTION_CALLING_NONE;
             const toolExists = Object.keys(tools).length > 0 && functionCallingEnabled;
             const generator = partialTextHandler ? streamText : generateText;

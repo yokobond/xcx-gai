@@ -8,6 +8,7 @@ import {DEBUG, checkDebugMode} from './dev-util.js';
 import {AIAdapter} from './ai-adapter.js';
 import {getCostumeByNameOrNumber, costumeToDataURL, insertImageAsSvgCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
+import {ensureSkillsList} from './skill-store.js';
 import {dotProduct, cosineDistance, euclideanDistance} from './math-util.js';
 
 
@@ -1236,7 +1237,15 @@ class GAIBlocks {
      * @return {AIAdapter} - the AI adapter for the target
      */
     getAI (target) {
-        return this.aiForTarget(target) || new AIAdapter(target);
+        let ai = this.aiForTarget(target);
+        if (!ai) {
+            ai = new AIAdapter(target);
+            // First AI use on this sprite: create the `skills` list so users can
+            // populate it with Agent Skills. Skills are injected into the prompt
+            // automatically once the list has items.
+            ensureSkillsList(target);
+        }
+        return ai;
     }
 
     /**
