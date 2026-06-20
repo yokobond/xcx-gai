@@ -67,155 +67,155 @@ describe("blockClass", () => {
 
     describe('File methods', () => {
         describe('getFileDataAtIndex', () => {
-            it('should return empty string when no AI adapter', () => {
+            it('should return empty string when no AI adapter', async () => {
                 block.aiForTarget.mockReturnValue(null);
-                const result = block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
+                const result = await block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('');
             });
 
-            it('should return empty string when no files', () => {
+            it('should return empty string when no files', async () => {
                 mockAIAdapter.getResultFiles.mockReturnValue([]);
-                const result = block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
+                const result = await block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('');
             });
 
-            it('should return file data URL at valid index', () => {
+            it('should return file data URL at valid index', async () => {
                 const mockFiles = [
                     { base64: 'data1', mediaType: 'image/png' },
                     { base64: 'data2', mediaType: 'image/jpeg' }
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
+
+                const result = await block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('data:image/png;base64,data1');
-                
-                const result2 = block.getFileDataAtIndex({ INDEX: 2 }, mockUtil);
+
+                const result2 = await block.getFileDataAtIndex({ INDEX: 2 }, mockUtil);
                 expect(result2).toBe('data:image/jpeg;base64,data2');
             });
 
-            it('should return empty string for invalid index', () => {
+            it('should return empty string for invalid index', async () => {
                 const mockFiles = [
                     { base64: 'data1', mediaType: 'image/png' }
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getFileDataAtIndex({ INDEX: 0 }, mockUtil);
+
+                const result = await block.getFileDataAtIndex({ INDEX: 0 }, mockUtil);
                 expect(result).toBe('');
-                
-                const result2 = block.getFileDataAtIndex({ INDEX: 3 }, mockUtil);
+
+                const result2 = await block.getFileDataAtIndex({ INDEX: 3 }, mockUtil);
                 expect(result2).toBe('');
             });
 
-            it('should handle non-integer index', () => {
+            it('should handle non-integer index', async () => {
                 const mockFiles = [
                     { base64: 'data1', mediaType: 'image/png' }
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getFileDataAtIndex({ INDEX: 1.7 }, mockUtil);
+
+                const result = await block.getFileDataAtIndex({ INDEX: 1.7 }, mockUtil);
                 expect(result).toBe('data:image/png;base64,data1');
             });
 
-            it('should use default media type when mediaType is missing', () => {
+            it('should use default media type when mediaType is missing', async () => {
                 const mockFiles = [
                     { base64: 'data1' } // mediaType missing
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
+
+                const result = await block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('data:application/octet-stream;base64,data1');
             });
 
-            it('should return empty string when base64 is empty', () => {
+            it('should return empty string when base64 is empty', async () => {
                 const mockFiles = [
                     { base64: '', mediaType: 'image/png' }
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
+
+                const result = await block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('');
             });
 
-            it('should return empty string when base64 is missing', () => {
+            it('should return empty string when base64 is missing', async () => {
                 const mockFiles = [
                     { mediaType: 'image/png' } // base64 missing
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
+
+                const result = await block.getFileDataAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('');
             });
         });
 
         describe('getFileMediaTypeAtIndex', () => {
-            it('should return empty string when no AI adapter', () => {
+            it('should return empty string when no AI adapter', async () => {
                 block.aiForTarget.mockReturnValue(null);
-                const result = block.getFileMediaTypeAtIndex({ INDEX: 1 }, mockUtil);
+                const result = await block.getFileMediaTypeAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('');
             });
 
-            it('should return empty string when no files', () => {
+            it('should return empty string when no files', async () => {
                 mockAIAdapter.getResultFiles.mockReturnValue([]);
-                const result = block.getFileMediaTypeAtIndex({ INDEX: 1 }, mockUtil);
+                const result = await block.getFileMediaTypeAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('');
             });
 
-            it('should return media type at valid index', () => {
+            it('should return media type at valid index', async () => {
                 const mockFiles = [
                     { base64: 'data1', mediaType: 'image/png' },
                     { base64: 'data2', mediaType: 'image/jpeg' }
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getFileMediaTypeAtIndex({ INDEX: 1 }, mockUtil);
+
+                const result = await block.getFileMediaTypeAtIndex({ INDEX: 1 }, mockUtil);
                 expect(result).toBe('image/png');
-                
-                const result2 = block.getFileMediaTypeAtIndex({ INDEX: 2 }, mockUtil);
+
+                const result2 = await block.getFileMediaTypeAtIndex({ INDEX: 2 }, mockUtil);
                 expect(result2).toBe('image/jpeg');
             });
 
-            it('should return empty string for invalid index', () => {
+            it('should return empty string for invalid index', async () => {
                 const mockFiles = [
                     { base64: 'data1', mediaType: 'image/png' }
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getFileMediaTypeAtIndex({ INDEX: 0 }, mockUtil);
+
+                const result = await block.getFileMediaTypeAtIndex({ INDEX: 0 }, mockUtil);
                 expect(result).toBe('');
-                
-                const result2 = block.getFileMediaTypeAtIndex({ INDEX: 3 }, mockUtil);
+
+                const result2 = await block.getFileMediaTypeAtIndex({ INDEX: 3 }, mockUtil);
                 expect(result2).toBe('');
             });
         });
 
         describe('getMaxFileNumber', () => {
-            it('should return 0 when no AI adapter', () => {
+            it('should return 0 when no AI adapter', async () => {
                 block.aiForTarget.mockReturnValue(null);
-                const result = block.getMaxFileNumber({}, mockUtil);
+                const result = await block.getMaxFileNumber({}, mockUtil);
                 expect(result).toBe(0);
             });
 
-            it('should return 0 when no files', () => {
+            it('should return 0 when no files', async () => {
                 mockAIAdapter.getResultFiles.mockReturnValue([]);
-                const result = block.getMaxFileNumber({}, mockUtil);
+                const result = await block.getMaxFileNumber({}, mockUtil);
                 expect(result).toBe(0);
             });
 
-            it('should return file count', () => {
+            it('should return file count', async () => {
                 const mockFiles = [
                     { base64: 'data1', mediaType: 'image/png' },
                     { base64: 'data2', mediaType: 'image/jpeg' },
                     { base64: 'data3', mediaType: 'image/gif' }
                 ];
                 mockAIAdapter.getResultFiles.mockReturnValue(mockFiles);
-                
-                const result = block.getMaxFileNumber({}, mockUtil);
+
+                const result = await block.getMaxFileNumber({}, mockUtil);
                 expect(result).toBe(3);
             });
 
-            it('should return 0 when getResultFiles returns null', () => {
+            it('should return 0 when getResultFiles returns null', async () => {
                 mockAIAdapter.getResultFiles.mockReturnValue(null);
-                const result = block.getMaxFileNumber({}, mockUtil);
+                const result = await block.getMaxFileNumber({}, mockUtil);
                 expect(result).toBe(0);
             });
         });

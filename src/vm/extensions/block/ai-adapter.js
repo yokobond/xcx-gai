@@ -752,13 +752,21 @@ export class AIAdapter {
 
     /**
      * Get result files from last result.
-     * @returns {Array.<{base64: string, mediaType: string}>} - array of result files
+     * In v6 streamText exposes `result.files` as a Promise while generateText returns
+     * an array; awaiting handles both (a non-Promise value passes through), so this is
+     * async. Reporter blocks may return the Promise directly — the VM awaits it.
+     * @returns {Promise<Array.<{base64: string, mediaType: string}>>} - resolved files.
      */
-    getResultFiles () {
+    async getResultFiles () {
         if (!this.lastResult) {
             return [];
         }
-        return this.lastResult.files || [];
+        try {
+            const files = await this.lastResult.files;
+            return Array.isArray(files) ? files : [];
+        } catch (e) {
+            return [];
+        }
     }
 
     /**

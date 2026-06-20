@@ -1184,12 +1184,12 @@ describe('AIAdapter', () => {
 
         describe('File management', () => {
             describe('getResultFiles', () => {
-                it('should return empty array when no last result', () => {
-                    const files = adapter.getResultFiles();
+                it('should return empty array when no last result', async () => {
+                    const files = await adapter.getResultFiles();
                     expect(files).toEqual([]);
                 });
 
-                it('should return files from last result', () => {
+                it('should return files from last result', async () => {
                     const mockFiles = [
                         {base64: 'base64data1', mediaType: 'image/png'},
                         {base64: 'base64data2', mediaType: 'image/jpeg'}
@@ -1197,13 +1197,33 @@ describe('AIAdapter', () => {
                     adapter.setLastResult({
                         files: mockFiles
                     });
-                    const files = adapter.getResultFiles();
+                    const files = await adapter.getResultFiles();
                     expect(files).toEqual(mockFiles);
                 });
 
-                it('should return empty array when last result has no files', () => {
+                it('should resolve files when last result exposes them as a Promise', async () => {
+                    const mockFiles = [
+                        {base64: 'base64data1', mediaType: 'image/png'}
+                    ];
+                    // v6 streamText exposes `files` as a Promise.
+                    adapter.setLastResult({
+                        files: Promise.resolve(mockFiles)
+                    });
+                    const files = await adapter.getResultFiles();
+                    expect(files).toEqual(mockFiles);
+                });
+
+                it('should return empty array when last result has no files', async () => {
                     adapter.setLastResult({text: 'some text'});
-                    const files = adapter.getResultFiles();
+                    const files = await adapter.getResultFiles();
+                    expect(files).toEqual([]);
+                });
+
+                it('should return empty array when the files Promise rejects', async () => {
+                    adapter.setLastResult({
+                        files: Promise.reject(new Error('failed'))
+                    });
+                    const files = await adapter.getResultFiles();
                     expect(files).toEqual([]);
                 });
             });

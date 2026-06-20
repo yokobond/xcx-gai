@@ -2326,14 +2326,14 @@ class GAIBlocks {
      * @param {object} args - the block's arguments.
      * @param {number} args.INDEX - file index (1-based)
      * @param {object} util - utility object provided by the runtime.
-     * @returns {string} - file data URL in format "data:mediaType;base64,base64Data"
+     * @returns {Promise<string>} - file data URL in format "data:mediaType;base64,base64Data"
      */
-    getFileDataAtIndex (args, util) {
+    async getFileDataAtIndex (args, util) {
         const ai = this.aiForTarget(util.target);
         if (!ai) {
             return '';
         }
-        const files = ai.getResultFiles();
+        const files = await ai.getResultFiles();
         if (!files || files.length === 0) {
             return '';
         }
@@ -2358,14 +2358,14 @@ class GAIBlocks {
      * @param {object} args - the block's arguments.
      * @param {number} args.INDEX - file index (1-based)
      * @param {object} util - utility object provided by the runtime.
-     * @returns {string} - file media type
+     * @returns {Promise<string>} - file media type
      */
-    getFileMediaTypeAtIndex (args, util) {
+    async getFileMediaTypeAtIndex (args, util) {
         const ai = this.aiForTarget(util.target);
         if (!ai) {
             return '';
         }
-        const files = ai.getResultFiles();
+        const files = await ai.getResultFiles();
         if (!files || files.length === 0) {
             return '';
         }
@@ -2384,15 +2384,15 @@ class GAIBlocks {
      * Get max file number from last result.
      * @param {object} args - the block's arguments.
      * @param {object} util - utility object provided by the runtime.
-     * @returns {number} - max file number
+     * @returns {Promise<number>} - max file number
      */
-    getMaxFileNumber (args, util) {
+    async getMaxFileNumber (args, util) {
         const ai = this.aiForTarget(util.target);
         if (!ai) {
             return 0;
         }
-        const files = ai.getResultFiles();
-        return files ? files.length : 0;
+        const files = await ai.getResultFiles();
+        return Array.isArray(files) ? files.length : 0;
     }
 
     /**
