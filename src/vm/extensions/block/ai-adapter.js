@@ -604,7 +604,7 @@ export class AIAdapter {
             params.system = this.generationConfig.systemInstruction;
         }
         
-        // Handle response schema - experimental structured output
+        // Handle response schema - structured output (v6 stable `output`)
         if (Object.prototype.hasOwnProperty.call(this.generationConfig, 'responseSchema')) {
             params.output = Output.object({schema: jsonSchema(this.generationConfig.responseSchema)});
         }
@@ -624,6 +624,8 @@ export class AIAdapter {
         Object.values(this.functionRegistry).forEach(funcSpec => {
             tools[funcSpec.name] = tool({
                 description: funcSpec.description,
+                // Preserve v5 (non-strict) tool-schema behavior; v6 OpenAI defaults strict to true.
+                strict: false,
                 inputSchema: jsonSchema(funcSpec.parameters),
                 execute: async (input, options) => {
                     try {
@@ -912,6 +914,12 @@ export class AIAdapter {
             // Apply generation config to Vercel AI SDK parameters
             const generationParams = this._buildGenerationParams();
 
+            // In v6, streamText routes stream errors to onError instead of throwing
+            // from textStream/partialOutputStream. Capture it here so the real cause
+            // (quota, network, API error) can be surfaced below rather than swallowed
+            // as empty output or masked as a generic NoOutputGeneratedError.
+            let streamError = null;
+
             const result = await generator({
                 model: client.languageModel(modelId),
                 messages: messages,
@@ -928,22 +936,55 @@ export class AIAdapter {
                         responseTextHandler(step.text);
                     }
                 },
-                ...('responseSchema' in this.generationConfig) && {
-                    experimental_output: Output.object({schema: jsonSchema(this.generationConfig.responseSchema)})
-                },
+                ...(partialTextHandler && {
+                    onError: event => {
+                        streamError = (event && event.error) ? event.error : event;
+                    }
+                }),
+                // Structured output (v6 stable `output`) is added by _buildGenerationParams()
+                // via ...generationParams above; no inline experimental_output needed.
                 headers: {
                     ...(this.getApiType() === 'Anthropic' && {'anthropic-dangerous-direct-browser-access': 'true'})
                 }
             });
 
+            const hasSchema = Object.prototype.hasOwnProperty.call(this.generationConfig, 'responseSchema');
+
             if (partialTextHandler) {
-                for await (const textPart of result.textStream) {
-                    this.setLastPartialText(textPart);
-                    partialTextHandler(textPart);
+                if (hasSchema) {
+                    // Structured output streams the growing partial object via
+                    // partialOutputStream (v6); surface it as a JSON snapshot so the
+                    // text-based partial handler keeps working.
+                    for await (const partialObject of result.partialOutputStream) {
+                        const partialText = JSON.stringify(partialObject);
+                        this.setLastPartialText(partialText);
+                        partialTextHandler(partialText);
+                    }
+                } else {
+                    for await (const textPart of result.textStream) {
+                        this.setLastPartialText(textPart);
+                        partialTextHandler(textPart);
+                    }
                 }
             }
 
+            // Propagate a streaming error captured by onError (v6 does not throw it
+            // from the stream iteration). Without this, the failure would surface as
+            // empty output or an unhelpful "No output generated" message.
+            if (streamError) {
+                this.setLastResult(streamError);
+                throw streamError;
+            }
+
             this.setLastResult(result);
+
+            // When a response schema is set, await result.output to validate the
+            // structured object (a schema/type validation failure rejects and
+            // propagates via the surrounding catch).
+            if (hasSchema) {
+                await result.output;
+            }
+
             if (isChat) {
                 const response = await result.response;
                 this.messages.push(...response.messages);
@@ -1009,7 +1050,7 @@ export class AIAdapter {
             const client = this.getClient();
             
             const {embedding} = await embed({
-                model: client.textEmbeddingModel(modelId),
+                model: client.embeddingModel(modelId),
                 value: text,
                 abortSignal: abortController.signal
             });

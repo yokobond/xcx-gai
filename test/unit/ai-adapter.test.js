@@ -59,7 +59,7 @@ describe('AIAdapter', () => {
             languageModel: jest.fn().mockReturnValue({
                 modelID: 'test-model'
             }),
-            textEmbeddingModel: jest.fn().mockReturnValue({
+            embeddingModel: jest.fn().mockReturnValue({
                 modelID: 'test-embedding-model'
             })
         };
@@ -645,6 +645,28 @@ describe('AIAdapter', () => {
                     expect(responseTextHandler).toHaveBeenCalledWith('partial response');
                 });
 
+                it('should surface a streaming error captured by onError (v6)', async () => {
+                    // In v6, streamText routes stream errors to onError instead of
+                    // throwing from textStream. requestGenerate must re-throw it so the
+                    // real cause is not swallowed as empty output / "No output generated".
+                    const streamErr = new Error('quota exceeded');
+                    streamErr.name = 'AI_APICallError';
+                    streamText.mockImplementation(async ({onError}) => {
+                        if (onError) {
+                            onError({error: streamErr});
+                        }
+                        return {
+                            textStream: (async function* () {})(),
+                            response: Promise.resolve({messages: []}),
+                            toText: async () => ''
+                        };
+                    });
+
+                    await expect(
+                        adapter.requestGenerate(['prompt'], responseTextHandler, functionDispatcher, partialTextHandler, false)
+                    ).rejects.toThrow('quota exceeded');
+                });
+
                 it('should handle function calls', async () => {
                     adapter.registerFunction('proc1', 'desc', []);
                     const spec = adapter.getFunctionSpec('proc1');
@@ -866,12 +888,12 @@ describe('AIAdapter', () => {
             });
 
             it('should handle Anthropic embedding request and throw error (not supported)', async () => {
-                // Create a mock client that throws error for textEmbeddingModel with null
+                // Create a mock client that throws error for embeddingModel with null
                 const anthropicMockClient = {
                     languageModel: jest.fn().mockReturnValue({
                         modelID: 'claude-3-haiku'
                     }),
-                    textEmbeddingModel: jest.fn().mockImplementation((modelId) => {
+                    embeddingModel: jest.fn().mockImplementation((modelId) => {
                         if (!modelId) {
                             throw new Error('Model ID is required for embedding model');
                         }
@@ -889,7 +911,7 @@ describe('AIAdapter', () => {
                 const contentParts = ['Hello world'];
                 
                 // Since Anthropic doesn't support embeddings (defaultModels.embedding is null),
-                // this should throw an error when trying to create textEmbeddingModel with null
+                // this should throw an error when trying to create embeddingModel with null
                 await expect(anthropicAdapter.requestEmbedding(contentParts))
                     .rejects.toThrow('Model ID is required for embedding model');
                 
