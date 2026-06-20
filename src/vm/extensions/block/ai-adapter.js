@@ -696,7 +696,7 @@ export class AIAdapter {
         if (response.text) {
             return response.text;
         }
-        
+
         if (response.content) {
             return response.content;
         }
@@ -926,9 +926,6 @@ export class AIAdapter {
                 ...(toolExists && {tools, toolChoice: this.functionCallingMode}),
                 ...generationParams,
                 abortSignal: abortController.signal,
-                onAbort: abortEvent => {
-                    console.debug(abortEvent);
-                },
                 stopWhen: stepCountIs(5),
                 onStepFinish: step => {
                     this.setLastResponseText(step.text);
@@ -936,7 +933,13 @@ export class AIAdapter {
                         responseTextHandler(step.text);
                     }
                 },
+                // onAbort and onError are streamText-only callbacks; only pass them
+                // when streaming (partialTextHandler set). generateText would silently
+                // drop them into call settings otherwise.
                 ...(partialTextHandler && {
+                    onAbort: abortEvent => {
+                        console.debug(abortEvent);
+                    },
                     onError: event => {
                         streamError = (event && event.error) ? event.error : event;
                     }
