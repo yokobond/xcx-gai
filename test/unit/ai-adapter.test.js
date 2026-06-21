@@ -938,6 +938,73 @@ describe('AIAdapter', () => {
             });
         });
 
+        describe('applyConfigFromVariables', () => {
+            /**
+             * Build a target whose sprite variables back the AI config.
+             * @param {object} values - map of config variable name to value
+             * @returns {object} mock target with the scalar variable API
+             */
+            const targetWithConfig = values => {
+                const variables = {};
+                Object.entries(values).forEach(([name, value]) => {
+                    variables[name] = {id: `gai_${name}`, name, type: '', value};
+                });
+                return {
+                    id: 'config-target',
+                    lookupVariableByNameAndType (name, type) {
+                        const v = variables[name];
+                        return (v && v.type === (type || '')) ? v : undefined;
+                    }
+                };
+            };
+
+            it('is a no-op for a target without the variable API', () => {
+                adapter.setBaseUrl('https://kept.example/v1');
+                adapter.modelID = 'kept-model';
+                adapter.generationConfig = {temperature: 0.5};
+
+                adapter.applyConfigFromVariables();
+
+                expect(adapter.baseUrl).toBe('https://kept.example/v1');
+                expect(adapter.modelID).toBe('kept-model');
+                expect(adapter.generationConfig).toEqual({temperature: 0.5});
+            });
+
+            it('loads baseUrl, modelID and generation config from variables', () => {
+                adapter.target = targetWithConfig({
+                    baseUrl: 'https://vars.example/v1',
+                    modelID: 'vars-model',
+                    temperature: '0.7',
+                    stopSequences: 'STOP, END'
+                });
+
+                adapter.applyConfigFromVariables();
+
+                expect(adapter.baseUrl).toBe('https://vars.example/v1');
+                expect(adapter.modelID).toBe('vars-model');
+                expect(adapter.generationConfig).toEqual({
+                    temperature: 0.7,
+                    stopSequences: ['STOP', 'END']
+                });
+            });
+
+            it('resets the client only when baseUrl changes', () => {
+                adapter.target = targetWithConfig({baseUrl: 'https://a.example/v1'});
+                adapter.baseUrl = 'https://a.example/v1';
+                adapter.client = mockClient;
+
+                // Same baseUrl: client preserved.
+                adapter.applyConfigFromVariables();
+                expect(adapter.client).toBe(mockClient);
+
+                // Changed baseUrl: client reset for reinitialization.
+                adapter.target = targetWithConfig({baseUrl: 'https://b.example/v1'});
+                adapter.applyConfigFromVariables();
+                expect(adapter.baseUrl).toBe('https://b.example/v1');
+                expect(adapter.client).toBeNull();
+            });
+        });
+
         describe('Abort functionality', () => {
             beforeEach(() => {
                 // Mock AbortController

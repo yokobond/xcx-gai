@@ -9,6 +9,7 @@ import {AIAdapter} from './ai-adapter.js';
 import {getCostumeByNameOrNumber, costumeToDataURL, insertImageAsSvgCostume} from './costume-util.js';
 import {interpretContentPartsText} from './content-directive.js';
 import {ensureSkillsList} from './skill-store.js';
+import {ensureConfigVariables, getConfigVariableRaw, setConfigVariable} from './config-store.js';
 import {dotProduct, cosineDistance, euclideanDistance} from './math-util.js';
 
 
@@ -505,6 +506,7 @@ class GAIBlocks {
                 },
                 {
                     opcode: 'setGenerationConfig',
+                    hideFromPalette: true, // deprecated: generation config is now stored in sprite variables
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
                         id: 'gai.setGenerationConfig',
@@ -525,6 +527,7 @@ class GAIBlocks {
                 },
                 {
                     opcode: 'generationConfig',
+                    hideFromPalette: true, // deprecated: generation config is now stored in sprite variables
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
@@ -576,6 +579,7 @@ class GAIBlocks {
                 '---',
                 {
                     opcode: 'setModel',
+                    hideFromPalette: true, // deprecated: model ID is now stored in the `modelID` sprite variable
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
                         id: 'gai.setModel',
@@ -592,6 +596,7 @@ class GAIBlocks {
                 },
                 {
                     opcode: 'getModel',
+                    hideFromPalette: true, // deprecated: model ID is now stored in the `modelID` sprite variable
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
@@ -916,6 +921,7 @@ class GAIBlocks {
                 },
                 {
                     opcode: 'setBaseUrl',
+                    hideFromPalette: true, // deprecated: base URL is now stored in the `baseUrl` sprite variable
                     blockType: BlockType.COMMAND,
                     text: formatMessage({
                         id: 'gai.setBaseUrl',
@@ -933,6 +939,7 @@ class GAIBlocks {
                 },
                 {
                     opcode: 'baseUrl',
+                    hideFromPalette: true, // deprecated: base URL is now stored in the `baseUrl` sprite variable
                     blockType: BlockType.REPORTER,
                     disableMonitor: true,
                     text: formatMessage({
@@ -1244,6 +1251,10 @@ class GAIBlocks {
             // populate it with Agent Skills. Skills are injected into the prompt
             // automatically once the list has items.
             ensureSkillsList(target);
+            // Also create the AI config sprite variables (baseUrl, modelID,
+            // temperature, ...) so users control them with standard variable blocks.
+            // The adapter reads these before each request.
+            ensureConfigVariables(target);
         }
         return ai;
     }
@@ -1828,52 +1839,10 @@ class GAIBlocks {
      */
     setGenerationConfig (args, util) {
         const target = util.target;
-        const ai = this.getAI(target);
-        const configKey = args.CONFIG;
-        let configValue = args.VALUE;
-        switch (configKey) {
-        case 'maxOutputTokens':
-            configValue = Math.max(1, parseInt(Cast.toString(configValue), 10));
-            break;
-        case 'stopSequences':
-            configValue = Cast.toString(configValue).split(',')
-                .map(s => s.trim());
-            break;
-        case 'temperature':
-            configValue = Math.max(0.0, Math.min(1.0, Cast.toNumber(configValue)));
-            break;
-        case 'topP':
-            configValue = Math.max(0.0, Math.min(1.0, Cast.toNumber(configValue)));
-            break;
-        case 'topK':
-            configValue = Math.max(1, parseInt(Cast.toNumber(configValue), 10));
-            break;
-        case 'systemInstruction':
-            configValue = Cast.toString(configValue);
-            break;
-        case 'responseSchema':
-            try {
-                configValue = JSON.parse(configValue);
-            } catch (error) {
-                console.error(`responseSchema: ${error.message}`);
-            }
-            break;
-        default:
-            return `unknown config key: ${configKey}`;
-        }
-        if (configValue === '') {
-            delete ai.generationConfig[configKey];
-            if (configKey === 'responseSchema') {
-                // Also remove responseMimeType when removing schema
-                delete ai.generationConfig.responseMimeType;
-            }
-            return `delete ${configKey}`;
-        }
-        ai.generationConfig[configKey] = configValue;
-        if (configKey === 'responseSchema' && typeof configValue === 'object') {
-            // Also set responseMimeType when setting schema
-            ai.generationConfig.responseMimeType = 'application/json';
-        }
+        // Ensure the config sprite variables exist, then store the raw value.
+        // Parsing into typed values happens when the adapter reads the variable.
+        this.getAI(target);
+        setConfigVariable(target, args.CONFIG, args.VALUE);
         return;
     }
 
@@ -1885,30 +1854,8 @@ class GAIBlocks {
      * @returns {string} - config value
      */
     generationConfig (args, util) {
-        const target = util.target;
-        const ai = this.getAI(target);
-        const configKey = args.CONFIG;
-        const configValue = ai.generationConfig[configKey];
-        if (configValue === null || typeof configValue === 'undefined') {
-            return '';
-        }
-        if (Array.isArray(configValue)) {
-            // Convert array to comma-separated string
-            return configValue.join(', ');
-        }
-        if (typeof configValue === 'object') {
-            // Convert object to JSON string
-            return JSON.stringify(configValue);
-        }
-        if (typeof configValue === 'number') {
-            // Convert number to string
-            return String(configValue);
-        }
-        if (typeof configValue === 'boolean') {
-            // Convert boolean to string
-            return configValue ? 'true' : 'false';
-        }
-        return configValue;
+        // Read the raw value from the corresponding config sprite variable.
+        return getConfigVariableRaw(util.target, args.CONFIG);
     }
 
     getValueFromJson (args) {
@@ -2254,12 +2201,12 @@ class GAIBlocks {
      */
     setBaseUrl (args, util) {
         const baseUrl = Cast.toString(args.URL).trim();
-        
+
         if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
             return 'error: invalid URL';
         }
-        const ai = this.getAI(util.target);
-        ai.setBaseUrl(baseUrl);
+        this.getAI(util.target);
+        setConfigVariable(util.target, 'baseUrl', baseUrl);
         return `set base URL to ${baseUrl}`;
     }
 
@@ -2270,11 +2217,7 @@ class GAIBlocks {
      * @returns {string} - base URL
      */
     baseUrl (_args, util) {
-        const ai = this.aiForTarget(util.target);
-        if (!ai) {
-            return '';
-        }
-        return ai.baseUrl || '';
+        return getConfigVariableRaw(util.target, 'baseUrl');
     }
 
     /**
@@ -2313,10 +2256,13 @@ class GAIBlocks {
      */
     setModel (args, util) {
         const target = util.target;
-        const ai = this.getAI(target);
+        this.getAI(target);
         const modelCode = Cast.toString(args.MODEL_ID).trim();
-        return ai.setModel(modelCode)
-            .catch(error => `Error setting model: ${error.message}`);
+        if (!modelCode) {
+            return 'Model ID is empty';
+        }
+        setConfigVariable(target, 'modelID', modelCode);
+        return `Model "${modelCode}" set successfully`;
     }
 
     /**
@@ -2327,11 +2273,14 @@ class GAIBlocks {
      */
     getModel (args, util) {
         const target = util.target;
-        const ai = this.aiForTarget(target);
-        if (!ai) {
-            return '';
+        // Prefer the `modelID` sprite variable; fall back to the adapter's
+        // effective default (provider default) when the variable is unset.
+        const raw = getConfigVariableRaw(target, 'modelID');
+        if (raw !== '') {
+            return raw;
         }
-        return ai.getModel();
+        const ai = this.aiForTarget(target);
+        return ai ? ai.getModel() : '';
     }
 
     /**

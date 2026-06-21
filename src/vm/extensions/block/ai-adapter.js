@@ -4,6 +4,7 @@ import {createOpenAICompatible} from '@ai-sdk/openai-compatible';
 import {createAnthropic} from '@ai-sdk/anthropic';
 import {generateText, streamText, tool, jsonSchema, stepCountIs, embed, Output} from 'ai';
 import {buildSkillsPrompt, composeSkillsPrompt, discoverSkills, loadSkillBody} from './skill-store.js';
+import {readConfigFromVariables} from './config-store.js';
 
 /**
  * Function Call class for AI adapter function calling.
@@ -377,6 +378,32 @@ export class AIAdapter {
     }
 
     /**
+     * Load the AI config (baseUrl, modelID, generation config) from this target's
+     * sprite variables into the adapter's runtime state. Called right before each
+     * request so users control the config through standard Scratch variable blocks.
+     * The client is reset only when baseUrl actually changes, to avoid rebuilding
+     * it on every request. No-op when there is no target to read from.
+     * @returns {void}
+     */
+    applyConfigFromVariables () {
+        // No-op when the target can't hold sprite variables (e.g. unit-test
+        // stubs): in that case the adapter's directly-set state is the source of
+        // truth and must not be overwritten with defaults.
+        if (!this.target || typeof this.target.lookupVariableByNameAndType !== 'function') {
+            return;
+        }
+        const config = readConfigFromVariables(this.target);
+        const newBaseUrl = config.baseUrl || null;
+        if (newBaseUrl !== this.baseUrl) {
+            this.baseUrl = newBaseUrl;
+            this.client = null; // reset client to reinitialize with new base URL
+            this.models = []; // clear models to reload for new base URL
+        }
+        this.modelID = config.modelID || null;
+        this.generationConfig = config.generationConfig;
+    }
+
+    /**
      * Get client. Initialize if not exists.
      * @returns {object} - AI SDK client
      */
@@ -388,13 +415,14 @@ export class AIAdapter {
                 throw new Error(`Unsupported API type: ${providerType}`);
             }
 
-            if (!this.baseUrl) {
-                // Use provider default base URL if not set
-                this.baseUrl = provider.baseUrl;
-            }
+            // Resolve the effective base URL without mutating this.baseUrl, so it
+            // keeps matching the sprite variable value (which may be empty meaning
+            // "use the provider default"). Mutating it here would make
+            // applyConfigFromVariables() think the value changed every request.
+            const baseURL = this.baseUrl || provider.baseUrl;
 
             const config = {
-                baseURL: this.baseUrl,
+                baseURL: baseURL,
                 ...(this.apiKey && {apiKey: this.apiKey}),
                 ...((providerType === 'OpenAICompatible') && {supportsStructuredOutputs: true})
             };
@@ -998,6 +1026,9 @@ export class AIAdapter {
         partialTextHandler,
         isChat
     ) {
+        // Load baseUrl/modelID/generation config from the sprite variables before
+        // building the client and request params.
+        this.applyConfigFromVariables();
         const promptMessage = this._convertToMessage(prompt);
         const messages = isChat ? this.messages : [];
         messages.push(promptMessage);
@@ -1126,7 +1157,9 @@ export class AIAdapter {
      * @returns {Promise<number[]>} - a Promise that resolves to embedding vector
      */
     async requestEmbedding (contentParts) {
-        
+        // Load baseUrl/modelID from the sprite variables before building the client.
+        this.applyConfigFromVariables();
+
         if (!contentParts || !contentParts.length) {
             return [];
         }
