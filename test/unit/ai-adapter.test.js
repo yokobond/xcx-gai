@@ -815,6 +815,7 @@ describe('AIAdapter', () => {
                 expect(adapter.getApiType()).toBe('OpenAI');
             });
 
+
             it('should infer Anthropic API type from base URL', () => {
                 adapter.setBaseUrl('https://api.anthropic.com/v1/messages');
                 expect(adapter.getApiType()).toBe('Anthropic');
@@ -1294,6 +1295,193 @@ describe('AIAdapter', () => {
                     expect(files).toEqual([]);
                 });
             });
+        });
+    });
+
+    describe('BrowserLLM model cache scanning', () => {
+        let originalCaches;
+
+        beforeEach(() => {
+            originalCaches = global.caches;
+        });
+
+        afterEach(() => {
+            global.caches = originalCaches;
+        });
+
+        it('should correctly merge and identify models from multiple caches', async () => {
+            adapter.setApiType('BrowserLLM');
+
+            // Caches mock
+            const mockCaches = {
+                keys: jest.fn().mockResolvedValue(['transformers-cache', 'onnxruntime-cache']),
+                open: jest.fn().mockImplementation((name) => {
+                    if (name === 'transformers-cache') {
+                        return Promise.resolve({
+                            keys: jest.fn().mockResolvedValue([
+                                { url: 'https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX/resolve/main/onnx/decoder_model_merged.onnx' }
+                            ])
+                        });
+                    } else if (name === 'onnxruntime-cache') {
+                        return Promise.resolve({
+                            keys: jest.fn().mockResolvedValue([
+                                { url: 'https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX/resolve/main/onnx/decoder_model_merged_q4f16.onnx_data' }
+                            ])
+                        });
+                    }
+                    return Promise.resolve({ keys: jest.fn().mockResolvedValue([]) });
+                })
+            };
+
+            global.caches = mockCaches;
+
+            // Clear adapter models cache to force rescan
+            adapter.models = null;
+
+            const models = await adapter.getModels();
+            
+            // Should correctly filter out fp32 since q4f16 is available
+            expect(models).toEqual([
+                { id: 'onnx-community/gemma-4-E2B-it-ONNX_q4f16' }
+            ]);
+        });
+
+        it('should merge localStorage records during getModels', async () => {
+            adapter.setApiType('BrowserLLM');
+
+            // Caches mock
+            const mockCaches = {
+                keys: jest.fn().mockResolvedValue(['transformers-cache']),
+                open: jest.fn().mockImplementation(() => {
+                    return Promise.resolve({
+                        keys: jest.fn().mockResolvedValue([
+                            // Only has decoder_model_merged.onnx (normally detected as fp32)
+                            { url: 'https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX/resolve/main/onnx/decoder_model_merged.onnx' }
+                        ])
+                    });
+                })
+            };
+
+            global.caches = mockCaches;
+
+            // localStorage mock
+            const mockStorage = {
+                'xcx_gai_downloaded_dtypes': JSON.stringify({
+                    'onnx-community/gemma-4-E2B-it-ONNX': ['q4f16']
+                })
+            };
+            const originalLocalStorage = global.window ? global.window.localStorage : undefined;
+            
+            if (!global.window) {
+                global.window = {};
+            }
+            global.window.localStorage = {
+                getItem: jest.fn().mockImplementation((key) => mockStorage[key] || null),
+                setItem: jest.fn().mockImplementation((key, val) => { mockStorage[key] = val; })
+            };
+
+            adapter.models = null;
+            const models = await adapter.getModels();
+
+            // Should use q4f16 from localStorage and filter out fp32
+            expect(models).toEqual([
+                { id: 'onnx-community/gemma-4-E2B-it-ONNX_q4f16' }
+            ]);
+
+            // Clean up window.localStorage mock
+            if (originalLocalStorage) {
+                global.window.localStorage = originalLocalStorage;
+            } else {
+                delete global.window.localStorage;
+            }
+        });
+
+        it('should record dtype to localStorage when downloadBrowserLLMModel completes successfully', async () => {
+            // Mock BrowserAIProvider inside the adapter or mock _getPipeline
+            const mockStorage = {};
+            if (!global.window) {
+                global.window = {};
+            }
+            global.window.localStorage = {
+                getItem: jest.fn().mockImplementation((key) => mockStorage[key] || null),
+                setItem: jest.fn().mockImplementation((key, val) => { mockStorage[key] = val; })
+            };
+
+            // Spy on _getPipeline to avoid actual execution
+            const mockBrowserAI = {
+                setBrowserLLMDtype: jest.fn(),
+                setModel: jest.fn(),
+                resetCache: jest.fn(),
+                _getPipeline: jest.fn().mockResolvedValue({})
+            };
+            adapter._browserAI = mockBrowserAI;
+
+            adapter.browserLLMDtype = 'q4f16';
+            await adapter.downloadBrowserLLMModel('onnx-community/gemma-4-E2B-it-ONNX_q4f16', 'generative');
+
+            // Should record 'q4f16' for gemma-4-E2B-it-ONNX
+            expect(mockStorage['xcx_gai_downloaded_dtypes']).toBeDefined();
+            const record = JSON.parse(mockStorage['xcx_gai_downloaded_dtypes']);
+            expect(record['onnx-community/gemma-4-E2B-it-ONNX']).toEqual(['q4f16']);
+
+            delete global.window.localStorage;
+            adapter._browserAI = null;
+        });
+
+        it('should remove dtype from localStorage when clearBrowserLLMModelCache completes successfully', async () => {
+            const mockStorage = {
+                'xcx_gai_downloaded_dtypes': JSON.stringify({
+                    'onnx-community/gemma-4-E2B-it-ONNX': ['q4f16']
+                })
+            };
+            if (!global.window) {
+                global.window = {};
+            }
+            global.window.localStorage = {
+                getItem: jest.fn().mockImplementation((key) => mockStorage[key] || null),
+                setItem: jest.fn().mockImplementation((key, val) => { mockStorage[key] = val; })
+            };
+
+            // Mock getModels to return the model we want to delete
+            jest.spyOn(adapter, 'getModels').mockResolvedValue([
+                { id: 'onnx-community/gemma-4-E2B-it-ONNX_q4f16' }
+            ]);
+
+            // deleteMock for asserting that cache.delete was actually called
+            const deleteMock = jest.fn().mockResolvedValue(true);
+
+            // Use dtype-specific ONNX URL so the new logic can match by repo AND dtype
+            global.caches = {
+                keys: jest.fn().mockResolvedValue(['transformers-cache']),
+                open: jest.fn().mockResolvedValue({
+                    keys: jest.fn().mockResolvedValue([
+                        { url: 'https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX/resolve/main/onnx/decoder_model_merged_q4f16.onnx' },
+                        { url: 'https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX/resolve/main/onnx/decoder_model_merged_q4f16.onnx_data' },
+                        // This fp32 file belongs to the same repo but different dtype, should NOT be deleted
+                        { url: 'https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX/resolve/main/onnx/decoder_model_merged.onnx' }
+                    ]),
+                    delete: deleteMock
+                })
+            };
+
+            // Ensure browserAI is not mocked or has resetCache
+            adapter._browserAI = {
+                resetCache: jest.fn()
+            };
+
+            const result = await adapter.clearBrowserLLMModelCache(1);
+
+            // Should have deleted only dtype-matching ONNX files (2 q4f16 files, not the fp32)
+            expect(deleteMock).toHaveBeenCalledTimes(2);
+            expect(result).toMatch(/Cleared 2 cache entries/);
+
+            // Should remove the record from localStorage
+            const record = JSON.parse(mockStorage['xcx_gai_downloaded_dtypes'] || '{}');
+            expect(record['onnx-community/gemma-4-E2B-it-ONNX']).toBeUndefined();
+
+            delete global.window.localStorage;
+            adapter._browserAI = null;
+            jest.restoreAllMocks();
         });
     });
 

@@ -65,6 +65,7 @@
     "gai.askApiKey": "ask API key with message [MESSAGE]",
     "gai.askApiKeyDefault": "Please enter API key",
     "gai.setApiKey": "set API key to [KEY]",
+    "gai.clearBrowserLLMModelCache": "clear cache for model at [MODEL_INDEX]",
     "gai.apiKey": "API key",
     "gai.apiKeyDialog.message": "set API key for AI of [targetName]",
     "gai.apiKeyDialog.howToGetApiKey": "get API key",
@@ -76,6 +77,7 @@
     "gai.adapterMenu.openai": "OpenAI",
     "gai.adapterMenu.openaiCompatible": "OpenAI Compatible",
     "gai.adapterMenu.anthropic": "Anthropic",
+    "gai.adapterMenu.browserLLM": "Browser LLM",
     "gai.getValueFromJson": "get [PATH] from JSON [JSON]",
     "gai.getItemOfJsonArray": "item [INDEX] of JSON array [JSON]",
     "gai.lengthOfJsonArray": "length of JSON array [JSON]",
@@ -84,7 +86,12 @@
     "gai.error.modelNotFound": "Model not found or not supported. Check the model name.",
     "gai.error.unauthorized": "Authentication failed. Check your API key.",
     "gai.error.rateLimit": "Rate limit or quota exceeded. Please wait and try again.",
-    "gai.error.apiCall": "AI request failed."
+    "gai.error.apiCall": "AI request failed.",
+    "gai.downloadBrowserLLMModel": "download browser LLM model [MODEL_ID] as [MODEL_TYPE]",
+    "gai.modelType.generative": "text generation",
+    "gai.modelType.embedding": "embedding",
+    "gai.downloadingModel": "Downloading model...",
+    "gai.error.modelNotDownloaded": "Browser LLM model is not downloaded. Please run the download block first."
   },
   "ja": {
     "gai.name": "GAI",
@@ -152,6 +159,7 @@
     "gai.askApiKey": "[MESSAGE]とメッセージを出してAPIキーを聞く",
     "gai.askApiKeyDefault": "APIキーを入力してください",
     "gai.setApiKey": "APIキーを[KEY]にする",
+    "gai.clearBrowserLLMModelCache": "[MODEL_INDEX] 番目のブラウザLLMモデルのキャッシュをクリアする",
     "gai.apiKey": "APIキー",
     "gai.apiKeyDialog.message": "[targetName] のAIのAPIキーを設定してください",
     "gai.apiKeyDialog.howToGetApiKey": "APIキーを取得",
@@ -163,6 +171,7 @@
     "gai.adapterMenu.openai": "OpenAI",
     "gai.adapterMenu.openaiCompatible": "OpenAI互換",
     "gai.adapterMenu.anthropic": "Anthropic",
+    "gai.adapterMenu.browserLLM": "ブラウザ LLM",
     "gai.getValueFromJson": "JSON [JSON]から[PATH]を取得",
     "gai.getItemOfJsonArray": "JSON配列[JSON]の[INDEX]番目",
     "gai.lengthOfJsonArray": "JSON配列[JSON]の長さ",
@@ -171,7 +180,12 @@
     "gai.error.modelNotFound": "モデルが見つからないか、サポートされていません。モデル名を確認してください。",
     "gai.error.unauthorized": "認証に失敗しました。APIキーを確認してください。",
     "gai.error.rateLimit": "リクエスト制限または利用上限に達しました。しばらくしてから再試行してください。",
-    "gai.error.apiCall": "AIリクエストに失敗しました。"
+    "gai.error.apiCall": "AIリクエストに失敗しました。",
+    "gai.downloadBrowserLLMModel": "ブラウザLLM [MODEL_TYPE] モデル [MODEL_ID] をダウンロードする",
+    "gai.modelType.generative": "文章生成",
+    "gai.modelType.embedding": "埋め込み",
+    "gai.downloadingModel": "モデルをダウンロード中...",
+    "gai.error.modelNotDownloaded": "ブラウザLLMモデルがダウンロードされていません。先にダウンロードブロックを実行してください。"
   },
   "ja-Hira": {
     "gai.name": "GAI",
@@ -239,6 +253,7 @@
     "gai.askApiKey": "[MESSAGE]と メッセージ を だして APIキー を きく",
     "gai.askApiKeyDefault": "APIキー を にゅうりょく してください",
     "gai.setApiKey": "APIキー を[KEY]に する",
+    "gai.clearBrowserLLMModelCache": "[MODEL_INDEX] ばんめの ブラウザLLMモデル の キャッシュ を クリアする",
     "gai.apiKey": "APIキー",
     "gai.apiKeyDialog.message": "[targetName] の AI の APIキー を せってい してください",
     "gai.apiKeyDialog.howToGetApiKey": "APIキー を しゅとく",
@@ -250,6 +265,7 @@
     "gai.adapterMenu.openai": "OpenAI",
     "gai.adapterMenu.openaiCompatible": "OpenAIごかん",
     "gai.adapterMenu.anthropic": "Anthropic",
+    "gai.adapterMenu.browserLLM": "ブラウザ LLM",
     "gai.getValueFromJson": "JSON [JSON]から[PATH]を しゅとく",
     "gai.getItemOfJsonArray": "JSONはいれつ[JSON]の[INDEX]ばんめ",
     "gai.lengthOfJsonArray": "JSONはいれつ[JSON]の ながさ",
@@ -258,6 +274,11 @@
     "gai.error.modelNotFound": "モデルが みつからないか、サポートされていません。モデルめい を かくにん してください。",
     "gai.error.unauthorized": "にんしょう に しっぱい しました。APIキー を かくにん してください。",
     "gai.error.rateLimit": "リクエスト せいげん または りようじょうげん に たっしました。しばらく してから もういちど ためして ください。",
-    "gai.error.apiCall": "AIリクエスト に しっぱい しました。"
+    "gai.error.apiCall": "AIリクエスト に しっぱい しました。",
+    "gai.downloadBrowserLLMModel": "ブラウザLLM [MODEL_TYPE] モデル [MODEL_ID] をダウンロードする",
+    "gai.modelType.generative": "ぶんしょうせいせい",
+    "gai.modelType.embedding": "うめこみ",
+    "gai.downloadingModel": "モデルをダウンロードちゅう...",
+    "gai.error.modelNotDownloaded": "ブラウザLLMモデルがダウンロードされていません。さきにダウンロードブロックをじっこうしてください。"
   }
 }

@@ -5,6 +5,7 @@ import {createAnthropic} from '@ai-sdk/anthropic';
 import {generateText, streamText, tool, jsonSchema, stepCountIs, embed, Output} from 'ai';
 import {buildSkillsPrompt, composeSkillsPrompt, discoverSkills, loadSkillBody} from './skill-store.js';
 import {readConfigFromVariables} from './config-store.js';
+import {BrowserAIProvider} from './browser-ai.js';
 
 /**
  * Function Call class for AI adapter function calling.
@@ -162,6 +163,20 @@ const PROVIDERS = {
             embeddings: false,
             streaming: true
         }
+    },
+    BrowserLLM: {
+        id: 'browser-llm',
+        factory: null,
+        baseUrl: 'https://huggingface.co',
+        defaultModels: {
+            generative: 'onnx-community/gemma-4-E2B-it-ONNX_q4f16',
+            embedding: 'onnx-community/all-MiniLM-L6-v2_q8'
+        },
+        supports: {
+            functionCalling: true,
+            embeddings: true,
+            streaming: true
+        }
     }
 };
 
@@ -299,6 +314,7 @@ export class AIAdapter {
         this.apiKey = null;
         this.baseUrl = null;
         this.modelID = null;
+        this.browserLLMDtype = 'q4f16';
         this.generationConfig = {};
         this.client = null;
         this.models = [];
@@ -349,6 +365,7 @@ export class AIAdapter {
         this.models = []; // Clear models to reload for new API type
         AIAdapter.apiType = apiType; // Set default API type for later use
     }
+
 
     /**
      * Get API type.
@@ -410,6 +427,7 @@ export class AIAdapter {
     getClient () {
         if (!this.client) {
             const providerType = this.getApiType();
+            if (providerType === 'BrowserLLM') return null;
             const provider = PROVIDERS[providerType];
             if (!provider) {
                 throw new Error(`Unsupported API type: ${providerType}`);
@@ -437,18 +455,98 @@ export class AIAdapter {
      * @returns {Promise<Array.<object>>} - a Promise that resolves when the models are loaded
      */
     async getModels () {
+        this.applyConfigFromVariables();
+
         if (this.models && this.models.length > 0) {
             return this.models;
         }
 
+        const apiType = this.getApiType();
+        if (apiType === 'BrowserLLM') {
+            const modelsSet = new Set();
+
+            try {
+                if (typeof caches !== 'undefined') {
+                    const cacheNames = await caches.keys();
+                    const repoDtypes = {};
+                    for (const cacheName of cacheNames) {
+                        if (cacheName.includes('transformers') || cacheName.includes('onnxruntime')) {
+                            const cache = await caches.open(cacheName);
+                            const requests = await cache.keys();
+                            
+                            for (const req of requests) {
+                                const url = req.url;
+                                let repo = null;
+                                const match = url.match(/\/([^/]+)\/([^/]+)\/resolve\//);
+                                if (match) {
+                                    repo = `${match[1]}/${match[2]}`;
+                                } else {
+                                    try {
+                                        const pathParts = new URL(url).pathname.split('/');
+                                        const resolveIdx = pathParts.indexOf('resolve');
+                                        if (resolveIdx >= 2) {
+                                            repo = `${pathParts[resolveIdx - 2]}/${pathParts[resolveIdx - 1]}`;
+                                        }
+                                    } catch (e) {
+                                        // Ignore
+                                    }
+                                }
+
+                                if (repo) {
+                                    if (!repoDtypes[repo]) {
+                                        repoDtypes[repo] = new Set();
+                                    }
+                                    
+                                    if (url.includes('.onnx') || url.includes('.onnx_data')) {
+                                        const dtypeMatch = url.match(
+                                            /[_/](q4f16|q4|q2f16|q2|q8|fp16|fp32)(?:\.onnx|_|[/]|\b)/i
+                                        );
+                                        if (dtypeMatch) {
+                                            repoDtypes[repo].add(dtypeMatch[1].toLowerCase());
+                                        } else {
+                                            repoDtypes[repo].add('fp32');
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    const recordedMap = this._getRecordedDtypes();
+                    for (const repo in repoDtypes) {
+                        const dtypes = repoDtypes[repo];
+                        if (recordedMap[repo]) {
+                            recordedMap[repo].forEach(d => dtypes.add(d));
+                        }
+
+                        if (dtypes.size > 0) {
+                            const specificDtypes = Array.from(dtypes).filter(d => d !== 'fp32');
+                            if (specificDtypes.length > 0) {
+                                for (const dtype of specificDtypes) {
+                                    modelsSet.add(`${repo}_${dtype}`);
+                                }
+                            } else {
+                                modelsSet.add(`${repo}_fp32`);
+                            }
+                        } else {
+                            modelsSet.add(`${repo}_q4f16`);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to scan browser cache for models:', err);
+            }
+
+            this.models = Array.from(modelsSet).map(id => ({id}));
+            return this.models;
+        }
+
         const baseUrl = this.baseUrl || AIAdapter.baseUrl;
-        
-        // If no baseURL is configured, return empty models list
         if (!baseUrl) {
             this.models = [];
             return this.models;
         }
-        const apiType = this.getApiType();
+
         if (apiType === 'Gemini') {
             try {
                 // Use baseURL to fetch models
@@ -1010,6 +1108,210 @@ export class AIAdapter {
     }
 
     /**
+     * Send generator type prompt to browser AI.
+     * @param {Array.<string | object>} prompt - the original prompt to AI
+     * @param {function} responseTextHandler - A function to handle response text.
+     * @param {function} functionDispatcher - A function to dispatch tool calls.
+     * @param {function} partialTextHandler - A function to handle partial text responses.
+     * @param {boolean} isChat - A flag indicating if the request is for chat.
+     * @returns {Promise<object>} - a Promise that resolves to the result object
+     * @private
+     */
+    async _requestGenerateBrowserLLM (prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
+        let effectiveBaseUrl = this.baseUrl;
+        if (!effectiveBaseUrl ||
+            effectiveBaseUrl === PROVIDERS.Gemini.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.OpenAI.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.Anthropic.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.OpenAICompatible.baseUrl) {
+            effectiveBaseUrl = PROVIDERS.BrowserLLM.baseUrl;
+        }
+
+        if (this._browserAI) {
+            this._browserAI.baseUrl = effectiveBaseUrl;
+        } else {
+            this._browserAI = new BrowserAIProvider(effectiveBaseUrl);
+        }
+        let effectiveModelId = this.modelID;
+        if (!effectiveModelId ||
+            effectiveModelId === PROVIDERS.Gemini.defaultModels.generative ||
+            effectiveModelId === PROVIDERS.OpenAI.defaultModels.generative ||
+            effectiveModelId === PROVIDERS.Anthropic.defaultModels.generative ||
+            effectiveModelId === PROVIDERS.OpenAICompatible.defaultModels.generative) {
+            effectiveModelId = PROVIDERS.BrowserLLM.defaultModels.generative;
+        }
+        this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
+        this._browserAI.setModel(effectiveModelId);
+        this._browserAI.onProgress = null;
+
+        const promptMessage = this._convertToMessage(prompt);
+        const messages = isChat ? this.messages : [];
+        messages.push(promptMessage);
+
+        const chatMessages = messages.map(m => ({
+            role: m.role,
+            content: typeof m.content === 'string' ? m.content :
+                (Array.isArray(m.content) ? m.content.filter(p => p.type === 'text').map(p => p.text)
+                    .join('') : String(m.content))
+        }));
+
+        let systemInstruction = this._composeSystemInstruction() || '';
+        
+        // Include tools in system instruction if enabled
+        const functionCallingEnabled = this.functionCallingMode !== AIAdapter.FUNCTION_CALLING_NONE;
+        
+        // Prepare localRegistry to include loadSkill if needed
+        const localRegistry = {...this.functionRegistry};
+        const useSkillTool = this.target && this._canUseSkillTool() && discoverSkills(this.target).length > 0;
+        if (useSkillTool) {
+            localRegistry.loadSkill = {
+                name: 'loadSkill',
+                description: 'Load the full instructions for one of the available Agent Skills by its name.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        name: {type: 'string', description: 'The name of the skill to load.'}
+                    },
+                    required: ['name']
+                }
+            };
+        }
+
+        if (Object.keys(localRegistry).length > 0 && functionCallingEnabled) {
+            const toolsPrompt = `
+You have access to the following functions:
+${JSON.stringify(Object.values(localRegistry), null, 2)}
+
+If you need to call a function, reply ONLY with a JSON object of this format:
+{"call": "function_name", "arguments": {...}}
+Do not write any other text if you call a function.
+`;
+            systemInstruction += `\n\n${toolsPrompt}`;
+        }
+
+        if (systemInstruction) {
+            chatMessages.unshift({role: 'system', content: systemInstruction});
+        }
+
+        const options = {};
+        const {temperature, maxOutputTokens} = this.generationConfig;
+        if (typeof temperature === 'number') options.temperature = temperature;
+        options.maxOutputTokens = typeof maxOutputTokens === 'number' ? maxOutputTokens : 256;
+        options.useCache = isChat;
+        
+        if (typeof partialTextHandler === 'function') {
+            options.onToken = token => {
+                this.setLastPartialText(token);
+                partialTextHandler(token);
+            };
+        }
+
+        let loopCount = 0;
+        const maxLoops = 5;
+        let text = '';
+
+        while (loopCount < maxLoops) {
+            text = await this._browserAI.generate(chatMessages, options);
+            
+            // Check if model wants to call a function
+            let callRequest = null;
+            const trimmed = text.trim();
+            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (parsed.call && parsed.arguments) {
+                        callRequest = parsed;
+                    }
+                } catch (e) {
+                    // Not valid JSON or parse error, treat as text
+                }
+            }
+
+            if (callRequest && functionCallingEnabled) {
+                if (callRequest.call === 'loadSkill' && useSkillTool) {
+                    const name = callRequest.arguments.name;
+                    const instructions = loadSkillBody(this.target, name);
+                    const result = instructions ?
+                        {success: true, name, instructions} :
+                        {success: false, error: `No skill named "${name}".`};
+                    
+                    chatMessages.push({role: 'assistant', content: text});
+                    chatMessages.push({
+                        role: 'user',
+                        content: `Function loadSkill returned: ${JSON.stringify(result)}`
+                    });
+                    if (isChat) {
+                        this.messages.push({role: 'assistant', content: text});
+                        this.messages.push({
+                            role: 'user',
+                            content: `Function loadSkill returned: ${JSON.stringify(result)}`
+                        });
+                    }
+                    loopCount++;
+                    continue;
+                }
+
+                const funcSpec = localRegistry[callRequest.call];
+                if (funcSpec) {
+                    const functionCall = new FunctionCall(
+                        funcSpec,
+                        {
+                            args: callRequest.arguments,
+                            options: {}
+                        }
+                    );
+
+                    try {
+                        const resultVal = await this._executeFunctionCall(functionCall, functionDispatcher);
+                        chatMessages.push({role: 'assistant', content: text});
+                        chatMessages.push({
+                            role: 'user',
+                            content: `Function ${callRequest.call} returned: ${JSON.stringify(resultVal)}`
+                        });
+                        if (isChat) {
+                            this.messages.push({role: 'assistant', content: text});
+                            this.messages.push({
+                                role: 'user',
+                                content: `Function ${callRequest.call} returned: ${JSON.stringify(resultVal)}`
+                            });
+                        }
+                        loopCount++;
+                        continue;
+                    } catch (err) {
+                        chatMessages.push({role: 'assistant', content: text});
+                        chatMessages.push({
+                            role: 'user',
+                            content: `Error executing ${callRequest.call}: ${err.message}`
+                        });
+                        if (isChat) {
+                            this.messages.push({role: 'assistant', content: text});
+                            this.messages.push({
+                                role: 'user',
+                                content: `Error executing ${callRequest.call}: ${err.message}`
+                            });
+                        }
+                        loopCount++;
+                        continue;
+                    }
+                }
+            }
+
+            break; // No function call, regular text response
+        }
+
+        this.setLastResponseText(text);
+        if (typeof responseTextHandler === 'function') responseTextHandler(text);
+
+        if (isChat) {
+            this.messages.push({role: 'assistant', content: text});
+        }
+
+        const result = {text};
+        this.setLastResult(result);
+        return result;
+    }
+
+    /**
      * Send generator type prompt to AI.
      * @param {Array.<string | object>} prompt - the original prompt to AI
      * @param {function} responseTextHandler - A function to handle response text.
@@ -1026,9 +1328,17 @@ export class AIAdapter {
         partialTextHandler,
         isChat
     ) {
+        this.lastStructuredOutput = null;
         // Load baseUrl/modelID/generation config from the sprite variables before
         // building the client and request params.
         this.applyConfigFromVariables();
+
+        if (this.getApiType() === 'BrowserLLM') {
+            return this._requestGenerateBrowserLLM(
+                prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat
+            );
+        }
+
         const promptMessage = this._convertToMessage(prompt);
         const messages = isChat ? this.messages : [];
         messages.push(promptMessage);
@@ -1149,6 +1459,60 @@ export class AIAdapter {
      */
     startChat (history) {
         this.messages = history || [];
+        if (this._browserAI) this._browserAI.resetCache();
+    }
+
+    /**
+     * Request embedding of content using browser AI.
+     * @param {Array.<string> | string} contentParts - content to AI
+     * @returns {Promise<number[]>} - a Promise that resolves to embedding vector
+     * @private
+     */
+    _requestEmbeddingBrowserLLM (contentParts) {
+        if (!contentParts || !contentParts.length) {
+            return [];
+        }
+        
+        if (typeof contentParts === 'string') {
+            contentParts = [contentParts];
+        }
+
+        const text = contentParts.reduce((acc, p) => {
+            if (typeof p === 'string') {
+                return acc + p;
+            }
+            if (p.type === 'text') {
+                return acc + p.data;
+            }
+            return acc;
+        }, '');
+
+        let effectiveBaseUrl = this.baseUrl;
+        if (!effectiveBaseUrl ||
+            effectiveBaseUrl === PROVIDERS.Gemini.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.OpenAI.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.Anthropic.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.OpenAICompatible.baseUrl) {
+            effectiveBaseUrl = PROVIDERS.BrowserLLM.baseUrl;
+        }
+
+        if (this._browserAI) {
+            this._browserAI.baseUrl = effectiveBaseUrl;
+        } else {
+            this._browserAI = new BrowserAIProvider(effectiveBaseUrl);
+        }
+        let effectiveEmbeddingModelId = this.modelID;
+        if (!effectiveEmbeddingModelId ||
+            effectiveEmbeddingModelId === PROVIDERS.Gemini.defaultModels.embedding ||
+            effectiveEmbeddingModelId === PROVIDERS.OpenAI.defaultModels.embedding ||
+            effectiveEmbeddingModelId === PROVIDERS.OpenAICompatible.defaultModels.embedding) {
+            effectiveEmbeddingModelId = PROVIDERS.BrowserLLM.defaultModels.embedding;
+        }
+        this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
+        this._browserAI.setEmbeddingModel(effectiveEmbeddingModelId);
+        this._browserAI.onProgress = null;
+
+        return this._browserAI.embed(text);
     }
 
     /**
@@ -1159,6 +1523,10 @@ export class AIAdapter {
     async requestEmbedding (contentParts) {
         // Load baseUrl/modelID from the sprite variables before building the client.
         this.applyConfigFromVariables();
+
+        if (this.getApiType() === 'BrowserLLM') {
+            return this._requestEmbeddingBrowserLLM(contentParts);
+        }
 
         if (!contentParts || !contentParts.length) {
             return [];
@@ -1200,6 +1568,171 @@ export class AIAdapter {
         } finally {
             // Remove the abort controller from the array when request is finished
             this._removeAbortController(abortController);
+        }
+    }
+
+    /**
+     * Clear cache for a specific model by its index.
+     * @param {number} modelIndex - 1-based index of the model
+     * @returns {Promise<string>} - A promise that resolves to status message
+     */
+    async clearBrowserLLMModelCache (modelIndex) {
+        const apiType = this.getApiType();
+        if (apiType !== 'BrowserLLM') {
+            return 'API type is not BrowserLLM';
+        }
+
+        const models = await this.getModels();
+        const idx = Math.round(modelIndex) - 1;
+        if (idx < 0 || idx >= models.length) {
+            return `Model index ${modelIndex} out of bounds`;
+        }
+
+        const targetModelId = models[idx].id;
+        const {name: targetRepo, dtype: targetDtype} = this._parseModelId(targetModelId);
+        console.log(
+            `[BrowserAI] Starting cache clear for model ID: "${targetModelId}"` +
+            ` (Repo: ${targetRepo}, Dtype: ${targetDtype}, Index: ${modelIndex})`
+        );
+        let deleteCount = 0;
+
+        try {
+            if (typeof caches !== 'undefined') {
+                const cacheNames = await caches.keys();
+                for (const cacheName of cacheNames) {
+                    if (cacheName.includes('transformers') || cacheName.includes('onnxruntime')) {
+                        console.log(`[BrowserAI] Scanning cache: ${cacheName}`);
+                        const cache = await caches.open(cacheName);
+                        const requests = await cache.keys();
+                        for (const req of requests) {
+                            const url = req.url;
+                            
+                            let repo = null;
+                            const match = url.match(/\/([^/]+)\/([^/]+)\/resolve\//);
+                            if (match) {
+                                repo = `${match[1]}/${match[2]}`;
+                            } else {
+                                try {
+                                    const pathParts = new URL(url).pathname.split('/');
+                                    const resolveIdx = pathParts.indexOf('resolve');
+                                    if (resolveIdx >= 2) {
+                                        repo = `${pathParts[resolveIdx - 2]}/${pathParts[resolveIdx - 1]}`;
+                                    }
+                                } catch (e) {
+                                    // Ignore
+                                }
+                            }
+
+                            if (repo === targetRepo) {
+                                let dtype = 'fp32';
+                                if (url.includes('.onnx') || url.includes('.onnx_data')) {
+                                    const dtypeMatch = url.match(
+                                        /[_/](q4f16|q4|q2f16|q2|q8|fp16|fp32)(?:\.onnx|_|[/]|\b)/i
+                                    );
+                                    if (dtypeMatch) {
+                                        dtype = dtypeMatch[1].toLowerCase();
+                                    }
+                                }
+
+                                const isModelFile = url.includes('.onnx') || url.includes('.onnx_data');
+                                if (!isModelFile || dtype === targetDtype) {
+                                    console.log(`[BrowserAI] Deleting cached file: ${url}`);
+                                    const success = await cache.delete(req);
+                                    if (success) {
+                                        deleteCount++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('[BrowserAI] Failed to delete cache for model:', err);
+            return `Error clearing cache: ${err.message}`;
+        }
+
+        console.log(`[BrowserAI] Successfully cleared ${deleteCount} cache entries for model "${targetModelId}"`);
+
+        // Reset models list for all adapters to force re-scanning
+        Object.values(AIAdapter.ADAPTERS).forEach(adapter => {
+            adapter.models = [];
+        });
+        
+        // Also reset memory cache if it was active
+        if (this._browserAI) {
+            if (this._browserAI.model === targetModelId) {
+                this._browserAI._pipe = null;
+            }
+            if (this._browserAI.embeddingModel === targetModelId) {
+                this._browserAI._embeddingPipe = null;
+            }
+            this._browserAI.resetCache();
+        }
+
+        this._removeRecordedModel(targetModelId);
+
+        return `Cleared ${deleteCount} cache entries for model "${targetModelId}"`;
+    }
+
+    /**
+     * Download specific BrowserLLM model (generative or embedding).
+     * @param {string} modelID - target model ID (with _dtype)
+     * @param {string} modelType - 'generative' | 'embedding'
+     * @param {function} progressCallback - callback function for download progress
+     * @returns {Promise<void>} - a Promise that resolves when the model is downloaded
+     */
+    async downloadBrowserLLMModel (modelID, modelType, progressCallback) {
+        this.applyConfigFromVariables();
+        let effectiveBaseUrl = this.baseUrl;
+        if (!effectiveBaseUrl ||
+            effectiveBaseUrl === PROVIDERS.Gemini.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.OpenAI.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.Anthropic.baseUrl ||
+            effectiveBaseUrl === PROVIDERS.OpenAICompatible.baseUrl) {
+            effectiveBaseUrl = PROVIDERS.BrowserLLM.baseUrl;
+        }
+
+        if (this._browserAI) {
+            this._browserAI.baseUrl = effectiveBaseUrl;
+        } else {
+            this._browserAI = new BrowserAIProvider(effectiveBaseUrl);
+        }
+
+        this._browserAI.onProgress = progressCallback;
+
+        try {
+            if (modelType === 'generative') {
+                let effectiveModelId = modelID || this.modelID;
+                if (!effectiveModelId ||
+                    effectiveModelId === PROVIDERS.Gemini.defaultModels.generative ||
+                    effectiveModelId === PROVIDERS.OpenAI.defaultModels.generative ||
+                    effectiveModelId === PROVIDERS.Anthropic.defaultModels.generative ||
+                    effectiveModelId === PROVIDERS.OpenAICompatible.defaultModels.generative) {
+                    effectiveModelId = PROVIDERS.BrowserLLM.defaultModels.generative;
+                }
+                this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
+                this._browserAI.setModel(effectiveModelId);
+                await this._browserAI._getPipeline(true);
+                this._recordDownloadedModel(effectiveModelId);
+            } else if (modelType === 'embedding') {
+                let effectiveEmbeddingModelId = modelID || this.modelID;
+                if (!effectiveEmbeddingModelId ||
+                    effectiveEmbeddingModelId === PROVIDERS.Gemini.defaultModels.embedding ||
+                    effectiveEmbeddingModelId === PROVIDERS.OpenAI.defaultModels.embedding ||
+                    effectiveEmbeddingModelId === PROVIDERS.OpenAICompatible.defaultModels.embedding) {
+                    effectiveEmbeddingModelId = PROVIDERS.BrowserLLM.defaultModels.embedding;
+                }
+                this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
+                this._browserAI.setEmbeddingModel(effectiveEmbeddingModelId);
+                await this._browserAI._getEmbeddingPipeline(true);
+                this._recordDownloadedModel(effectiveEmbeddingModelId);
+            }
+        } finally {
+            this._browserAI.onProgress = null;
+            Object.values(AIAdapter.ADAPTERS).forEach(adapter => {
+                adapter.models = [];
+            });
         }
     }
 
@@ -1274,6 +1807,101 @@ export class AIAdapter {
         const index = this.abortControllers.indexOf(abortController);
         if (index !== -1) {
             this.abortControllers.splice(index, 1);
+        }
+    }
+
+    /**
+     * Parse model ID into repository name and dtype.
+     * @param {string} modelId - model ID
+     * @returns {object} - {name: repository name, dtype: data type}
+     * @private
+     */
+    _parseModelId (modelId) {
+        if (!modelId) return {name: '', dtype: null};
+        const knownDtypes = ['auto', 'q4f16', 'q4', 'q2f16', 'q2', 'q8', 'fp16', 'fp32'];
+        let repo = modelId;
+        let dtype = null;
+
+        const lastUnderscore = modelId.lastIndexOf('_');
+        if (lastUnderscore !== -1) {
+            const potentialDtype = modelId.substring(lastUnderscore + 1);
+            if (knownDtypes.includes(potentialDtype)) {
+                repo = modelId.substring(0, lastUnderscore);
+                dtype = potentialDtype;
+            }
+        }
+        return {name: repo, dtype: dtype};
+    }
+
+    /**
+     * Get recorded dtypes map from localStorage.
+     * @returns {object} - map of repo -> array of dtypes
+     * @private
+     */
+    _getRecordedDtypes () {
+        if (typeof window === 'undefined' || !window.localStorage) return {};
+        try {
+            const data = window.localStorage.getItem('xcx_gai_downloaded_dtypes');
+            return data ? JSON.parse(data) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    /**
+     * Record downloaded model dtype in localStorage.
+     * @param {string} modelId - model ID
+     * @returns {void}
+     * @private
+     */
+    _recordDownloadedModel (modelId) {
+        if (!modelId) return;
+        if (typeof window === 'undefined' || !window.localStorage) return;
+
+        const {name: repo, dtype: parsedDtype} = this._parseModelId(modelId);
+        const dtype = parsedDtype || 'q4f16'; // default fallback
+
+        try {
+            const dtypesMap = this._getRecordedDtypes();
+            if (!dtypesMap[repo]) {
+                dtypesMap[repo] = [];
+            }
+            if (!dtypesMap[repo].includes(dtype)) {
+                dtypesMap[repo].push(dtype);
+                window.localStorage.setItem('xcx_gai_downloaded_dtypes', JSON.stringify(dtypesMap));
+            }
+        } catch (e) {
+            // Ignore
+        }
+    }
+
+    /**
+     * Remove recorded model dtype from localStorage.
+     * @param {string} modelId - model ID
+     * @returns {void}
+     * @private
+     */
+    _removeRecordedModel (modelId) {
+        if (!modelId) return;
+        if (typeof window === 'undefined' || !window.localStorage) return;
+
+        const {name: repo, dtype} = this._parseModelId(modelId);
+
+        try {
+            const dtypesMap = this._getRecordedDtypes();
+            if (dtypesMap[repo]) {
+                if (dtype) {
+                    dtypesMap[repo] = dtypesMap[repo].filter(d => d !== dtype);
+                } else {
+                    delete dtypesMap[repo];
+                }
+                if (dtypesMap[repo] && dtypesMap[repo].length === 0) {
+                    delete dtypesMap[repo];
+                }
+                window.localStorage.setItem('xcx_gai_downloaded_dtypes', JSON.stringify(dtypesMap));
+            }
+        } catch (e) {
+            // Ignore
         }
     }
 }

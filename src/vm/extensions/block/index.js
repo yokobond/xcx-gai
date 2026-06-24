@@ -13,6 +13,175 @@ import {ensureConfigVariables, getConfigVariableRaw, setConfigVariable} from './
 import {dotProduct, cosineDistance, euclideanDistance} from './math-util.js';
 
 
+class DownloadProgressBar {
+    constructor (title = 'Downloading Model...') {
+        this.title = title;
+        this.element = null;
+        this.progressFill = null;
+        this.progressText = null;
+        this.statusText = null;
+        this.styleSheet = null;
+        this.createDOM();
+    }
+
+    createDOM () {
+        const overlay = document.createElement('div');
+        overlay.id = 'xcx-gai-download-overlay';
+        Object.assign(overlay.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(15, 15, 23, 0.4)',
+            backdropFilter: 'blur(12px)',
+            webkitBackdropFilter: 'blur(12px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: '999999',
+            fontFamily: '"Inter", "Helvetica Neue", Arial, sans-serif',
+            opacity: '0',
+            transition: 'opacity 0.3s ease'
+        });
+
+        const card = document.createElement('div');
+        Object.assign(card.style, {
+            backgroundColor: 'rgba(30, 30, 46, 0.85)',
+            color: '#cdd6f4',
+            borderRadius: '24px',
+            padding: '32px',
+            width: '420px',
+            boxShadow: '0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            transform: 'scale(0.95)',
+            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        });
+
+        const title = document.createElement('div');
+        title.innerText = this.title;
+        Object.assign(title.style, {
+            fontSize: '20px',
+            fontWeight: '700',
+            letterSpacing: '-0.5px',
+            background: 'linear-gradient(135deg, #cba6f7 0%, #f5c2e7 100%)',
+            webkitBackgroundClip: 'text',
+            webkitTextFillColor: 'transparent',
+            textAlign: 'center'
+        });
+
+        const progressContainer = document.createElement('div');
+        Object.assign(progressContainer.style, {
+            width: '100%',
+            height: '16px',
+            backgroundColor: '#313244',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            position: 'relative',
+            boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.3)'
+        });
+
+        const progressFill = document.createElement('div');
+        Object.assign(progressFill.style, {
+            width: '0%',
+            height: '100%',
+            background: 'linear-gradient(90deg, #89b4fa, #cba6f7, #f5c2e7)',
+            backgroundSize: '200% 100%',
+            borderRadius: '8px',
+            transition: 'width 0.1s ease',
+            animation: 'gradientMove 2s linear infinite'
+        });
+
+        const styleSheet = document.createElement('style');
+        styleSheet.innerText = `
+            @keyframes gradientMove {
+                0% { background-position: 0% 50%; }
+                100% { background-position: 200% 50%; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        this.styleSheet = styleSheet;
+
+        const infoContainer = document.createElement('div');
+        Object.assign(infoContainer.style, {
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: '13px',
+            fontWeight: '500',
+            color: '#a6adc8'
+        });
+
+        const statusText = document.createElement('div');
+        statusText.innerText = 'Initializing...';
+        Object.assign(statusText.style, {
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: '300px'
+        });
+
+        const progressText = document.createElement('div');
+        progressText.innerText = '0%';
+        Object.assign(progressText.style, {
+            fontVariantNumeric: 'tabular-nums'
+        });
+
+        progressContainer.appendChild(progressFill);
+        infoContainer.appendChild(statusText);
+        infoContainer.appendChild(progressText);
+
+        card.appendChild(title);
+        card.appendChild(progressContainer);
+        card.appendChild(infoContainer);
+        overlay.appendChild(card);
+
+        document.body.appendChild(overlay);
+
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1';
+            card.style.transform = 'scale(1)';
+        });
+
+        this.element = overlay;
+        this.card = card;
+        this.progressFill = progressFill;
+        this.progressText = progressText;
+        this.statusText = statusText;
+    }
+
+    update (progress, status) {
+        if (this.progressFill) {
+            this.progressFill.style.width = `${progress}%`;
+        }
+        if (this.progressText) {
+            this.progressText.innerText = `${Math.round(progress)}%`;
+        }
+        if (this.statusText && status) {
+            this.statusText.innerText = status;
+        }
+    }
+
+    destroy () {
+        if (this.element) {
+            this.element.style.opacity = '0';
+            if (this.card) {
+                this.card.style.transform = 'scale(0.95)';
+            }
+            setTimeout(() => {
+                if (this.element && this.element.parentNode) {
+                    this.element.parentNode.removeChild(this.element);
+                }
+                if (this.styleSheet && this.styleSheet.parentNode) {
+                    this.styleSheet.parentNode.removeChild(this.styleSheet);
+                }
+            }, 300);
+        }
+    }
+}
+
+
 /**
  * Get all user-defined procedures from the target
  * @param {Target} target - the target to get procedures from
@@ -701,6 +870,43 @@ class GAIBlocks {
                     arguments: {
                     }
                 },
+                {
+                    opcode: 'downloadBrowserLLMModel',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.downloadBrowserLLMModel',
+                        default: 'download browser LLM model [MODEL_ID] as [MODEL_TYPE]',
+                        description: 'download specific browser AI model'
+                    }),
+                    func: 'downloadBrowserLLMModel',
+                    arguments: {
+                        MODEL_ID: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'onnx-community/gemma-4-E2B-it-ONNX_q4f16'
+                        },
+                        MODEL_TYPE: {
+                            type: ArgumentType.STRING,
+                            menu: 'browserLLMModelTypeMenu',
+                            defaultValue: 'generative'
+                        }
+                    }
+                },
+                {
+                    opcode: 'clearBrowserLLMModelCache',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.clearBrowserLLMModelCache',
+                        default: 'clear cache for model at [MODEL_INDEX]',
+                        description: 'clear cache for specific browser AI model'
+                    }),
+                    func: 'clearBrowserLLMModelCache',
+                    arguments: {
+                        MODEL_INDEX: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: 1
+                        }
+                    }
+                },
                 '---',
                 {
                     opcode: 'getValueFromJson',
@@ -1025,6 +1231,28 @@ class GAIBlocks {
                 adapterMenu: {
                     acceptReporters: false,
                     items: this.getAdapterMenu()
+                },
+
+                browserLLMModelTypeMenu: {
+                    acceptReporters: true,
+                    items: [
+                        {
+                            text: formatMessage({
+                                id: 'gai.modelType.generative',
+                                default: 'text generation',
+                                description: 'text generation model type'
+                            }),
+                            value: 'generative'
+                        },
+                        {
+                            text: formatMessage({
+                                id: 'gai.modelType.embedding',
+                                default: 'embedding',
+                                description: 'embedding model type'
+                            }),
+                            value: 'embedding'
+                        }
+                    ]
                 }
             }
         };
@@ -1233,6 +1461,14 @@ class GAIBlocks {
                     description: 'Anthropic adapter'
                 }),
                 value: 'Anthropic'
+            },
+            {
+                text: formatMessage({
+                    id: 'gai.adapterMenu.browserLLM',
+                    default: 'Browser LLM',
+                    description: 'Browser LLM AI adapter'
+                }),
+                value: 'BrowserLLM'
             }
         ];
         return menu;
@@ -1747,6 +1983,12 @@ class GAIBlocks {
             return '';
         }
         const detail = (error.message || error.name || '').trim();
+        if (detail === 'MODEL_NOT_DOWNLOADED') {
+            return formatMessage({
+                id: 'gai.error.modelNotDownloaded',
+                default: 'Browser LLM model is not downloaded. Please run the download block first.'
+            });
+        }
         const status = error.statusCode;
         if (error.name === 'AI_APICallError' || typeof status === 'number') {
             switch (status) {
@@ -2245,6 +2487,91 @@ class GAIBlocks {
             return '';
         }
         return ai.getApiType();
+    }
+
+    /**
+     * Clear cache for a specific model by its index.
+     * @param {object} args - the block's arguments.
+     * @param {number} args.MODEL_INDEX - model index
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - status message
+     */
+    clearBrowserLLMModelCache (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        if (!ai) {
+            return Promise.resolve('AI is not available');
+        }
+        const modelIndex = Cast.toNumber(args.MODEL_INDEX);
+        return ai.clearBrowserLLMModelCache(modelIndex);
+    }
+
+    /**
+     * Download specific BrowserLLM model (generative or embedding).
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_ID - model ID (with _dtype)
+     * @param {string} args.MODEL_TYPE - model type ('generative' | 'embedding')
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - validation result message
+     */
+    downloadBrowserLLMModel (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        if (!ai) {
+            return Promise.resolve('AI is not available');
+        }
+
+        const modelID = Cast.toString(args.MODEL_ID).trim();
+        const modelType = Cast.toString(args.MODEL_TYPE) || 'generative';
+        const titleMsg = formatMessage({
+            id: 'gai.downloadingModel',
+            default: 'Downloading model...'
+        });
+        const progressBar = new DownloadProgressBar(titleMsg);
+
+        const activeDownloads = new Map();
+        let maxProgress = 0;
+        const progressCallback = data => {
+            if (data.status === 'initiate') {
+                activeDownloads.set(data.file, {progress: 0});
+            } else if (data.status === 'progress') {
+                activeDownloads.set(data.file, {progress: data.progress});
+            } else if (data.status === 'done') {
+                activeDownloads.set(data.file, {progress: 100});
+            }
+
+            let totalProgress = 0;
+            const fileCount = activeDownloads.size;
+            for (const [_, info] of activeDownloads) {
+                totalProgress += info.progress;
+            }
+            const averageProgress = fileCount > 0 ? totalProgress / fileCount : 0;
+            maxProgress = Math.max(maxProgress, averageProgress);
+
+            const currentFileName = data.file ? data.file.split('/').pop() : '';
+            let statusText = '';
+            if (data.status === 'done') {
+                statusText = `Loaded ${currentFileName}`;
+            } else if (currentFileName) {
+                statusText = `Downloading ${currentFileName}...`;
+            } else {
+                statusText = 'Loading...';
+            }
+
+            progressBar.update(maxProgress, statusText);
+        };
+
+        return ai.downloadBrowserLLMModel(modelID, modelType, progressCallback)
+            .then(() => {
+                progressBar.update(100, 'Complete!');
+                progressBar.destroy();
+                return 'Download complete';
+            })
+            .catch(error => {
+                progressBar.destroy();
+                console.error(error);
+                throw error;
+            });
     }
 
     /**
