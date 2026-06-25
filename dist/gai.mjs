@@ -50912,6 +50912,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "downloadBrowserLLMModel",
     value: function downloadBrowserLLMModel(args, util) {
+      var _this9 = this;
       var target = util.target;
       var ai = this.getAI(target);
       if (!ai) {
@@ -50931,11 +50932,18 @@ var GAIBlocks = /*#__PURE__*/function () {
       var cancelPromise = new Promise(function (resolve) {
         cancelResolve = resolve;
       });
-      var progressBar = new DownloadProgressBar(titleMsg, function () {
+      var doCancel = function doCancel() {
         ai.cancelDownloadBrowserLLMModel();
         progressBar.destroy();
         cancelResolve('Download cancelled');
-      });
+        _this9._activeDownload = null;
+      };
+      var progressBar = new DownloadProgressBar(titleMsg, doCancel);
+
+      // Store the cancel function so the cancel block can call it.
+      this._activeDownload = {
+        cancel: doCancel
+      };
       var activeDownloads = new Map();
       var maxProgress = 0;
       var progressCallback = function progressCallback(data) {
@@ -50984,9 +50992,11 @@ var GAIBlocks = /*#__PURE__*/function () {
       var downloadPromise = ai.downloadBrowserLLMModel(modelID, modelType, progressCallback).then(function () {
         progressBar.update(100, 'Complete!');
         progressBar.destroy();
+        _this9._activeDownload = null;
         return 'Download complete';
       }).catch(function (error) {
         progressBar.destroy();
+        _this9._activeDownload = null;
         if (error.message && error.message.includes('DOWNLOAD_CANCELLED')) {
           return 'Download cancelled';
         }
@@ -51004,6 +51014,10 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "cancelBrowserLLMModelDownload",
     value: function cancelBrowserLLMModelDownload(args, util) {
+      if (this._activeDownload) {
+        this._activeDownload.cancel();
+        return;
+      }
       var target = util.target;
       var ai = this.getAI(target);
       if (!ai) return;
@@ -51374,7 +51388,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this9 = this;
+      var _this0 = this;
       var targetName = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var defaultApiKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
       var customMessage = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
@@ -51451,7 +51465,7 @@ var GAIBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this9.apiKeyDialogOpened = false;
+        _this0.apiKeyDialogOpened = false;
       });
     }
 

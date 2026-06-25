@@ -2581,11 +2581,17 @@ class GAIBlocks {
             cancelResolve = resolve;
         });
 
-        const progressBar = new DownloadProgressBar(titleMsg, () => {
+        const doCancel = () => {
             ai.cancelDownloadBrowserLLMModel();
             progressBar.destroy();
             cancelResolve('Download cancelled');
-        });
+            this._activeDownload = null;
+        };
+
+        const progressBar = new DownloadProgressBar(titleMsg, doCancel);
+
+        // Store the cancel function so the cancel block can call it.
+        this._activeDownload = {cancel: doCancel};
 
         const activeDownloads = new Map();
         let maxProgress = 0;
@@ -2623,10 +2629,12 @@ class GAIBlocks {
             .then(() => {
                 progressBar.update(100, 'Complete!');
                 progressBar.destroy();
+                this._activeDownload = null;
                 return 'Download complete';
             })
             .catch(error => {
                 progressBar.destroy();
+                this._activeDownload = null;
                 if (error.message && error.message.includes('DOWNLOAD_CANCELLED')) {
                     return 'Download cancelled';
                 }
@@ -2643,6 +2651,10 @@ class GAIBlocks {
      * @param {object} util - utility object provided by the runtime.
      */
     cancelBrowserLLMModelDownload (args, util) {
+        if (this._activeDownload) {
+            this._activeDownload.cancel();
+            return;
+        }
         const target = util.target;
         const ai = this.getAI(target);
         if (!ai) return;
