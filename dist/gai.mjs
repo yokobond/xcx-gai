@@ -133,17 +133,17 @@ function _iterableToArrayLimit(r, l) {
   }
 }
 
-function _arrayLikeToArray$1(r, a) {
+function _arrayLikeToArray$4(r, a) {
   (null == a || a > r.length) && (a = r.length);
   for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
   return n;
 }
 
-function _unsupportedIterableToArray$1(r, a) {
+function _unsupportedIterableToArray$4(r, a) {
   if (r) {
-    if ("string" == typeof r) return _arrayLikeToArray$1(r, a);
+    if ("string" == typeof r) return _arrayLikeToArray$4(r, a);
     var t = {}.toString.call(r).slice(8, -1);
-    return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0;
+    return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$4(r, a) : void 0;
   }
 }
 
@@ -152,7 +152,7 @@ function _nonIterableRest() {
 }
 
 function _slicedToArray(r, e) {
-  return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray$1(r, e) || _nonIterableRest();
+  return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray$4(r, e) || _nonIterableRest();
 }
 
 function _classCallCheck$1(a, n) {
@@ -1338,6 +1338,7 @@ var en = {
 	"gai.askApiKey": "ask API key with message [MESSAGE]",
 	"gai.askApiKeyDefault": "Please enter API key",
 	"gai.setApiKey": "set API key to [KEY]",
+	"gai.clearBrowserLLMModelCache": "clear cache for model at [MODEL_INDEX]",
 	"gai.apiKey": "API key",
 	"gai.apiKeyDialog.message": "set API key for AI of [targetName]",
 	"gai.apiKeyDialog.howToGetApiKey": "get API key",
@@ -1349,6 +1350,7 @@ var en = {
 	"gai.adapterMenu.openai": "OpenAI",
 	"gai.adapterMenu.openaiCompatible": "OpenAI Compatible",
 	"gai.adapterMenu.anthropic": "Anthropic",
+	"gai.adapterMenu.browserLLM": "Browser LLM",
 	"gai.getValueFromJson": "get [PATH] from JSON [JSON]",
 	"gai.getItemOfJsonArray": "item [INDEX] of JSON array [JSON]",
 	"gai.lengthOfJsonArray": "length of JSON array [JSON]",
@@ -1357,7 +1359,13 @@ var en = {
 	"gai.error.modelNotFound": "Model not found or not supported. Check the model name.",
 	"gai.error.unauthorized": "Authentication failed. Check your API key.",
 	"gai.error.rateLimit": "Rate limit or quota exceeded. Please wait and try again.",
-	"gai.error.apiCall": "AI request failed."
+	"gai.error.apiCall": "AI request failed.",
+	"gai.downloadBrowserLLMModel": "download browser LLM model [MODEL_ID] as [MODEL_TYPE]",
+	"gai.modelType.generative": "text generation",
+	"gai.modelType.embedding": "embedding",
+	"gai.downloadingModel": "Downloading model...",
+	"gai.error.modelNotDownloaded": "Browser LLM model is not downloaded. Please run the download block first.",
+	"gai.cancelBrowserLLMModelDownload": "cancel browser LLM model download"
 };
 var ja = {
 	"gai.name": "GAI",
@@ -1425,6 +1433,7 @@ var ja = {
 	"gai.askApiKey": "[MESSAGE]とメッセージを出してAPIキーを聞く",
 	"gai.askApiKeyDefault": "APIキーを入力してください",
 	"gai.setApiKey": "APIキーを[KEY]にする",
+	"gai.clearBrowserLLMModelCache": "[MODEL_INDEX] 番目のブラウザLLMモデルのキャッシュをクリアする",
 	"gai.apiKey": "APIキー",
 	"gai.apiKeyDialog.message": "[targetName] のAIのAPIキーを設定してください",
 	"gai.apiKeyDialog.howToGetApiKey": "APIキーを取得",
@@ -1436,6 +1445,7 @@ var ja = {
 	"gai.adapterMenu.openai": "OpenAI",
 	"gai.adapterMenu.openaiCompatible": "OpenAI互換",
 	"gai.adapterMenu.anthropic": "Anthropic",
+	"gai.adapterMenu.browserLLM": "ブラウザ LLM",
 	"gai.getValueFromJson": "JSON [JSON]から[PATH]を取得",
 	"gai.getItemOfJsonArray": "JSON配列[JSON]の[INDEX]番目",
 	"gai.lengthOfJsonArray": "JSON配列[JSON]の長さ",
@@ -1444,7 +1454,13 @@ var ja = {
 	"gai.error.modelNotFound": "モデルが見つからないか、サポートされていません。モデル名を確認してください。",
 	"gai.error.unauthorized": "認証に失敗しました。APIキーを確認してください。",
 	"gai.error.rateLimit": "リクエスト制限または利用上限に達しました。しばらくしてから再試行してください。",
-	"gai.error.apiCall": "AIリクエストに失敗しました。"
+	"gai.error.apiCall": "AIリクエストに失敗しました。",
+	"gai.downloadBrowserLLMModel": "ブラウザLLM [MODEL_TYPE] モデル [MODEL_ID] をダウンロードする",
+	"gai.modelType.generative": "文章生成",
+	"gai.modelType.embedding": "埋め込み",
+	"gai.downloadingModel": "モデルをダウンロード中...",
+	"gai.error.modelNotDownloaded": "ブラウザLLMモデルがダウンロードされていません。先にダウンロードブロックを実行してください。",
+	"gai.cancelBrowserLLMModelDownload": "ブラウザLLMモデルのダウンロードを中断する"
 };
 var translations = {
 	en: en,
@@ -1515,6 +1531,7 @@ var translations = {
 	"gai.askApiKey": "[MESSAGE]と メッセージ を だして APIキー を きく",
 	"gai.askApiKeyDefault": "APIキー を にゅうりょく してください",
 	"gai.setApiKey": "APIキー を[KEY]に する",
+	"gai.clearBrowserLLMModelCache": "[MODEL_INDEX] ばんめの ブラウザLLMモデル の キャッシュ を クリアする",
 	"gai.apiKey": "APIキー",
 	"gai.apiKeyDialog.message": "[targetName] の AI の APIキー を せってい してください",
 	"gai.apiKeyDialog.howToGetApiKey": "APIキー を しゅとく",
@@ -1526,6 +1543,7 @@ var translations = {
 	"gai.adapterMenu.openai": "OpenAI",
 	"gai.adapterMenu.openaiCompatible": "OpenAIごかん",
 	"gai.adapterMenu.anthropic": "Anthropic",
+	"gai.adapterMenu.browserLLM": "ブラウザ LLM",
 	"gai.getValueFromJson": "JSON [JSON]から[PATH]を しゅとく",
 	"gai.getItemOfJsonArray": "JSONはいれつ[JSON]の[INDEX]ばんめ",
 	"gai.lengthOfJsonArray": "JSONはいれつ[JSON]の ながさ",
@@ -1534,7 +1552,13 @@ var translations = {
 	"gai.error.modelNotFound": "モデルが みつからないか、サポートされていません。モデルめい を かくにん してください。",
 	"gai.error.unauthorized": "にんしょう に しっぱい しました。APIキー を かくにん してください。",
 	"gai.error.rateLimit": "リクエスト せいげん または りようじょうげん に たっしました。しばらく してから もういちど ためして ください。",
-	"gai.error.apiCall": "AIリクエスト に しっぱい しました。"
+	"gai.error.apiCall": "AIリクエスト に しっぱい しました。",
+	"gai.downloadBrowserLLMModel": "ブラウザLLM [MODEL_TYPE] モデル [MODEL_ID] をダウンロードする",
+	"gai.modelType.generative": "ぶんしょうせいせい",
+	"gai.modelType.embedding": "うめこみ",
+	"gai.downloadingModel": "モデルをダウンロードちゅう...",
+	"gai.error.modelNotDownloaded": "ブラウザLLMモデルがダウンロードされていません。さきにダウンロードブロックをじっこうしてください。",
+	"gai.cancelBrowserLLMModelDownload": "ブラウザLLMモデルのダウンロードをちゅうだんする"
 }
 };
 
@@ -1568,7 +1592,7 @@ var checkDebugMode = function checkDebugMode() {
 };
 
 function _arrayWithoutHoles(r) {
-  if (Array.isArray(r)) return _arrayLikeToArray$1(r);
+  if (Array.isArray(r)) return _arrayLikeToArray$4(r);
 }
 
 function _iterableToArray(r) {
@@ -1580,7 +1604,7 @@ function _nonIterableSpread() {
 }
 
 function _toConsumableArray(r) {
-  return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray$1(r) || _nonIterableSpread();
+  return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray$4(r) || _nonIterableSpread();
 }
 
 function _defineProperty(e, r, t) {
@@ -44157,6 +44181,1379 @@ createIdGenerator({ prefix: "aiobj", size: 24 });
 // src/generate-object/stream-object.ts
 createIdGenerator({ prefix: "aiobj", size: 24 });
 
+/**
+ * Force the Blockly variable/list flyout to re-render so a just-created
+ * variable or list shows up in the palette immediately.
+ *
+ * A workspace update alone is not enough: the variables category is a *dynamic*
+ * toolbox category (`custom="VARIABLE"`), so the toolbox XML string never changes
+ * when a variable is added and the GUI's diff-based toolbox refresh is skipped. The
+ * flyout is only re-read on an explicit toolbox refresh (tab switch, drag-drop,
+ * etc.). Since the extension runs on the main thread with DOM access, we reach
+ * the scratch-blocks workspace through the rendered DOM + React fiber and call
+ * its `refreshToolboxSelection_` (the same method the GUI uses internally).
+ * Best-effort: if editor internals differ, the variable still appears on the next
+ * natural toolbox refresh.
+ * @returns {void}
+ */
+var refreshVariablePalette = function refreshVariablePalette() {
+  if (typeof document === 'undefined') return;
+  try {
+    var svg = document.querySelector('svg.blocklyWorkspace') || document.querySelector('.blocklyWorkspace');
+    var el = svg && svg.parentElement;
+    for (var depth = 0; depth < 20 && el; depth++) {
+      var fiberKey = Object.keys(el).find(function (k) {
+        return k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$');
+      });
+      if (fiberKey) {
+        var fiber = el[fiberKey];
+        while (fiber) {
+          var ws = fiber.stateNode && fiber.stateNode.workspace;
+          if (ws && typeof ws.refreshToolboxSelection_ === 'function') {
+            // The workspace XML reload (triggered by requestBlocksUpdate)
+            // leaves toolboxRefreshEnabled_ false, which makes
+            // refreshToolboxSelection_ a no-op. Re-enable it first, the
+            // same way the GUI's own updateToolbox does.
+            ws.toolboxRefreshEnabled_ = true;
+            ws.refreshToolboxSelection_();
+            return;
+          }
+          fiber = fiber.return;
+        }
+      }
+      el = el.parentElement;
+    }
+  } catch (e) {
+    // best-effort only; ignore if the editor internals have changed
+  }
+};
+
+var SKILLS_LIST_NAME = 'skills';
+var SKILLS_LIST_ID = 'gai_skills';
+
+// Header for the progressive-disclosure listing: only the name and description of
+// each skill are shown here. The model retrieves the full instructions on demand
+// with the `loadSkill` tool, keeping the system prompt small (see
+// https://ai-sdk.dev/cookbook/guides/agent-skills).
+var SKILLS_PROMPT_HEADER = 'You have the following Agent Skills available. Each is listed with its "name" ' + 'and a "description" of when to use it. When the user\'s request matches a ' + 'skill\'s description, call the "loadSkill" tool with that skill\'s name to ' + 'retrieve its full instructions, then follow them. Only load a skill when it ' + 'is relevant to the request.';
+
+// Header used for the fallback that inlines full skill bodies (for providers that
+// cannot call tools, e.g. the local model). Here the instructions are already in
+// context, so the model just follows the matching skill directly.
+var SKILLS_FULL_PROMPT_HEADER = 'You have the following Agent Skills, each written with a "name", a ' + '"description" of when to use it, and its instructions. When the user\'s ' + 'request matches a skill\'s description, follow that skill\'s instructions.';
+var FRONTMATTER_RE = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n?([\s\S]*)$/;
+
+/**
+ * Remove a single pair of surrounding quotes from a frontmatter value.
+ * @param {string} value - raw frontmatter value
+ * @returns {string} unquoted value
+ */
+var unquote = function unquote(value) {
+  var m = value.match(/^"([\s\S]*)"$/) || value.match(/^'([\s\S]*)'$/);
+  return m ? m[1] : value;
+};
+
+/**
+ * Parse one Agent Skills document (YAML frontmatter + markdown body) into its
+ * metadata and body. Missing fields fall back to sensible defaults so a skill is
+ * always addressable by name.
+ * @param {string} raw - the raw skill document
+ * @param {number} index - position in the list, used for a fallback name
+ * @returns {{name: string, description: string, body: string}} parsed skill
+ */
+var parseSkill = function parseSkill(raw, index) {
+  var text = String(raw);
+  var name = '';
+  var description = '';
+  var body = '';
+  var m = text.match(FRONTMATTER_RE);
+  if (m) {
+    body = m[2].trim();
+    m[1].split(/\r?\n/).forEach(function (line) {
+      var sep = line.indexOf(':');
+      if (sep === -1) return;
+      var key = line.slice(0, sep).trim().toLowerCase();
+      var val = unquote(line.slice(sep + 1).trim());
+      if (key === 'name') name = val;else if (key === 'description') description = val;
+    });
+  } else {
+    body = text.trim();
+  }
+  if (!name) name = "skill-".concat(index + 1);
+  if (!description) description = body.split(/\r?\n/)[0] || name;
+  return {
+    name: name,
+    description: description,
+    body: body
+  };
+};
+
+/**
+ * Ensure the target has a sprite-local list variable named `skills`, creating it
+ * if missing. The list holds one skill per item in Agent Skills format
+ * (YAML frontmatter + body); users edit it with the standard Scratch list blocks.
+ * @param {Target} target - target that should own the skills list
+ * @returns {Variable} the existing or newly created skills list variable
+ */
+var ensureSkillsList = function ensureSkillsList(target) {
+  var list = target.lookupVariableByNameAndType(SKILLS_LIST_NAME, 'list');
+  if (!list) {
+    list = target.lookupOrCreateList(SKILLS_LIST_ID, SKILLS_LIST_NAME);
+    if (target.runtime) {
+      target.runtime.emitProjectChanged();
+      // Sync the new list into the Blockly workspace variable map. This
+      // emits BLOCKS_NEED_UPDATE, which the VM turns into a workspace
+      // update that reloads the workspace XML (incl. the new variable).
+      if (typeof target.runtime.requestBlocksUpdate === 'function') {
+        target.runtime.requestBlocksUpdate();
+      }
+      // Then force the (dynamic) variable/list flyout to re-render so the
+      // list shows in the palette without re-opening the code tab.
+      refreshVariablePalette();
+    }
+  }
+  return list;
+};
+
+/**
+ * Discover the skills owned by a target by parsing each item of its `skills`
+ * list. Empty items are skipped. Read-only: does not create the list.
+ * @param {Target} target - target whose skills list is read
+ * @returns {Array.<{name: string, description: string, body: string}>} parsed skills
+ */
+var discoverSkills = function discoverSkills(target) {
+  if (!target || typeof target.lookupVariableByNameAndType !== 'function') return [];
+  var list = target.lookupVariableByNameAndType(SKILLS_LIST_NAME, 'list');
+  if (!list || !Array.isArray(list.value)) return [];
+  return list.value.filter(function (v) {
+    return String(v).trim();
+  }).map(function (v, i) {
+    return parseSkill(v, i);
+  }).filter(function (skill) {
+    return skill.body;
+  });
+};
+
+/**
+ * Build the progressive-disclosure skills section of the system instruction:
+ * only the name and description of each skill, plus guidance to call `loadSkill`.
+ * @param {Target} target - target whose skills are listed
+ * @returns {string} the skills prompt section, or '' if there are no skills
+ */
+var buildSkillsPrompt = function buildSkillsPrompt(target) {
+  var skills = discoverSkills(target);
+  if (skills.length === 0) return '';
+  var lines = skills.map(function (s) {
+    return "- name: ".concat(s.name, "\n  description: ").concat(s.description);
+  });
+  return "".concat(SKILLS_PROMPT_HEADER, "\n\n").concat(lines.join('\n'));
+};
+
+/**
+ * Look up the full instructions (body) of a skill by its name. Used by the
+ * `loadSkill` tool to lazily expand a skill into context. Case-insensitive.
+ * @param {Target} target - target whose skills are searched
+ * @param {string} name - the skill name to load
+ * @returns {string|null} the skill body, or null if no such skill
+ */
+var loadSkillBody = function loadSkillBody(target, name) {
+  var wanted = String(name).trim().toLowerCase();
+  var found = discoverSkills(target).find(function (s) {
+    return s.name.toLowerCase() === wanted;
+  });
+  return found ? found.body : null;
+};
+
+/**
+ * Compose a skills section that inlines the full body of every skill. Used as a
+ * fallback for providers that cannot call tools (e.g. the local model), where
+ * progressive disclosure via `loadSkill` is unavailable. Read-only.
+ * @param {Target} target - target whose skills list is read
+ * @returns {string} the skills prompt section, or '' if there are no skills
+ */
+var composeSkillsPrompt = function composeSkillsPrompt(target) {
+  var skills = discoverSkills(target);
+  if (skills.length === 0) return '';
+  var blocks = skills.map(function (s) {
+    return "## ".concat(s.name, "\n").concat(s.description, "\n\n").concat(s.body);
+  });
+  return "".concat(SKILLS_FULL_PROMPT_HEADER, "\n\n").concat(blocks.join('\n\n'));
+};
+
+// Scalar variables are looked up with the empty-string type in scratch-vm.
+var SCALAR_TYPE = '';
+
+/**
+ * Whether a raw variable value should be treated as "unset" (use the default).
+ * @param {*} raw - raw value read from a sprite variable
+ * @returns {boolean} true when empty/blank
+ */
+var isEmpty = function isEmpty(raw) {
+  if (raw === null || typeof raw === 'undefined') return true;
+  return String(raw).trim() === '';
+};
+
+// Parse functions return `null` to signal "unset/invalid" (use the default);
+// `null` is used instead of `undefined` because the repo's eslint bans the
+// `undefined` literal (no-undefined).
+
+/**
+ * Parse a trimmed string value, or null when empty.
+ * @param {*} raw - raw value
+ * @returns {?string} trimmed string or null
+ */
+var parseString = function parseString(raw) {
+  return isEmpty(raw) ? null : String(raw).trim();
+};
+
+/**
+ * Parse a free-form text value (not trimmed), or null when blank.
+ * @param {*} raw - raw value
+ * @returns {?string} the text or null
+ */
+var parseText = function parseText(raw) {
+  return isEmpty(raw) ? null : String(raw);
+};
+
+/**
+ * Parse a number clamped to the 0.0–1.0 range, or null when empty/invalid.
+ * @param {*} raw - raw value
+ * @returns {?number} clamped number or null
+ */
+var parseUnitRange = function parseUnitRange(raw) {
+  if (isEmpty(raw)) return null;
+  var n = Number(raw);
+  if (Number.isNaN(n)) return null;
+  return Math.max(0.0, Math.min(1.0, n));
+};
+
+/**
+ * Parse a positive integer (>= 1), or null when empty/invalid.
+ * @param {*} raw - raw value
+ * @returns {?number} positive integer or null
+ */
+var parsePositiveInt = function parsePositiveInt(raw) {
+  if (isEmpty(raw)) return null;
+  var n = parseInt(String(raw), 10);
+  if (Number.isNaN(n)) return null;
+  return Math.max(1, n);
+};
+
+/**
+ * Parse a comma-separated list into an array of non-empty trimmed strings,
+ * or null when nothing remains.
+ * @param {*} raw - raw value
+ * @returns {?Array.<string>} array or null
+ */
+var parseStopSequences = function parseStopSequences(raw) {
+  if (isEmpty(raw)) return null;
+  var arr = String(raw).split(',').map(function (s) {
+    return s.trim();
+  }).filter(function (s) {
+    return s !== '';
+  });
+  return arr.length > 0 ? arr : null;
+};
+
+/**
+ * Parse a JSON string into an object, or null when empty/invalid.
+ * @param {*} raw - raw value
+ * @returns {?object} parsed object or null
+ */
+var parseSchema = function parseSchema(raw) {
+  if (isEmpty(raw)) return null;
+  try {
+    return JSON.parse(String(raw));
+  } catch (error) {
+    console.error("responseSchema: ".concat(error.message));
+    return null;
+  }
+};
+
+// Initial values for the config variables. baseUrl and modelID mirror the
+// Gemini provider defaults in ai-adapter.js (PROVIDERS.Gemini), which is the
+// extension's default API type, so freshly created variables show the values
+// actually in use. The generation params have no fixed default — empty means
+// "let the model decide" — so they start as empty strings rather than the
+// scratch-vm scalar default of 0.
+var DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+var DEFAULT_MODEL_ID = 'gemini-flash-latest';
+
+/**
+ * Specifications for the AI config sprite variables. `dest` indicates where a
+ * parsed value belongs in the result of {@link readConfigFromVariables}:
+ * 'baseUrl' and 'modelID' are top-level; everything else goes into
+ * `generationConfig` keyed by `key`. `default` is the value seeded when the
+ * variable is first created. An empty variable means "use the default".
+ * @type {Array.<{key: string, name: string, id: string, dest: string, default: string, parse: Function}>}
+ */
+var CONFIG_VARIABLES = [{
+  key: 'baseUrl',
+  name: 'baseUrl',
+  id: 'gai_baseUrl',
+  dest: 'baseUrl',
+  default: DEFAULT_BASE_URL,
+  parse: parseString
+}, {
+  key: 'modelID',
+  name: 'modelID',
+  id: 'gai_modelID',
+  dest: 'modelID',
+  default: DEFAULT_MODEL_ID,
+  parse: parseString
+}, {
+  key: 'temperature',
+  name: 'temperature',
+  id: 'gai_temperature',
+  dest: 'generation',
+  default: '',
+  parse: parseUnitRange
+}, {
+  key: 'topP',
+  name: 'topP',
+  id: 'gai_topP',
+  dest: 'generation',
+  default: '',
+  parse: parseUnitRange
+}, {
+  key: 'topK',
+  name: 'topK',
+  id: 'gai_topK',
+  dest: 'generation',
+  default: '',
+  parse: parsePositiveInt
+}, {
+  key: 'maxOutputTokens',
+  name: 'maxOutputTokens',
+  id: 'gai_maxOutputTokens',
+  dest: 'generation',
+  default: '',
+  parse: parsePositiveInt
+}, {
+  key: 'stopSequences',
+  name: 'stopSequences',
+  id: 'gai_stopSequences',
+  dest: 'generation',
+  default: '',
+  parse: parseStopSequences
+}, {
+  key: 'systemInstruction',
+  name: 'systemInstruction',
+  id: 'gai_systemInstruction',
+  dest: 'generation',
+  default: '',
+  parse: parseText
+}, {
+  key: 'responseSchema',
+  name: 'responseSchema',
+  id: 'gai_responseSchema',
+  dest: 'generation',
+  default: '',
+  parse: parseSchema
+}];
+
+/**
+ * Find the config variable specification for a config key.
+ * @param {string} key - config key (e.g. 'temperature')
+ * @returns {?object} the spec, or undefined when unknown
+ */
+var specForKey = function specForKey(key) {
+  return CONFIG_VARIABLES.find(function (spec) {
+    return spec.key === key;
+  });
+};
+
+/**
+ * Ensure the target owns a sprite-local scalar variable for each AI config key,
+ * creating any that are missing. Mirrors `ensureSkillsList`: on first creation
+ * the project is marked changed, the Blockly workspace is asked to reload, and
+ * the (dynamic) variable flyout is refreshed so the variables show up in the
+ * palette without re-opening the Code tab.
+ * @param {Target} target - target that should own the config variables
+ * @returns {void}
+ */
+var ensureConfigVariables = function ensureConfigVariables(target) {
+  if (!target || typeof target.lookupOrCreateVariable !== 'function') return;
+  var created = false;
+  CONFIG_VARIABLES.forEach(function (spec) {
+    var existing = target.lookupVariableByNameAndType(spec.name, SCALAR_TYPE);
+    if (!existing) {
+      // Seed the default value so a new variable shows a usable value
+      // (scratch-vm scalars otherwise default to 0).
+      var variable = target.lookupOrCreateVariable(spec.id, spec.name);
+      variable.value = spec.default;
+      created = true;
+    }
+  });
+  if (created && target.runtime) {
+    target.runtime.emitProjectChanged();
+    if (typeof target.runtime.requestBlocksUpdate === 'function') {
+      target.runtime.requestBlocksUpdate();
+    }
+    refreshVariablePalette();
+  }
+};
+
+/**
+ * Read the AI config from the target's sprite variables and parse each value
+ * into its typed form. Read-only: never creates variables. Empty/unset/invalid
+ * values are omitted so callers fall back to provider defaults.
+ * @param {Target} target - target whose config variables are read
+ * @returns {{baseUrl: string, modelID: string, generationConfig: object}} parsed config
+ */
+var readConfigFromVariables = function readConfigFromVariables(target) {
+  var result = {
+    baseUrl: '',
+    modelID: '',
+    generationConfig: {}
+  };
+  if (!target || typeof target.lookupVariableByNameAndType !== 'function') {
+    return result;
+  }
+  CONFIG_VARIABLES.forEach(function (spec) {
+    var variable = target.lookupVariableByNameAndType(spec.name, SCALAR_TYPE);
+    if (!variable) return;
+    var parsed = spec.parse(variable.value);
+    if (parsed === null) return;
+    if (spec.dest === 'baseUrl') {
+      result.baseUrl = parsed;
+    } else if (spec.dest === 'modelID') {
+      result.modelID = parsed;
+    } else {
+      result.generationConfig[spec.key] = parsed;
+    }
+  });
+  return result;
+};
+
+/**
+ * Get the raw (unparsed) string value of a config variable. Used by the hidden,
+ * backward-compatible reporter blocks.
+ * @param {Target} target - target whose variable is read
+ * @param {string} key - config key
+ * @returns {string} the raw value, or '' when unset/unknown
+ */
+var getConfigVariableRaw = function getConfigVariableRaw(target, key) {
+  if (!target || typeof target.lookupVariableByNameAndType !== 'function') return '';
+  var spec = specForKey(key);
+  if (!spec) return '';
+  var variable = target.lookupVariableByNameAndType(spec.name, SCALAR_TYPE);
+  if (!variable || variable.value === null || typeof variable.value === 'undefined') {
+    return '';
+  }
+  return variable.value;
+};
+
+/**
+ * Set the value of a config variable, creating it if necessary. Used by the
+ * hidden, backward-compatible command blocks so old projects keep working.
+ * @param {Target} target - target whose variable is written
+ * @param {string} key - config key
+ * @param {*} raw - raw value to store
+ * @returns {void}
+ */
+var setConfigVariable = function setConfigVariable(target, key, raw) {
+  if (!target || typeof target.lookupOrCreateVariable !== 'function') return;
+  var spec = specForKey(key);
+  if (!spec) return;
+  var variable = target.lookupVariableByNameAndType(spec.name, SCALAR_TYPE);
+  var created = false;
+  if (!variable) {
+    variable = target.lookupOrCreateVariable(spec.id, spec.name);
+    created = true;
+  }
+  variable.value = raw;
+  if (target.runtime) {
+    target.runtime.emitProjectChanged();
+    if (created && typeof target.runtime.requestBlocksUpdate === 'function') {
+      target.runtime.requestBlocksUpdate();
+      refreshVariablePalette();
+    }
+  }
+};
+
+function _createForOfIteratorHelper$3(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray$3(r)) || e) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: true } : { done: false, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = true, u = false; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = true, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray$3(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$3(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$3(r, a) : void 0; } }
+function _arrayLikeToArray$3(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function ownKeys$1(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread$1(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys$1(Object(t), true).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$1(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+var TRANSFORMERS_CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4';
+var DEFAULT_MODEL = 'onnx-community/gemma-4-E2B-it-ONNX';
+var DEFAULT_EMBEDDING_MODEL = 'onnx-community/all-MiniLM-L6-v2';
+var DEFAULT_BROWSER_LLM_DTYPE = 'q4f16';
+var BrowserAIProvider = /*#__PURE__*/function () {
+  function BrowserAIProvider() {
+    var baseUrl = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+    _classCallCheck$1(this, BrowserAIProvider);
+    this.model = DEFAULT_MODEL;
+    this.embeddingModel = DEFAULT_EMBEDDING_MODEL;
+    this.browserLLMDtype = DEFAULT_BROWSER_LLM_DTYPE;
+    this.baseUrl = baseUrl;
+    this._pipe = null;
+    this._embeddingPipe = null;
+    this._pastKeyValues = null;
+    this._lastMessages = null;
+    this.onProgress = null;
+    this._cancelDownload = false;
+    this._downloadAbortController = null;
+    this._originalFetch = null;
+  }
+  return _createClass$1(BrowserAIProvider, [{
+    key: "_parseModelId",
+    value: function _parseModelId(modelId) {
+      if (!modelId) return {
+        name: '',
+        dtype: null
+      };
+      var knownDtypes = ['auto', 'q4f16', 'q4', 'q2f16', 'q2', 'q8', 'fp16', 'fp32'];
+      var lastUnderscore = modelId.lastIndexOf('_');
+      if (lastUnderscore !== -1) {
+        var potentialDtype = modelId.substring(lastUnderscore + 1);
+        if (knownDtypes.includes(potentialDtype)) {
+          return {
+            name: modelId.substring(0, lastUnderscore),
+            dtype: potentialDtype
+          };
+        }
+      }
+      return {
+        name: modelId,
+        dtype: null
+      };
+    }
+  }, {
+    key: "setModel",
+    value: function setModel(modelId) {
+      if (modelId) {
+        var parsed = this._parseModelId(modelId);
+        if (parsed.name !== this.model || parsed.dtype && parsed.dtype !== this.browserLLMDtype) {
+          this.model = parsed.name;
+          if (parsed.dtype) {
+            this.browserLLMDtype = parsed.dtype;
+          }
+          this._pipe = null;
+          this._pastKeyValues = null;
+        }
+      }
+    }
+  }, {
+    key: "setEmbeddingModel",
+    value: function setEmbeddingModel(modelId) {
+      if (modelId) {
+        var parsed = this._parseModelId(modelId);
+        if (parsed.name !== this.embeddingModel || parsed.dtype && parsed.dtype !== this.browserLLMDtype) {
+          this.embeddingModel = parsed.name;
+          if (parsed.dtype) {
+            this.browserLLMDtype = parsed.dtype;
+          }
+          this._embeddingPipe = null;
+        }
+      }
+    }
+  }, {
+    key: "setBrowserLLMDtype",
+    value: function setBrowserLLMDtype(browserLLMDtype) {
+      if (browserLLMDtype && browserLLMDtype !== this.browserLLMDtype) {
+        this.browserLLMDtype = browserLLMDtype;
+        this._pipe = null;
+        this._embeddingPipe = null;
+        this._pastKeyValues = null;
+      }
+    }
+  }, {
+    key: "getBrowserLLMDtype",
+    value: function getBrowserLLMDtype() {
+      return this.browserLLMDtype;
+    }
+  }, {
+    key: "resetCache",
+    value: function resetCache() {
+      this._pastKeyValues = null;
+      this._lastMessages = null;
+    }
+
+    /**
+     * Cancel the ongoing model download.
+     * Aborts the in-flight fetch requests via AbortController and
+     * sets a flag so the progress callback also throws.
+     */
+  }, {
+    key: "cancelDownload",
+    value: function cancelDownload() {
+      this._cancelDownload = true;
+      if (this._downloadAbortController) {
+        this._downloadAbortController.abort();
+      }
+    }
+
+    /**
+     * Check if an error was caused by download cancellation.
+     * @param {Error} err - error to check
+     * @returns {boolean} true if the error is a cancellation
+     */
+  }, {
+    key: "_installFetchInterceptor",
+    value:
+    /**
+     * Install a fetch interceptor that injects an AbortSignal.
+     * All fetch calls will be aborted when cancelDownload() is called.
+     * Must be paired with _uninstallFetchInterceptor() in a finally block.
+     */
+    function _installFetchInterceptor() {
+      this._downloadAbortController = new AbortController();
+      this._originalFetch = globalThis.fetch;
+      var abortSignal = this._downloadAbortController.signal;
+      var origFetch = this._originalFetch;
+      globalThis.fetch = function (input) {
+        var init = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+        if (abortSignal.aborted) {
+          return Promise.reject(new DOMException('Download cancelled', 'AbortError'));
+        }
+        // Combine with any existing signal
+        var existingSignal = init.signal;
+        if (existingSignal) {
+          var combined = new AbortController();
+          abortSignal.addEventListener('abort', function () {
+            return combined.abort();
+          }, {
+            once: true
+          });
+          existingSignal.addEventListener('abort', function () {
+            return combined.abort();
+          }, {
+            once: true
+          });
+          init = _objectSpread$1(_objectSpread$1({}, init), {}, {
+            signal: combined.signal
+          });
+        } else {
+          init = _objectSpread$1(_objectSpread$1({}, init), {}, {
+            signal: abortSignal
+          });
+        }
+        return origFetch.call(globalThis, input, init);
+      };
+    }
+
+    /**
+     * Restore the original fetch and clean up the abort controller.
+     */
+  }, {
+    key: "_uninstallFetchInterceptor",
+    value: function _uninstallFetchInterceptor() {
+      if (this._originalFetch) {
+        globalThis.fetch = this._originalFetch;
+        this._originalFetch = null;
+      }
+      this._downloadAbortController = null;
+    }
+
+    /**
+     * Build a progress callback that checks the cancel flag before forwarding.
+     * @returns {function|undefined} wrapped callback or undefined
+     */
+  }, {
+    key: "_buildProgressCallback",
+    value: function _buildProgressCallback() {
+      var _this = this;
+      if (!this.onProgress) return undefined;
+      return function (data) {
+        if (_this._cancelDownload) {
+          throw new Error('DOWNLOAD_CANCELLED');
+        }
+        _this.onProgress(data);
+      };
+    }
+  }, {
+    key: "_getPipeline",
+    value: function () {
+      var _getPipeline2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
+        var allowDownload,
+          _yield$import,
+          pipeline,
+          env,
+          ModelRegistry,
+          host,
+          targetDtype,
+          availableDtypes,
+          _preferredDtypes,
+          selectedDtype,
+          _i,
+          _preferredDtypes2,
+          dtype,
+          preferredDtypes,
+          dtypesToTry,
+          index,
+          devicesToTry,
+          lastError,
+          loaded,
+          _i2,
+          _devicesToTry,
+          device,
+          _iterator,
+          _step,
+          _dtype,
+          progressCb,
+          isFileNotFound,
+          isSessionError,
+          isDownloadRequired,
+          _args = arguments,
+          _t,
+          _t2,
+          _t3;
+        return _regeneratorRuntime.wrap(function (_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              allowDownload = _args.length > 0 && _args[0] !== undefined ? _args[0] : false;
+              if (!this._pipe) {
+                _context.next = 1;
+                break;
+              }
+              return _context.abrupt("return", this._pipe);
+            case 1:
+              console.log("[BrowserAI] Loading pipeline for model: ".concat(this.model, ",") + " dtype: ".concat(this.browserLLMDtype, ", allowDownload: ").concat(allowDownload));
+              _context.next = 2;
+              return import(TRANSFORMERS_CDN);
+            case 2:
+              _yield$import = _context.sent;
+              pipeline = _yield$import.pipeline;
+              env = _yield$import.env;
+              ModelRegistry = _yield$import.ModelRegistry;
+              env.allowRemoteModels = allowDownload;
+              env.allowLocalModels = true;
+              env.logLevel = 'info';
+              if (this.baseUrl) {
+                host = this.baseUrl;
+                if (!host.endsWith('/')) {
+                  host += '/';
+                }
+                env.remoteHost = host;
+                console.log("[BrowserAI] Custom baseUrl applied: ".concat(host));
+              }
+              targetDtype = this.browserLLMDtype;
+              availableDtypes = [];
+              _context.prev = 3;
+              _context.next = 4;
+              return ModelRegistry.get_available_dtypes(this.model);
+            case 4:
+              availableDtypes = _context.sent;
+              console.log("[BrowserAI] Available dtypes for ".concat(this.model, ":"), availableDtypes);
+              _context.next = 6;
+              break;
+            case 5:
+              _context.prev = 5;
+              _t = _context["catch"](3);
+              console.warn("[BrowserAI] Failed to fetch available dtypes:", _t);
+            case 6:
+              if (!(availableDtypes.length > 0)) {
+                _context.next = 10;
+                break;
+              }
+              if (!(targetDtype === 'auto' || !availableDtypes.includes(targetDtype))) {
+                _context.next = 10;
+                break;
+              }
+              _preferredDtypes = ['q4f16', 'q4', 'q2f16', 'q2', 'q8', 'fp16', 'fp32'];
+              selectedDtype = null;
+              _i = 0, _preferredDtypes2 = _preferredDtypes;
+            case 7:
+              if (!(_i < _preferredDtypes2.length)) {
+                _context.next = 9;
+                break;
+              }
+              dtype = _preferredDtypes2[_i];
+              if (!availableDtypes.includes(dtype)) {
+                _context.next = 8;
+                break;
+              }
+              selectedDtype = dtype;
+              return _context.abrupt("continue", 9);
+            case 8:
+              _i++;
+              _context.next = 7;
+              break;
+            case 9:
+              if (!selectedDtype) {
+                selectedDtype = availableDtypes[0];
+              }
+              console.log("[BrowserAI] Selected dtype for pipeline: ".concat(selectedDtype) + " (original requested: ".concat(targetDtype, ")"));
+              targetDtype = selectedDtype;
+            case 10:
+              // Retry loop as a second safety net if loading fails (e.g. file not found, WebGPU session limits)
+              preferredDtypes = ['q4f16', 'q4', 'q2f16', 'q2', 'q8', 'fp16', 'fp32'];
+              dtypesToTry = [targetDtype];
+              index = preferredDtypes.indexOf(targetDtype);
+              if (index === -1) {
+                dtypesToTry = dtypesToTry.concat(preferredDtypes);
+              } else {
+                dtypesToTry = dtypesToTry.concat(preferredDtypes.slice(index + 1));
+              }
+              dtypesToTry = Array.from(new Set(dtypesToTry));
+              devicesToTry = ['webgpu', 'wasm'];
+              lastError = null;
+              loaded = false;
+              if (allowDownload) {
+                this._installFetchInterceptor();
+              }
+              _context.prev = 11;
+              _i2 = 0, _devicesToTry = devicesToTry;
+            case 12:
+              if (!(_i2 < _devicesToTry.length)) {
+                _context.next = 29;
+                break;
+              }
+              device = _devicesToTry[_i2];
+              if (!loaded) {
+                _context.next = 13;
+                break;
+              }
+              return _context.abrupt("continue", 29);
+            case 13:
+              _iterator = _createForOfIteratorHelper$3(dtypesToTry);
+              _context.prev = 14;
+              _iterator.s();
+            case 15:
+              if ((_step = _iterator.n()).done) {
+                _context.next = 25;
+                break;
+              }
+              _dtype = _step.value;
+              _context.prev = 16;
+              if (!this._cancelDownload) {
+                _context.next = 17;
+                break;
+              }
+              throw new Error('DOWNLOAD_CANCELLED');
+            case 17:
+              console.log("[BrowserAI] Loading text-generation pipeline with device: ".concat(device, ", dtype: ").concat(_dtype));
+              progressCb = this._buildProgressCallback();
+              _context.next = 18;
+              return pipeline('text-generation', this.model, _objectSpread$1({
+                device: device,
+                dtype: _dtype
+              }, progressCb && {
+                progress_callback: progressCb
+              }));
+            case 18:
+              this._pipe = _context.sent;
+              console.log("[BrowserAI] Pipeline loaded successfully with device: ".concat(device, ", dtype: ").concat(_dtype));
+              lastError = null;
+              loaded = true;
+              return _context.abrupt("continue", 25);
+            case 19:
+              _context.prev = 19;
+              _t2 = _context["catch"](16);
+              console.warn("[BrowserAI] Failed to load pipeline with device: ".concat(device, ", dtype: ").concat(_dtype, ". Error:"), _t2);
+              lastError = _t2;
+              if (!BrowserAIProvider._isCancelledError(_t2)) {
+                _context.next = 20;
+                break;
+              }
+              throw _t2;
+            case 20:
+              isFileNotFound = _t2.message && (_t2.message.includes('Could not locate file') || _t2.message.includes('404') || _t2.message.includes('not found'));
+              isSessionError = _t2.message && (_t2.message.includes("Can't create a session") || _t2.message.includes('session') || _t2.message.includes('GatherBlockQuantized'));
+              if (!isFileNotFound) {
+                _context.next = 22;
+                break;
+              }
+              if (allowDownload) {
+                _context.next = 21;
+                break;
+              }
+              throw new Error('MODEL_NOT_DOWNLOADED');
+            case 21:
+              return _context.abrupt("continue", 24);
+            case 22:
+              if (!(isSessionError && device === 'webgpu')) {
+                _context.next = 23;
+                break;
+              }
+              console.warn("[BrowserAI] WebGPU session creation failed. Will fallback to wasm.");
+              return _context.abrupt("continue", 25);
+            case 23:
+              return _context.abrupt("continue", 24);
+            case 24:
+              _context.next = 15;
+              break;
+            case 25:
+              _context.next = 27;
+              break;
+            case 26:
+              _context.prev = 26;
+              _t3 = _context["catch"](14);
+              _iterator.e(_t3);
+            case 27:
+              _context.prev = 27;
+              _iterator.f();
+              return _context.finish(27);
+            case 28:
+              _i2++;
+              _context.next = 12;
+              break;
+            case 29:
+              _context.prev = 29;
+              if (allowDownload) {
+                this._uninstallFetchInterceptor();
+              }
+              return _context.finish(29);
+            case 30:
+              if (!lastError) {
+                _context.next = 33;
+                break;
+              }
+              if (!BrowserAIProvider._isCancelledError(lastError)) {
+                _context.next = 31;
+                break;
+              }
+              this._pipe = null;
+              throw new Error('DOWNLOAD_CANCELLED');
+            case 31:
+              console.error("[BrowserAI] All device/dtype attempts failed for model: ".concat(this.model));
+              isDownloadRequired = !allowDownload && lastError.message && (lastError.message.includes('Could not locate file') || lastError.message.includes('404') || lastError.message.includes('not found'));
+              if (!isDownloadRequired) {
+                _context.next = 32;
+                break;
+              }
+              throw new Error('MODEL_NOT_DOWNLOADED');
+            case 32:
+              throw lastError;
+            case 33:
+              return _context.abrupt("return", this._pipe);
+            case 34:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, this, [[3, 5], [11,, 29, 30], [14, 26, 27, 28], [16, 19]]);
+      }));
+      function _getPipeline() {
+        return _getPipeline2.apply(this, arguments);
+      }
+      return _getPipeline;
+    }()
+  }, {
+    key: "_getEmbeddingPipeline",
+    value: function () {
+      var _getEmbeddingPipeline2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee2() {
+        var allowDownload,
+          _yield$import2,
+          pipeline,
+          env,
+          ModelRegistry,
+          host,
+          targetDtype,
+          availableDtypes,
+          preferredDtypes,
+          selectedDtype,
+          _i3,
+          _preferredDtypes3,
+          dtype,
+          preferredEmbeddingDtypes,
+          embeddingDtypesToTry,
+          embeddingIndex,
+          devicesToTry,
+          lastError,
+          loaded,
+          _i4,
+          _devicesToTry2,
+          device,
+          _iterator2,
+          _step2,
+          _dtype2,
+          progressCb,
+          isFileNotFound,
+          isSessionError,
+          isDownloadRequired,
+          _args2 = arguments,
+          _t4,
+          _t5,
+          _t6;
+        return _regeneratorRuntime.wrap(function (_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              allowDownload = _args2.length > 0 && _args2[0] !== undefined ? _args2[0] : false;
+              if (!this._embeddingPipe) {
+                _context2.next = 1;
+                break;
+              }
+              return _context2.abrupt("return", this._embeddingPipe);
+            case 1:
+              console.log("[BrowserAI] Loading embedding pipeline for model: ".concat(this.embeddingModel, ",") + " dtype: ".concat(this.browserLLMDtype, ", allowDownload: ").concat(allowDownload));
+              _context2.next = 2;
+              return import(TRANSFORMERS_CDN);
+            case 2:
+              _yield$import2 = _context2.sent;
+              pipeline = _yield$import2.pipeline;
+              env = _yield$import2.env;
+              ModelRegistry = _yield$import2.ModelRegistry;
+              env.allowRemoteModels = allowDownload;
+              env.allowLocalModels = true;
+              if (this.baseUrl) {
+                host = this.baseUrl;
+                if (!host.endsWith('/')) {
+                  host += '/';
+                }
+                env.remoteHost = host;
+              }
+              targetDtype = this.browserLLMDtype;
+              availableDtypes = [];
+              _context2.prev = 3;
+              _context2.next = 4;
+              return ModelRegistry.get_available_dtypes(this.embeddingModel);
+            case 4:
+              availableDtypes = _context2.sent;
+              console.log("[BrowserAI] Available embedding dtypes for ".concat(this.embeddingModel, ":"), availableDtypes);
+              _context2.next = 6;
+              break;
+            case 5:
+              _context2.prev = 5;
+              _t4 = _context2["catch"](3);
+              console.warn("[BrowserAI] Failed to fetch available embedding dtypes:", _t4);
+            case 6:
+              if (!(availableDtypes.length > 0)) {
+                _context2.next = 10;
+                break;
+              }
+              if (!(targetDtype === 'auto' || !availableDtypes.includes(targetDtype))) {
+                _context2.next = 10;
+                break;
+              }
+              preferredDtypes = ['q4f16', 'q4', 'q8', 'fp16', 'fp32'];
+              selectedDtype = null;
+              _i3 = 0, _preferredDtypes3 = preferredDtypes;
+            case 7:
+              if (!(_i3 < _preferredDtypes3.length)) {
+                _context2.next = 9;
+                break;
+              }
+              dtype = _preferredDtypes3[_i3];
+              if (!availableDtypes.includes(dtype)) {
+                _context2.next = 8;
+                break;
+              }
+              selectedDtype = dtype;
+              return _context2.abrupt("continue", 9);
+            case 8:
+              _i3++;
+              _context2.next = 7;
+              break;
+            case 9:
+              if (!selectedDtype) {
+                selectedDtype = availableDtypes[0];
+              }
+              console.log("[BrowserAI] Selected dtype for embedding: ".concat(selectedDtype) + " (original requested: ".concat(targetDtype, ")"));
+              targetDtype = selectedDtype;
+            case 10:
+              // Retry loop as a second safety net if loading fails (e.g. file not found, WebGPU session limits)
+              preferredEmbeddingDtypes = ['q4f16', 'q4', 'q8', 'fp16', 'fp32'];
+              embeddingDtypesToTry = [targetDtype];
+              embeddingIndex = preferredEmbeddingDtypes.indexOf(targetDtype);
+              if (embeddingIndex === -1) {
+                embeddingDtypesToTry = embeddingDtypesToTry.concat(preferredEmbeddingDtypes);
+              } else {
+                embeddingDtypesToTry = embeddingDtypesToTry.concat(preferredEmbeddingDtypes.slice(embeddingIndex + 1));
+              }
+              embeddingDtypesToTry = Array.from(new Set(embeddingDtypesToTry));
+              devicesToTry = ['webgpu', 'wasm'];
+              lastError = null;
+              loaded = false;
+              if (allowDownload) {
+                this._installFetchInterceptor();
+              }
+              _context2.prev = 11;
+              _i4 = 0, _devicesToTry2 = devicesToTry;
+            case 12:
+              if (!(_i4 < _devicesToTry2.length)) {
+                _context2.next = 29;
+                break;
+              }
+              device = _devicesToTry2[_i4];
+              if (!loaded) {
+                _context2.next = 13;
+                break;
+              }
+              return _context2.abrupt("continue", 29);
+            case 13:
+              _iterator2 = _createForOfIteratorHelper$3(embeddingDtypesToTry);
+              _context2.prev = 14;
+              _iterator2.s();
+            case 15:
+              if ((_step2 = _iterator2.n()).done) {
+                _context2.next = 25;
+                break;
+              }
+              _dtype2 = _step2.value;
+              _context2.prev = 16;
+              if (!this._cancelDownload) {
+                _context2.next = 17;
+                break;
+              }
+              throw new Error('DOWNLOAD_CANCELLED');
+            case 17:
+              console.log("[BrowserAI] Loading embedding pipeline with device: ".concat(device, ", dtype: ").concat(_dtype2));
+              progressCb = this._buildProgressCallback();
+              _context2.next = 18;
+              return pipeline('feature-extraction', this.embeddingModel, _objectSpread$1({
+                device: device,
+                dtype: _dtype2
+              }, progressCb && {
+                progress_callback: progressCb
+              }));
+            case 18:
+              this._embeddingPipe = _context2.sent;
+              console.log("[BrowserAI] Embedding pipeline loaded successfully with device: ".concat(device, ", dtype: ").concat(_dtype2));
+              lastError = null;
+              loaded = true;
+              return _context2.abrupt("continue", 25);
+            case 19:
+              _context2.prev = 19;
+              _t5 = _context2["catch"](16);
+              console.warn("[BrowserAI] Failed to load embedding pipeline" + " with device: ".concat(device, ", dtype: ").concat(_dtype2, ". Error:"), _t5);
+              lastError = _t5;
+              if (!BrowserAIProvider._isCancelledError(_t5)) {
+                _context2.next = 20;
+                break;
+              }
+              throw _t5;
+            case 20:
+              isFileNotFound = _t5.message && (_t5.message.includes('Could not locate file') || _t5.message.includes('404') || _t5.message.includes('not found'));
+              isSessionError = _t5.message && (_t5.message.includes("Can't create a session") || _t5.message.includes('session') || _t5.message.includes('GatherBlockQuantized'));
+              if (!isFileNotFound) {
+                _context2.next = 22;
+                break;
+              }
+              if (allowDownload) {
+                _context2.next = 21;
+                break;
+              }
+              throw new Error('MODEL_NOT_DOWNLOADED');
+            case 21:
+              return _context2.abrupt("continue", 24);
+            case 22:
+              if (!(isSessionError && device === 'webgpu')) {
+                _context2.next = 23;
+                break;
+              }
+              console.warn("[BrowserAI] WebGPU embedding session creation failed. Will fallback to wasm.");
+              return _context2.abrupt("continue", 25);
+            case 23:
+              return _context2.abrupt("continue", 24);
+            case 24:
+              _context2.next = 15;
+              break;
+            case 25:
+              _context2.next = 27;
+              break;
+            case 26:
+              _context2.prev = 26;
+              _t6 = _context2["catch"](14);
+              _iterator2.e(_t6);
+            case 27:
+              _context2.prev = 27;
+              _iterator2.f();
+              return _context2.finish(27);
+            case 28:
+              _i4++;
+              _context2.next = 12;
+              break;
+            case 29:
+              _context2.prev = 29;
+              if (allowDownload) {
+                this._uninstallFetchInterceptor();
+              }
+              return _context2.finish(29);
+            case 30:
+              if (!lastError) {
+                _context2.next = 33;
+                break;
+              }
+              if (!BrowserAIProvider._isCancelledError(lastError)) {
+                _context2.next = 31;
+                break;
+              }
+              this._embeddingPipe = null;
+              throw new Error('DOWNLOAD_CANCELLED');
+            case 31:
+              console.error("[BrowserAI] All device/dtype attempts failed for embedding model: ".concat(this.embeddingModel));
+              isDownloadRequired = !allowDownload && lastError.message && (lastError.message.includes('Could not locate file') || lastError.message.includes('404') || lastError.message.includes('not found'));
+              if (!isDownloadRequired) {
+                _context2.next = 32;
+                break;
+              }
+              throw new Error('MODEL_NOT_DOWNLOADED');
+            case 32:
+              throw lastError;
+            case 33:
+              return _context2.abrupt("return", this._embeddingPipe);
+            case 34:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, this, [[3, 5], [11,, 29, 30], [14, 26, 27, 28], [16, 19]]);
+      }));
+      function _getEmbeddingPipeline() {
+        return _getEmbeddingPipeline2.apply(this, arguments);
+      }
+      return _getEmbeddingPipeline;
+    }()
+  }, {
+    key: "generate",
+    value: function () {
+      var _generate = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee3(messages) {
+        var options,
+          _yield$import3,
+          DynamicCache,
+          TextStreamer,
+          pipe,
+          useCache,
+          isContextContinued,
+          useStreaming,
+          streamer,
+          doSample,
+          output,
+          generated,
+          last,
+          _args3 = arguments,
+          _t7;
+        return _regeneratorRuntime.wrap(function (_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
+            case 0:
+              options = _args3.length > 1 && _args3[1] !== undefined ? _args3[1] : {};
+              console.log("[BrowserAI] Starting generate. Messages:", messages, "Options:", options);
+              _context3.next = 1;
+              return import(TRANSFORMERS_CDN);
+            case 1:
+              _yield$import3 = _context3.sent;
+              DynamicCache = _yield$import3.DynamicCache;
+              TextStreamer = _yield$import3.TextStreamer;
+              console.log("[BrowserAI] Getting pipeline...");
+              _context3.next = 2;
+              return this._getPipeline(false);
+            case 2:
+              pipe = _context3.sent;
+              useCache = options.useCache !== false;
+              isContextContinued = false;
+              if (useCache && this._pastKeyValues && this._lastMessages) {
+                if (messages.length >= this._lastMessages.length) {
+                  isContextContinued = this._lastMessages.every(function (msg, idx) {
+                    return msg.role === messages[idx].role && msg.content === messages[idx].content;
+                  });
+                }
+              }
+              if (useCache) {
+                if (!isContextContinued || !this._pastKeyValues) {
+                  console.log("[BrowserAI] Conversation context changed or empty cache. Resetting KV cache.");
+                  this._pastKeyValues = new DynamicCache();
+                }
+                this._lastMessages = messages;
+              } else {
+                this._pastKeyValues = null;
+                this._lastMessages = null;
+              }
+              useStreaming = typeof options.onToken === 'function';
+              console.log("[BrowserAI] useCache: ".concat(useCache, ", useStreaming: ").concat(useStreaming));
+              streamer = useStreaming ? new TextStreamer(pipe.tokenizer, {
+                skip_prompt: true,
+                skip_special_tokens: false,
+                callback_function: function callback_function(token) {
+                  console.log("[BrowserAI] Token received: ".concat(JSON.stringify(token)));
+                  options.onToken(token);
+                }
+              }) : null;
+              doSample = typeof options.temperature === 'number' && options.temperature > 0;
+              _context3.prev = 3;
+              _context3.next = 4;
+              return pipe(messages, _objectSpread$1(_objectSpread$1(_objectSpread$1({
+                add_generation_prompt: true
+              }, useCache && {
+                past_key_values: this._pastKeyValues
+              }), {}, {
+                max_new_tokens: options.maxOutputTokens || 256,
+                do_sample: doSample
+              }, doSample && {
+                temperature: options.temperature
+              }), streamer && {
+                streamer: streamer
+              }));
+            case 4:
+              output = _context3.sent;
+              console.log("[BrowserAI] Pipeline execution completed. Raw output:", output);
+              if (!(Array.isArray(output) && output.length > 0)) {
+                _context3.next = 6;
+                break;
+              }
+              generated = output[0].generated_text;
+              console.log("[BrowserAI] Generated content:", generated);
+              if (!Array.isArray(generated)) {
+                _context3.next = 5;
+                break;
+              }
+              last = generated[generated.length - 1];
+              return _context3.abrupt("return", last && last.content ? last.content : String(last));
+            case 5:
+              return _context3.abrupt("return", String(generated));
+            case 6:
+              return _context3.abrupt("return", '');
+            case 7:
+              _context3.prev = 7;
+              _t7 = _context3["catch"](3);
+              console.error("[BrowserAI] Error during pipeline inference:", _t7);
+              throw _t7;
+            case 8:
+            case "end":
+              return _context3.stop();
+          }
+        }, _callee3, this, [[3, 7]]);
+      }));
+      function generate(_x) {
+        return _generate.apply(this, arguments);
+      }
+      return generate;
+    }()
+  }, {
+    key: "embed",
+    value: function () {
+      var _embed = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(text) {
+        var pipe, output;
+        return _regeneratorRuntime.wrap(function (_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              _context4.next = 1;
+              return this._getEmbeddingPipeline(false);
+            case 1:
+              pipe = _context4.sent;
+              _context4.next = 2;
+              return pipe(text, {
+                pooling: 'mean',
+                normalize: true
+              });
+            case 2:
+              output = _context4.sent;
+              return _context4.abrupt("return", Array.from(output.data));
+            case 3:
+            case "end":
+              return _context4.stop();
+          }
+        }, _callee4, this);
+      }));
+      function embed(_x2) {
+        return _embed.apply(this, arguments);
+      }
+      return embed;
+    }()
+  }], [{
+    key: "_isCancelledError",
+    value: function _isCancelledError(err) {
+      if (!err) return false;
+      if (err.name === 'AbortError') return true;
+      return err.message && err.message.includes('DOWNLOAD_CANCELLED');
+    }
+  }]);
+}();
+
+function _createForOfIteratorHelper$2(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray$2(r)) || e) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: true } : { done: false, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = true, u = false; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = true, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray$2(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$2(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$2(r, a) : void 0; } }
+function _arrayLikeToArray$2(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), true).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _asyncIterator(r) { var n, t, o, e = 2; for ("undefined" != typeof Symbol && (t = Symbol.asyncIterator, o = Symbol.iterator); e--;) { if (t && null != (n = r[t])) return n.call(r); if (o && null != (n = r[o])) return new AsyncFromSyncIterator(n.call(r)); t = "@@asyncIterator", o = "@@iterator"; } throw new TypeError("Object is not async iterable"); }
@@ -44328,6 +45725,20 @@ var PROVIDERS = {
       embeddings: false,
       streaming: true
     }
+  },
+  BrowserLLM: {
+    id: 'browser-llm',
+    factory: null,
+    baseUrl: 'https://huggingface.co',
+    defaultModels: {
+      generative: 'onnx-community/gemma-4-E2B-it-ONNX_q4f16',
+      embedding: 'onnx-community/all-MiniLM-L6-v2_q8'
+    },
+    supports: {
+      functionCalling: true,
+      embeddings: true,
+      streaming: true
+    }
   }
 };
 
@@ -44346,10 +45757,12 @@ var AIAdapter = /*#__PURE__*/function () {
   function AIAdapter(target) {
     _classCallCheck$1(this, AIAdapter);
     AIAdapter.ADAPTERS[target.id] = this;
+    this.target = target;
     this.apiType = null;
     this.apiKey = null;
     this.baseUrl = null;
     this.modelID = null;
+    this.browserLLMDtype = 'q4f16';
     this.generationConfig = {};
     this.client = null;
     this.models = [];
@@ -44435,6 +45848,34 @@ var AIAdapter = /*#__PURE__*/function () {
     }
 
     /**
+     * Load the AI config (baseUrl, modelID, generation config) from this target's
+     * sprite variables into the adapter's runtime state. Called right before each
+     * request so users control the config through standard Scratch variable blocks.
+     * The client is reset only when baseUrl actually changes, to avoid rebuilding
+     * it on every request. No-op when there is no target to read from.
+     * @returns {void}
+     */
+  }, {
+    key: "applyConfigFromVariables",
+    value: function applyConfigFromVariables() {
+      // No-op when the target can't hold sprite variables (e.g. unit-test
+      // stubs): in that case the adapter's directly-set state is the source of
+      // truth and must not be overwritten with defaults.
+      if (!this.target || typeof this.target.lookupVariableByNameAndType !== 'function') {
+        return;
+      }
+      var config = readConfigFromVariables(this.target);
+      var newBaseUrl = config.baseUrl || null;
+      if (newBaseUrl !== this.baseUrl) {
+        this.baseUrl = newBaseUrl;
+        this.client = null; // reset client to reinitialize with new base URL
+        this.models = []; // clear models to reload for new base URL
+      }
+      this.modelID = config.modelID || null;
+      this.generationConfig = config.generationConfig;
+    }
+
+    /**
      * Get client. Initialize if not exists.
      * @returns {object} - AI SDK client
      */
@@ -44443,16 +45884,19 @@ var AIAdapter = /*#__PURE__*/function () {
     value: function getClient() {
       if (!this.client) {
         var providerType = this.getApiType();
+        if (providerType === 'BrowserLLM') return null;
         var provider = PROVIDERS[providerType];
         if (!provider) {
           throw new Error("Unsupported API type: ".concat(providerType));
         }
-        if (!this.baseUrl) {
-          // Use provider default base URL if not set
-          this.baseUrl = provider.baseUrl;
-        }
+
+        // Resolve the effective base URL without mutating this.baseUrl, so it
+        // keeps matching the sprite variable value (which may be empty meaning
+        // "use the provider default"). Mutating it here would make
+        // applyConfigFromVariables() think the value changed every request.
+        var baseURL = this.baseUrl || provider.baseUrl;
         var config = _objectSpread(_objectSpread({
-          baseURL: this.baseUrl
+          baseURL: baseURL
         }, this.apiKey && {
           apiKey: this.apiKey
         }), providerType === 'OpenAICompatible' && {
@@ -44471,50 +45915,207 @@ var AIAdapter = /*#__PURE__*/function () {
     key: "getModels",
     value: (function () {
       var _getModels = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee() {
-        var baseUrl, apiType, apiUrl, response, data, _apiUrl, _response, _data, _t, _t2;
-        return _regeneratorRuntime.wrap(function (_context) {
-          while (1) switch (_context.prev = _context.next) {
+        var apiType, modelsSet, cacheNames, repoDtypes, _iterator3, _step3, cacheName, cache, requests, _iterator4, _step4, req, url, _repo, match, pathParts, resolveIdx, dtypeMatch, recordedMap, _loop, repo, baseUrl, apiUrl, response, data, _apiUrl, _response, _data, _t, _t2, _t3, _t4, _t5, _t6;
+        return _regeneratorRuntime.wrap(function (_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
             case 0:
+              this.applyConfigFromVariables();
               if (!(this.models && this.models.length > 0)) {
-                _context.next = 1;
+                _context2.next = 1;
                 break;
               }
-              return _context.abrupt("return", this.models);
+              return _context2.abrupt("return", this.models);
             case 1:
-              baseUrl = this.baseUrl || AIAdapter.baseUrl; // If no baseURL is configured, return empty models list
+              apiType = this.getApiType();
+              if (!(apiType === 'BrowserLLM')) {
+                _context2.next = 18;
+                break;
+              }
+              modelsSet = new Set();
+              _context2.prev = 2;
+              if (!(typeof caches !== 'undefined')) {
+                _context2.next = 15;
+                break;
+              }
+              _context2.next = 3;
+              return caches.keys();
+            case 3:
+              cacheNames = _context2.sent;
+              repoDtypes = {};
+              _iterator3 = _createForOfIteratorHelper$2(cacheNames);
+              _context2.prev = 4;
+              _iterator3.s();
+            case 5:
+              if ((_step3 = _iterator3.n()).done) {
+                _context2.next = 9;
+                break;
+              }
+              cacheName = _step3.value;
+              if (!(cacheName.includes('transformers') || cacheName.includes('onnxruntime'))) {
+                _context2.next = 8;
+                break;
+              }
+              _context2.next = 6;
+              return caches.open(cacheName);
+            case 6:
+              cache = _context2.sent;
+              _context2.next = 7;
+              return cache.keys();
+            case 7:
+              requests = _context2.sent;
+              _iterator4 = _createForOfIteratorHelper$2(requests);
+              try {
+                for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+                  req = _step4.value;
+                  url = req.url;
+                  _repo = null;
+                  match = url.match(/\/([^/]+)\/([^/]+)\/resolve\//);
+                  if (match) {
+                    _repo = "".concat(match[1], "/").concat(match[2]);
+                  } else {
+                    try {
+                      pathParts = new URL(url).pathname.split('/');
+                      resolveIdx = pathParts.indexOf('resolve');
+                      if (resolveIdx >= 2) {
+                        _repo = "".concat(pathParts[resolveIdx - 2], "/").concat(pathParts[resolveIdx - 1]);
+                      }
+                    } catch (e) {
+                      // Ignore
+                    }
+                  }
+                  if (_repo) {
+                    if (!repoDtypes[_repo]) {
+                      repoDtypes[_repo] = new Set();
+                    }
+                    if (url.includes('.onnx') || url.includes('.onnx_data')) {
+                      dtypeMatch = url.match(/[_/](q4f16|q4|q2f16|q2|q8|fp16|fp32)(?:\.onnx|_|[/]|\b)/i);
+                      if (dtypeMatch) {
+                        repoDtypes[_repo].add(dtypeMatch[1].toLowerCase());
+                      } else {
+                        repoDtypes[_repo].add('fp32');
+                      }
+                    }
+                  }
+                }
+              } catch (err) {
+                _iterator4.e(err);
+              } finally {
+                _iterator4.f();
+              }
+            case 8:
+              _context2.next = 5;
+              break;
+            case 9:
+              _context2.next = 11;
+              break;
+            case 10:
+              _context2.prev = 10;
+              _t = _context2["catch"](4);
+              _iterator3.e(_t);
+            case 11:
+              _context2.prev = 11;
+              _iterator3.f();
+              return _context2.finish(11);
+            case 12:
+              recordedMap = this._getRecordedDtypes();
+              _loop = /*#__PURE__*/_regeneratorRuntime.mark(function _loop() {
+                var dtypes, specificDtypes, _iterator5, _step5, dtype;
+                return _regeneratorRuntime.wrap(function (_context) {
+                  while (1) switch (_context.prev = _context.next) {
+                    case 0:
+                      dtypes = repoDtypes[repo];
+                      if (recordedMap[repo]) {
+                        recordedMap[repo].forEach(function (d) {
+                          return dtypes.add(d);
+                        });
+                      }
+                      if (dtypes.size > 0) {
+                        specificDtypes = Array.from(dtypes).filter(function (d) {
+                          return d !== 'fp32';
+                        });
+                        if (specificDtypes.length > 0) {
+                          _iterator5 = _createForOfIteratorHelper$2(specificDtypes);
+                          try {
+                            for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+                              dtype = _step5.value;
+                              modelsSet.add("".concat(repo, "_").concat(dtype));
+                            }
+                          } catch (err) {
+                            _iterator5.e(err);
+                          } finally {
+                            _iterator5.f();
+                          }
+                        } else {
+                          modelsSet.add("".concat(repo, "_fp32"));
+                        }
+                      } else {
+                        modelsSet.add("".concat(repo, "_q4f16"));
+                      }
+                    case 1:
+                    case "end":
+                      return _context.stop();
+                  }
+                }, _loop);
+              });
+              _t2 = _regeneratorRuntime.keys(repoDtypes);
+            case 13:
+              if ((_t3 = _t2()).done) {
+                _context2.next = 15;
+                break;
+              }
+              repo = _t3.value;
+              return _context2.delegateYield(_loop(), "t0", 14);
+            case 14:
+              _context2.next = 13;
+              break;
+            case 15:
+              _context2.next = 17;
+              break;
+            case 16:
+              _context2.prev = 16;
+              _t4 = _context2["catch"](2);
+              console.warn('Failed to scan browser cache for models:', _t4);
+            case 17:
+              this.models = Array.from(modelsSet).map(function (id) {
+                return {
+                  id: id
+                };
+              });
+              return _context2.abrupt("return", this.models);
+            case 18:
+              baseUrl = this.baseUrl || AIAdapter.baseUrl;
               if (baseUrl) {
-                _context.next = 2;
+                _context2.next = 19;
                 break;
               }
               this.models = [];
-              return _context.abrupt("return", this.models);
-            case 2:
-              apiType = this.getApiType();
+              return _context2.abrupt("return", this.models);
+            case 19:
               if (!(apiType === 'Gemini')) {
-                _context.next = 9;
+                _context2.next = 26;
                 break;
               }
-              _context.prev = 3;
+              _context2.prev = 20;
               // Use baseURL to fetch models
               apiUrl = "".concat(baseUrl.replace(/\/$/, ''), "/models");
-              _context.next = 4;
+              _context2.next = 21;
               return fetch(apiUrl, {
                 headers: {
                   'x-goog-api-key': this.apiKey
                 }
               });
-            case 4:
-              response = _context.sent;
+            case 21:
+              response = _context2.sent;
               if (response.ok) {
-                _context.next = 5;
+                _context2.next = 22;
                 break;
               }
               throw new Error("Gemini API error: ".concat(response.status));
-            case 5:
-              _context.next = 6;
+            case 22:
+              _context2.next = 23;
               return response.json();
-            case 6:
-              data = _context.sent;
+            case 23:
+              data = _context2.sent;
               if (data.models && Array.isArray(data.models)) {
                 this.models = data.models.map(function (model) {
                   return {
@@ -44525,61 +46126,61 @@ var AIAdapter = /*#__PURE__*/function () {
                 console.warn('Unexpected Gemini API response structure:', data);
                 this.models = [];
               }
-              _context.next = 8;
+              _context2.next = 25;
               break;
-            case 7:
-              _context.prev = 7;
-              _t = _context["catch"](3);
-              console.warn("Failed to fetch models for Gemini:", _t);
+            case 24:
+              _context2.prev = 24;
+              _t5 = _context2["catch"](20);
+              console.warn("Failed to fetch models for Gemini:", _t5);
               this.models = [];
-            case 8:
-              _context.next = 15;
+            case 25:
+              _context2.next = 32;
               break;
-            case 9:
+            case 26:
               if (!(apiType === 'OpenAI' || apiType === 'OpenAICompatible')) {
-                _context.next = 15;
+                _context2.next = 32;
                 break;
               }
-              _context.prev = 10;
+              _context2.prev = 27;
               // Use baseURL to fetch models
               _apiUrl = "".concat(baseUrl.replace(/\/$/, ''), "/models");
-              _context.next = 11;
+              _context2.next = 28;
               return fetch(_apiUrl, {
                 headers: {
                   Authorization: "Bearer ".concat(this.apiKey)
                 }
               });
-            case 11:
-              _response = _context.sent;
+            case 28:
+              _response = _context2.sent;
               if (_response.ok) {
-                _context.next = 12;
+                _context2.next = 29;
                 break;
               }
               throw new Error("OpenAI API error: ".concat(_response.status));
-            case 12:
-              _context.next = 13;
+            case 29:
+              _context2.next = 30;
               return _response.json();
-            case 13:
-              _data = _context.sent;
+            case 30:
+              _data = _context2.sent;
               this.models = _data.data.map(function (model) {
                 return {
                   id: model.id
                 };
               });
-              _context.next = 15;
+              _context2.next = 32;
               break;
-            case 14:
-              _context.prev = 14;
-              _t2 = _context["catch"](10);
-              console.warn("Failed to fetch models for OpenAI:", _t2);
+            case 31:
+              _context2.prev = 31;
+              _t6 = _context2["catch"](27);
+              console.warn("Failed to fetch models for OpenAI:", _t6);
               this.models = [];
-            case 15:
-              return _context.abrupt("return", this.models);
-            case 16:
+            case 32:
+              return _context2.abrupt("return", this.models);
+            case 33:
             case "end":
-              return _context.stop();
+              return _context2.stop();
           }
-        }, _callee, this, [[3, 7], [10, 14]]);
+        }, _callee, this, [[2, 16], [4, 10, 11, 12], [20, 24], [27, 31]]);
       }));
       function getModels() {
         return _getModels.apply(this, arguments);
@@ -44596,19 +46197,19 @@ var AIAdapter = /*#__PURE__*/function () {
     value: (function () {
       var _getModelIDs = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee2() {
         var models;
-        return _regeneratorRuntime.wrap(function (_context2) {
-          while (1) switch (_context2.prev = _context2.next) {
+        return _regeneratorRuntime.wrap(function (_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
             case 0:
-              _context2.next = 1;
+              _context3.next = 1;
               return this.getModels();
             case 1:
-              models = _context2.sent;
-              return _context2.abrupt("return", models.map(function (model) {
+              models = _context3.sent;
+              return _context3.abrupt("return", models.map(function (model) {
                 return model.id;
               }));
             case 2:
             case "end":
-              return _context2.stop();
+              return _context3.stop();
           }
         }, _callee2, this);
       }));
@@ -44627,19 +46228,19 @@ var AIAdapter = /*#__PURE__*/function () {
     value: (function () {
       var _getGenerativeModelList = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee3() {
         var models;
-        return _regeneratorRuntime.wrap(function (_context3) {
-          while (1) switch (_context3.prev = _context3.next) {
+        return _regeneratorRuntime.wrap(function (_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
             case 0:
-              _context3.next = 1;
+              _context4.next = 1;
               return this.getModels();
             case 1:
-              models = _context3.sent;
-              return _context3.abrupt("return", models.map(function (model) {
+              models = _context4.sent;
+              return _context4.abrupt("return", models.map(function (model) {
                 return model.id;
               }));
             case 2:
             case "end":
-              return _context3.stop();
+              return _context4.stop();
           }
         }, _callee3, this);
       }));
@@ -44748,9 +46349,13 @@ var AIAdapter = /*#__PURE__*/function () {
         params.stopSequences = this.generationConfig.stopSequences;
       }
 
-      // Handle system instruction - add to system parameter if present
-      if (Object.prototype.hasOwnProperty.call(this.generationConfig, 'systemInstruction')) {
-        params.system = this.generationConfig.systemInstruction;
+      // Handle system instruction - merge base instruction with the Agent
+      // Skills section (when the target owns skills). Only set when non-empty
+      // so behavior is unchanged when there is neither a base instruction nor
+      // any skills.
+      var system = this._composeSystemInstruction();
+      if (system) {
+        params.system = system;
       }
 
       // Handle response schema - structured output (v6 stable `output`)
@@ -44763,6 +46368,98 @@ var AIAdapter = /*#__PURE__*/function () {
     }
 
     /**
+     * Whether Agent Skills can be exposed through the `loadSkill` tool
+     * (progressive disclosure). Requires a provider that supports function
+     * calling and a function-calling mode other than NONE. When false, skills
+     * are inlined into the system instruction instead.
+     * @returns {boolean} - true if the `loadSkill` tool can be used
+     * @private
+     */
+  }, {
+    key: "_canUseSkillTool",
+    value: function _canUseSkillTool() {
+      var provider = PROVIDERS[this.getApiType()];
+      if (!provider || !provider.supports.functionCalling) {
+        return false;
+      }
+      return this.functionCallingMode !== AIAdapter.FUNCTION_CALLING_NONE;
+    }
+
+    /**
+     * Compose the system instruction by merging the configured base instruction
+     * with the Agent Skills section. With tool calling available, only skill
+     * name/description are listed (the model fetches bodies via `loadSkill`);
+     * otherwise the full skill bodies are inlined.
+     * @returns {string} - the composed system instruction, or '' if empty
+     * @private
+     */
+  }, {
+    key: "_composeSystemInstruction",
+    value: function _composeSystemInstruction() {
+      var base = this.generationConfig.systemInstruction;
+      var skills = this.target ? this._canUseSkillTool() ? buildSkillsPrompt(this.target) : composeSkillsPrompt(this.target) : '';
+      var sections = [];
+      if (base && String(base).trim()) {
+        sections.push(String(base).trim());
+      }
+      if (skills) {
+        sections.push(skills);
+      }
+      return sections.join('\n\n');
+    }
+
+    /**
+     * Build the `loadSkill` tool for progressive disclosure of Agent Skills.
+     * Returns an empty object when skills cannot be exposed as a tool (no
+     * target, unsupported provider/mode, or no skills defined).
+     * @returns {object} - tools map containing `loadSkill`, or {} when unavailable
+     * @private
+     */
+  }, {
+    key: "_buildSkillTools",
+    value: function _buildSkillTools() {
+      var _this = this;
+      if (!this.target || !this._canUseSkillTool()) {
+        return {};
+      }
+      if (discoverSkills(this.target).length === 0) {
+        return {};
+      }
+      return {
+        loadSkill: tool({
+          description: 'Load the full instructions for one of the available Agent Skills by its ' + 'name. Call this when the user request matches a skill description, before ' + 'following that skill\'s instructions.',
+          // Preserve v5 (non-strict) tool-schema behavior; v6 OpenAI defaults strict to true.
+          strict: false,
+          inputSchema: jsonSchema({
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+                description: 'The name of the skill to load.'
+              }
+            },
+            required: ['name']
+          }),
+          execute: function execute(_ref) {
+            var name = _ref.name;
+            var instructions = loadSkillBody(_this.target, name);
+            if (!instructions) {
+              return {
+                success: false,
+                error: "No skill named \"".concat(name, "\".")
+              };
+            }
+            return {
+              success: true,
+              name: name,
+              instructions: instructions
+            };
+          }
+        })
+      };
+    }
+
+    /**
      * Build tools array from registered functions.
      * @param {Function} functionDispatcher - function to dispatch the call
      * @returns {Array.<object>} - tools array for Vercel AI SDK
@@ -44771,7 +46468,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "_buildTools",
     value: function _buildTools(functionDispatcher) {
-      var _this = this;
+      var _this2 = this;
       var tools = {};
       Object.values(this.functionRegistry).forEach(function (funcSpec) {
         tools[funcSpec.name] = tool({
@@ -44781,40 +46478,40 @@ var AIAdapter = /*#__PURE__*/function () {
           inputSchema: jsonSchema(funcSpec.parameters),
           execute: function () {
             var _execute = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(input, options) {
-              var functionCall, result, _t3;
-              return _regeneratorRuntime.wrap(function (_context4) {
-                while (1) switch (_context4.prev = _context4.next) {
+              var functionCall, result, _t7;
+              return _regeneratorRuntime.wrap(function (_context5) {
+                while (1) switch (_context5.prev = _context5.next) {
                   case 0:
-                    _context4.prev = 0;
+                    _context5.prev = 0;
                     functionCall = new FunctionCall(funcSpec, {
                       args: input,
                       options: options
                     }); // Function execution logic here
-                    _context4.next = 1;
-                    return _this._executeFunctionCall(functionCall, functionDispatcher);
+                    _context5.next = 1;
+                    return _this2._executeFunctionCall(functionCall, functionDispatcher);
                   case 1:
-                    result = _context4.sent;
+                    result = _context5.sent;
                     if (!result) {
-                      _context4.next = 2;
+                      _context5.next = 2;
                       break;
                     }
-                    return _context4.abrupt("return", {
+                    return _context5.abrupt("return", {
                       success: true,
                       result: result
                     });
                   case 2:
-                    return _context4.abrupt("return");
+                    return _context5.abrupt("return");
                   case 3:
-                    _context4.prev = 3;
-                    _t3 = _context4["catch"](0);
-                    return _context4.abrupt("return", {
+                    _context5.prev = 3;
+                    _t7 = _context5["catch"](0);
+                    return _context5.abrupt("return", {
                       success: false,
-                      error: _t3.message,
-                      type: _t3.name || 'FunctionExecutionError'
+                      error: _t7.message,
+                      type: _t7.name || 'FunctionExecutionError'
                     });
                   case 4:
                   case "end":
-                    return _context4.stop();
+                    return _context5.stop();
                 }
               }, _callee4, null, [[0, 3]]);
             }));
@@ -44836,7 +46533,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "getTextFromResponse",
     value: function getTextFromResponse(responses) {
-      var _this2 = this;
+      var _this3 = this;
       if (!responses) {
         return '';
       }
@@ -44845,7 +46542,7 @@ var AIAdapter = /*#__PURE__*/function () {
       }
       if (Array.isArray(responses)) {
         return responses.map(function (r) {
-          return _this2._extractTextFromSingleResponse(r);
+          return _this3._extractTextFromSingleResponse(r);
         }).join('');
       }
       return this._extractTextFromSingleResponse(responses);
@@ -44933,28 +46630,28 @@ var AIAdapter = /*#__PURE__*/function () {
     value: (function () {
       var _getResultFiles = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee5() {
         var files;
-        return _regeneratorRuntime.wrap(function (_context5) {
-          while (1) switch (_context5.prev = _context5.next) {
+        return _regeneratorRuntime.wrap(function (_context6) {
+          while (1) switch (_context6.prev = _context6.next) {
             case 0:
               if (this.lastResult) {
-                _context5.next = 1;
+                _context6.next = 1;
                 break;
               }
-              return _context5.abrupt("return", []);
+              return _context6.abrupt("return", []);
             case 1:
-              _context5.prev = 1;
-              _context5.next = 2;
+              _context6.prev = 1;
+              _context6.next = 2;
               return this.lastResult.files;
             case 2:
-              files = _context5.sent;
-              return _context5.abrupt("return", Array.isArray(files) ? files : []);
+              files = _context6.sent;
+              return _context6.abrupt("return", Array.isArray(files) ? files : []);
             case 3:
-              _context5.prev = 3;
-              _context5["catch"](1);
-              return _context5.abrupt("return", []);
+              _context6.prev = 3;
+              _context6["catch"](1);
+              return _context6.abrupt("return", []);
             case 4:
             case "end":
-              return _context5.stop();
+              return _context6.stop();
           }
         }, _callee5, this, [[1, 3]]);
       }));
@@ -45017,7 +46714,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "registerFunction",
     value: function registerFunction(procedureCode, functionDescription, procedureArguments) {
-      var _this3 = this;
+      var _this4 = this;
       var functionName;
       var existingSpec = this.getFunctionSpec(procedureCode);
       if (existingSpec) {
@@ -45035,7 +46732,7 @@ var AIAdapter = /*#__PURE__*/function () {
       var argumentDict = {};
       if (procedureArguments && procedureArguments.length > 0) {
         procedureArguments.forEach(function (argSpec, index) {
-          var paramName = "".concat(_this3.functionArgPrefix).concat(index);
+          var paramName = "".concat(_this4.functionArgPrefix).concat(index);
           parameters.properties[paramName] = {
             type: argSpec.type,
             description: argSpec.description
@@ -45087,9 +46784,9 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "clearRegisteredFunctions",
     value: function clearRegisteredFunctions() {
-      var _this4 = this;
+      var _this5 = this;
       Object.keys(this.functionRegistry).forEach(function (key) {
-        delete _this4.functionRegistry[key];
+        delete _this5.functionRegistry[key];
       });
       this.functionIndex = 0;
     }
@@ -45106,6 +46803,243 @@ var AIAdapter = /*#__PURE__*/function () {
     }
 
     /**
+     * Send generator type prompt to browser AI.
+     * @param {Array.<string | object>} prompt - the original prompt to AI
+     * @param {function} responseTextHandler - A function to handle response text.
+     * @param {function} functionDispatcher - A function to dispatch tool calls.
+     * @param {function} partialTextHandler - A function to handle partial text responses.
+     * @param {boolean} isChat - A flag indicating if the request is for chat.
+     * @returns {Promise<object>} - a Promise that resolves to the result object
+     * @private
+     */
+  }, {
+    key: "_requestGenerateBrowserLLM",
+    value: (function () {
+      var _requestGenerateBrowserLLM2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee6(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
+        var _this6 = this;
+        var effectiveBaseUrl, effectiveModelId, promptMessage, messages, chatMessages, systemInstruction, functionCallingEnabled, localRegistry, useSkillTool, toolsPrompt, options, _this$generationConfi, temperature, maxOutputTokens, loopCount, maxLoops, text, callRequest, trimmed, parsed, name, instructions, _result, funcSpec, functionCall, resultVal, result, _t9;
+        return _regeneratorRuntime.wrap(function (_context7) {
+          while (1) switch (_context7.prev = _context7.next) {
+            case 0:
+              effectiveBaseUrl = this.baseUrl;
+              if (!effectiveBaseUrl || effectiveBaseUrl === PROVIDERS.Gemini.baseUrl || effectiveBaseUrl === PROVIDERS.OpenAI.baseUrl || effectiveBaseUrl === PROVIDERS.Anthropic.baseUrl || effectiveBaseUrl === PROVIDERS.OpenAICompatible.baseUrl) {
+                effectiveBaseUrl = PROVIDERS.BrowserLLM.baseUrl;
+              }
+              if (this._browserAI) {
+                this._browserAI.baseUrl = effectiveBaseUrl;
+              } else {
+                this._browserAI = new BrowserAIProvider(effectiveBaseUrl);
+              }
+              effectiveModelId = this.modelID;
+              if (!effectiveModelId || effectiveModelId === PROVIDERS.Gemini.defaultModels.generative || effectiveModelId === PROVIDERS.OpenAI.defaultModels.generative || effectiveModelId === PROVIDERS.Anthropic.defaultModels.generative || effectiveModelId === PROVIDERS.OpenAICompatible.defaultModels.generative) {
+                effectiveModelId = PROVIDERS.BrowserLLM.defaultModels.generative;
+              }
+              this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
+              this._browserAI.setModel(effectiveModelId);
+              this._browserAI.onProgress = null;
+              promptMessage = this._convertToMessage(prompt);
+              messages = isChat ? this.messages : [];
+              messages.push(promptMessage);
+              chatMessages = messages.map(function (m) {
+                return {
+                  role: m.role,
+                  content: typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? m.content.filter(function (p) {
+                    return p.type === 'text';
+                  }).map(function (p) {
+                    return p.text;
+                  }).join('') : String(m.content)
+                };
+              });
+              systemInstruction = this._composeSystemInstruction() || ''; // Include tools in system instruction if enabled
+              functionCallingEnabled = this.functionCallingMode !== AIAdapter.FUNCTION_CALLING_NONE; // Prepare localRegistry to include loadSkill if needed
+              localRegistry = _objectSpread({}, this.functionRegistry);
+              useSkillTool = this.target && this._canUseSkillTool() && discoverSkills(this.target).length > 0;
+              if (useSkillTool) {
+                localRegistry.loadSkill = {
+                  name: 'loadSkill',
+                  description: 'Load the full instructions for one of the available Agent Skills by its name.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      name: {
+                        type: 'string',
+                        description: 'The name of the skill to load.'
+                      }
+                    },
+                    required: ['name']
+                  }
+                };
+              }
+              if (Object.keys(localRegistry).length > 0 && functionCallingEnabled) {
+                toolsPrompt = "\nYou have access to the following functions:\n".concat(JSON.stringify(Object.values(localRegistry), null, 2), "\n\nIf you need to call a function, reply ONLY with a JSON object of this format:\n{\"call\": \"function_name\", \"arguments\": {...}}\nDo not write any other text if you call a function.\n");
+                systemInstruction += "\n\n".concat(toolsPrompt);
+              }
+              if (systemInstruction) {
+                chatMessages.unshift({
+                  role: 'system',
+                  content: systemInstruction
+                });
+              }
+              options = {};
+              _this$generationConfi = this.generationConfig, temperature = _this$generationConfi.temperature, maxOutputTokens = _this$generationConfi.maxOutputTokens;
+              if (typeof temperature === 'number') options.temperature = temperature;
+              options.maxOutputTokens = typeof maxOutputTokens === 'number' ? maxOutputTokens : 256;
+              options.useCache = isChat;
+              if (typeof partialTextHandler === 'function') {
+                options.onToken = function (token) {
+                  _this6.setLastPartialText(token);
+                  partialTextHandler(token);
+                };
+              }
+              loopCount = 0;
+              maxLoops = 5;
+              text = '';
+            case 1:
+              if (!(loopCount < maxLoops)) {
+                _context7.next = 8;
+                break;
+              }
+              _context7.next = 2;
+              return this._browserAI.generate(chatMessages, options);
+            case 2:
+              text = _context7.sent;
+              // Check if model wants to call a function
+              callRequest = null;
+              trimmed = text.trim();
+              if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                try {
+                  parsed = JSON.parse(trimmed);
+                  if (parsed.call && parsed.arguments) {
+                    callRequest = parsed;
+                  }
+                } catch (e) {
+                  // Not valid JSON or parse error, treat as text
+                }
+              }
+              if (!(callRequest && functionCallingEnabled)) {
+                _context7.next = 7;
+                break;
+              }
+              if (!(callRequest.call === 'loadSkill' && useSkillTool)) {
+                _context7.next = 3;
+                break;
+              }
+              name = callRequest.arguments.name;
+              instructions = loadSkillBody(this.target, name);
+              _result = instructions ? {
+                success: true,
+                name: name,
+                instructions: instructions
+              } : {
+                success: false,
+                error: "No skill named \"".concat(name, "\".")
+              };
+              chatMessages.push({
+                role: 'assistant',
+                content: text
+              });
+              chatMessages.push({
+                role: 'user',
+                content: "Function loadSkill returned: ".concat(JSON.stringify(_result))
+              });
+              if (isChat) {
+                this.messages.push({
+                  role: 'assistant',
+                  content: text
+                });
+                this.messages.push({
+                  role: 'user',
+                  content: "Function loadSkill returned: ".concat(JSON.stringify(_result))
+                });
+              }
+              loopCount++;
+              return _context7.abrupt("continue", 1);
+            case 3:
+              funcSpec = localRegistry[callRequest.call];
+              if (!funcSpec) {
+                _context7.next = 7;
+                break;
+              }
+              functionCall = new FunctionCall(funcSpec, {
+                args: callRequest.arguments,
+                options: {}
+              });
+              _context7.prev = 4;
+              _context7.next = 5;
+              return this._executeFunctionCall(functionCall, functionDispatcher);
+            case 5:
+              resultVal = _context7.sent;
+              chatMessages.push({
+                role: 'assistant',
+                content: text
+              });
+              chatMessages.push({
+                role: 'user',
+                content: "Function ".concat(callRequest.call, " returned: ").concat(JSON.stringify(resultVal))
+              });
+              if (isChat) {
+                this.messages.push({
+                  role: 'assistant',
+                  content: text
+                });
+                this.messages.push({
+                  role: 'user',
+                  content: "Function ".concat(callRequest.call, " returned: ").concat(JSON.stringify(resultVal))
+                });
+              }
+              loopCount++;
+              return _context7.abrupt("continue", 1);
+            case 6:
+              _context7.prev = 6;
+              _t9 = _context7["catch"](4);
+              chatMessages.push({
+                role: 'assistant',
+                content: text
+              });
+              chatMessages.push({
+                role: 'user',
+                content: "Error executing ".concat(callRequest.call, ": ").concat(_t9.message)
+              });
+              if (isChat) {
+                this.messages.push({
+                  role: 'assistant',
+                  content: text
+                });
+                this.messages.push({
+                  role: 'user',
+                  content: "Error executing ".concat(callRequest.call, ": ").concat(_t9.message)
+                });
+              }
+              loopCount++;
+              return _context7.abrupt("continue", 1);
+            case 7:
+              return _context7.abrupt("continue", 8);
+            case 8:
+              this.setLastResponseText(text);
+              if (typeof responseTextHandler === 'function') responseTextHandler(text);
+              if (isChat) {
+                this.messages.push({
+                  role: 'assistant',
+                  content: text
+                });
+              }
+              result = {
+                text: text
+              };
+              this.setLastResult(result);
+              return _context7.abrupt("return", result);
+            case 9:
+            case "end":
+              return _context7.stop();
+          }
+        }, _callee6, this, [[4, 6]]);
+      }));
+      function _requestGenerateBrowserLLM(_x3, _x4, _x5, _x6, _x7) {
+        return _requestGenerateBrowserLLM2.apply(this, arguments);
+      }
+      return _requestGenerateBrowserLLM;
+    }()
+    /**
      * Send generator type prompt to AI.
      * @param {Array.<string | object>} prompt - the original prompt to AI
      * @param {function} responseTextHandler - A function to handle response text.
@@ -45115,23 +47049,34 @@ var AIAdapter = /*#__PURE__*/function () {
      * @returns {Promise<[object, Array.<object>]>} - a Promise that resolves
      *  to an array with response and function calls
      */
+    )
   }, {
     key: "requestGenerate",
     value: (function () {
-      var _requestGenerate = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee6(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
-        var _this5 = this;
-        var promptMessage, messages, abortController, client, tools, functionCallingEnabled, toolExists, generator, modelId, generationParams, streamError, result, hasSchema, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialObject, partialText, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, textPart, _this$messages, response, _t5, _t6, _t7;
-        return _regeneratorRuntime.wrap(function (_context6) {
-          while (1) switch (_context6.prev = _context6.next) {
+      var _requestGenerate = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee7(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
+        var _this7 = this;
+        var promptMessage, messages, abortController, client, tools, functionCallingEnabled, toolExists, generator, modelId, generationParams, streamError, result, hasSchema, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialObject, partialText, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, textPart, _this$messages, response, _t0, _t1, _t10;
+        return _regeneratorRuntime.wrap(function (_context8) {
+          while (1) switch (_context8.prev = _context8.next) {
             case 0:
+              this.lastStructuredOutput = null;
+              // Load baseUrl/modelID/generation config from the sprite variables before
+              // building the client and request params.
+              this.applyConfigFromVariables();
+              if (!(this.getApiType() === 'BrowserLLM')) {
+                _context8.next = 1;
+                break;
+              }
+              return _context8.abrupt("return", this._requestGenerateBrowserLLM(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat));
+            case 1:
               promptMessage = this._convertToMessage(prompt);
               messages = isChat ? this.messages : [];
               messages.push(promptMessage);
               // Create abort controller for this request
               abortController = this._createAbortController();
-              _context6.prev = 1;
+              _context8.prev = 2;
               client = this.getClient();
-              tools = this._buildTools(functionDispatcher);
+              tools = _objectSpread(_objectSpread({}, this._buildTools(functionDispatcher)), this._buildSkillTools());
               functionCallingEnabled = this.functionCallingMode !== AIAdapter.FUNCTION_CALLING_NONE;
               toolExists = Object.keys(tools).length > 0 && functionCallingEnabled;
               generator = partialTextHandler ? streamText : generateText;
@@ -45141,7 +47086,7 @@ var AIAdapter = /*#__PURE__*/function () {
               // (quota, network, API error) can be surfaced below rather than swallowed
               // as empty output or masked as a generic NoOutputGeneratedError.
               streamError = null;
-              _context6.next = 2;
+              _context8.next = 3;
               return generator(_objectSpread(_objectSpread(_objectSpread(_objectSpread({
                 model: client.languageModel(modelId),
                 messages: messages
@@ -45152,7 +47097,7 @@ var AIAdapter = /*#__PURE__*/function () {
                 abortSignal: abortController.signal,
                 stopWhen: stepCountIs(5),
                 onStepFinish: function onStepFinish(step) {
-                  _this5.setLastResponseText(step.text);
+                  _this7.setLastResponseText(step.text);
                   if (typeof responseTextHandler === 'function') {
                     responseTextHandler(step.text);
                   }
@@ -45171,15 +47116,15 @@ var AIAdapter = /*#__PURE__*/function () {
                   'anthropic-dangerous-direct-browser-access': 'true'
                 })
               }));
-            case 2:
-              result = _context6.sent;
+            case 3:
+              result = _context8.sent;
               hasSchema = Object.prototype.hasOwnProperty.call(this.generationConfig, 'responseSchema');
               if (!partialTextHandler) {
-                _context6.next = 27;
+                _context8.next = 28;
                 break;
               }
               if (!hasSchema) {
-                _context6.next = 15;
+                _context8.next = 16;
                 break;
               }
               // Structured output streams the growing partial object via
@@ -45187,151 +47132,151 @@ var AIAdapter = /*#__PURE__*/function () {
               // text-based partial handler keeps working.
               _iteratorAbruptCompletion = false;
               _didIteratorError = false;
-              _context6.prev = 3;
+              _context8.prev = 4;
               _iterator = _asyncIterator(result.partialOutputStream);
-            case 4:
-              _context6.next = 5;
-              return _iterator.next();
             case 5:
-              if (!(_iteratorAbruptCompletion = !(_step = _context6.sent).done)) {
-                _context6.next = 7;
+              _context8.next = 6;
+              return _iterator.next();
+            case 6:
+              if (!(_iteratorAbruptCompletion = !(_step = _context8.sent).done)) {
+                _context8.next = 8;
                 break;
               }
               partialObject = _step.value;
               partialText = JSON.stringify(partialObject);
               this.setLastPartialText(partialText);
               partialTextHandler(partialText);
-            case 6:
-              _iteratorAbruptCompletion = false;
-              _context6.next = 4;
-              break;
             case 7:
-              _context6.next = 9;
+              _iteratorAbruptCompletion = false;
+              _context8.next = 5;
               break;
             case 8:
-              _context6.prev = 8;
-              _t5 = _context6["catch"](3);
-              _didIteratorError = true;
-              _iteratorError = _t5;
+              _context8.next = 10;
+              break;
             case 9:
-              _context6.prev = 9;
-              _context6.prev = 10;
+              _context8.prev = 9;
+              _t0 = _context8["catch"](4);
+              _didIteratorError = true;
+              _iteratorError = _t0;
+            case 10:
+              _context8.prev = 10;
+              _context8.prev = 11;
               if (!(_iteratorAbruptCompletion && _iterator.return != null)) {
-                _context6.next = 11;
+                _context8.next = 12;
                 break;
               }
-              _context6.next = 11;
+              _context8.next = 12;
               return _iterator.return();
-            case 11:
-              _context6.prev = 11;
+            case 12:
+              _context8.prev = 12;
               if (!_didIteratorError) {
-                _context6.next = 12;
+                _context8.next = 13;
                 break;
               }
               throw _iteratorError;
-            case 12:
-              return _context6.finish(11);
             case 13:
-              return _context6.finish(9);
+              return _context8.finish(12);
             case 14:
-              _context6.next = 27;
-              break;
+              return _context8.finish(10);
             case 15:
+              _context8.next = 28;
+              break;
+            case 16:
               _iteratorAbruptCompletion2 = false;
               _didIteratorError2 = false;
-              _context6.prev = 16;
+              _context8.prev = 17;
               _iterator2 = _asyncIterator(result.textStream);
-            case 17:
-              _context6.next = 18;
-              return _iterator2.next();
             case 18:
-              if (!(_iteratorAbruptCompletion2 = !(_step2 = _context6.sent).done)) {
-                _context6.next = 20;
+              _context8.next = 19;
+              return _iterator2.next();
+            case 19:
+              if (!(_iteratorAbruptCompletion2 = !(_step2 = _context8.sent).done)) {
+                _context8.next = 21;
                 break;
               }
               textPart = _step2.value;
               this.setLastPartialText(textPart);
               partialTextHandler(textPart);
-            case 19:
-              _iteratorAbruptCompletion2 = false;
-              _context6.next = 17;
-              break;
             case 20:
-              _context6.next = 22;
+              _iteratorAbruptCompletion2 = false;
+              _context8.next = 18;
               break;
             case 21:
-              _context6.prev = 21;
-              _t6 = _context6["catch"](16);
-              _didIteratorError2 = true;
-              _iteratorError2 = _t6;
+              _context8.next = 23;
+              break;
             case 22:
-              _context6.prev = 22;
-              _context6.prev = 23;
+              _context8.prev = 22;
+              _t1 = _context8["catch"](17);
+              _didIteratorError2 = true;
+              _iteratorError2 = _t1;
+            case 23:
+              _context8.prev = 23;
+              _context8.prev = 24;
               if (!(_iteratorAbruptCompletion2 && _iterator2.return != null)) {
-                _context6.next = 24;
+                _context8.next = 25;
                 break;
               }
-              _context6.next = 24;
+              _context8.next = 25;
               return _iterator2.return();
-            case 24:
-              _context6.prev = 24;
+            case 25:
+              _context8.prev = 25;
               if (!_didIteratorError2) {
-                _context6.next = 25;
+                _context8.next = 26;
                 break;
               }
               throw _iteratorError2;
-            case 25:
-              return _context6.finish(24);
             case 26:
-              return _context6.finish(22);
+              return _context8.finish(25);
             case 27:
+              return _context8.finish(23);
+            case 28:
               if (!streamError) {
-                _context6.next = 28;
+                _context8.next = 29;
                 break;
               }
               this.setLastResult(streamError);
               throw streamError;
-            case 28:
+            case 29:
               this.setLastResult(result);
 
               // When a response schema is set, await result.output to validate the
               // structured object (a schema/type validation failure rejects and
               // propagates via the surrounding catch).
               if (!hasSchema) {
-                _context6.next = 29;
+                _context8.next = 30;
                 break;
               }
-              _context6.next = 29;
+              _context8.next = 30;
               return result.output;
-            case 29:
+            case 30:
               if (!isChat) {
-                _context6.next = 31;
+                _context8.next = 32;
                 break;
               }
-              _context6.next = 30;
+              _context8.next = 31;
               return result.response;
-            case 30:
-              response = _context6.sent;
-              (_this$messages = this.messages).push.apply(_this$messages, _toConsumableArray(response.messages));
             case 31:
-              return _context6.abrupt("return", result);
+              response = _context8.sent;
+              (_this$messages = this.messages).push.apply(_this$messages, _toConsumableArray(response.messages));
             case 32:
-              _context6.prev = 32;
-              _t7 = _context6["catch"](1);
-              this.setLastResult(_t7);
-              throw _t7;
+              return _context8.abrupt("return", result);
             case 33:
-              _context6.prev = 33;
+              _context8.prev = 33;
+              _t10 = _context8["catch"](2);
+              this.setLastResult(_t10);
+              throw _t10;
+            case 34:
+              _context8.prev = 34;
               // Remove the abort controller from the array when request is finished
               this._removeAbortController(abortController);
-              return _context6.finish(33);
-            case 34:
+              return _context8.finish(34);
+            case 35:
             case "end":
-              return _context6.stop();
+              return _context8.stop();
           }
-        }, _callee6, this, [[1, 32, 33, 34], [3, 8, 9, 14], [10,, 11, 13], [16, 21, 22, 27], [23,, 24, 26]]);
+        }, _callee7, this, [[2, 33, 34, 35], [4, 9, 10, 15], [11,, 12, 14], [17, 22, 23, 28], [24,, 25, 27]]);
       }));
-      function requestGenerate(_x3, _x4, _x5, _x6, _x7) {
+      function requestGenerate(_x8, _x9, _x0, _x1, _x10) {
         return _requestGenerate.apply(this, arguments);
       }
       return requestGenerate;
@@ -45356,6 +47301,50 @@ var AIAdapter = /*#__PURE__*/function () {
     key: "startChat",
     value: function startChat(history) {
       this.messages = history || [];
+      if (this._browserAI) this._browserAI.resetCache();
+    }
+
+    /**
+     * Request embedding of content using browser AI.
+     * @param {Array.<string> | string} contentParts - content to AI
+     * @returns {Promise<number[]>} - a Promise that resolves to embedding vector
+     * @private
+     */
+  }, {
+    key: "_requestEmbeddingBrowserLLM",
+    value: function _requestEmbeddingBrowserLLM(contentParts) {
+      if (!contentParts || !contentParts.length) {
+        return [];
+      }
+      if (typeof contentParts === 'string') {
+        contentParts = [contentParts];
+      }
+      var text = contentParts.reduce(function (acc, p) {
+        if (typeof p === 'string') {
+          return acc + p;
+        }
+        if (p.type === 'text') {
+          return acc + p.data;
+        }
+        return acc;
+      }, '');
+      var effectiveBaseUrl = this.baseUrl;
+      if (!effectiveBaseUrl || effectiveBaseUrl === PROVIDERS.Gemini.baseUrl || effectiveBaseUrl === PROVIDERS.OpenAI.baseUrl || effectiveBaseUrl === PROVIDERS.Anthropic.baseUrl || effectiveBaseUrl === PROVIDERS.OpenAICompatible.baseUrl) {
+        effectiveBaseUrl = PROVIDERS.BrowserLLM.baseUrl;
+      }
+      if (this._browserAI) {
+        this._browserAI.baseUrl = effectiveBaseUrl;
+      } else {
+        this._browserAI = new BrowserAIProvider(effectiveBaseUrl);
+      }
+      var effectiveEmbeddingModelId = this.modelID;
+      if (!effectiveEmbeddingModelId || effectiveEmbeddingModelId === PROVIDERS.Gemini.defaultModels.embedding || effectiveEmbeddingModelId === PROVIDERS.OpenAI.defaultModels.embedding || effectiveEmbeddingModelId === PROVIDERS.OpenAICompatible.defaultModels.embedding) {
+        effectiveEmbeddingModelId = PROVIDERS.BrowserLLM.defaultModels.embedding;
+      }
+      this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
+      this._browserAI.setEmbeddingModel(effectiveEmbeddingModelId);
+      this._browserAI.onProgress = null;
+      return this._browserAI.embed(text);
     }
 
     /**
@@ -45366,17 +47355,25 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestEmbedding",
     value: (function () {
-      var _requestEmbedding = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee7(contentParts) {
-        var text, modelId, abortController, client, _yield$embed, embedding, _t8;
-        return _regeneratorRuntime.wrap(function (_context7) {
-          while (1) switch (_context7.prev = _context7.next) {
+      var _requestEmbedding = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee8(contentParts) {
+        var text, modelId, abortController, client, _yield$embed, embedding, _t11;
+        return _regeneratorRuntime.wrap(function (_context9) {
+          while (1) switch (_context9.prev = _context9.next) {
             case 0:
-              if (!(!contentParts || !contentParts.length)) {
-                _context7.next = 1;
+              // Load baseUrl/modelID from the sprite variables before building the client.
+              this.applyConfigFromVariables();
+              if (!(this.getApiType() === 'BrowserLLM')) {
+                _context9.next = 1;
                 break;
               }
-              return _context7.abrupt("return", []);
+              return _context9.abrupt("return", this._requestEmbeddingBrowserLLM(contentParts));
             case 1:
+              if (!(!contentParts || !contentParts.length)) {
+                _context9.next = 2;
+                break;
+              }
+              return _context9.abrupt("return", []);
+            case 2:
               if (typeof contentParts === 'string') {
                 contentParts = [contentParts];
               }
@@ -45391,50 +47388,322 @@ var AIAdapter = /*#__PURE__*/function () {
               }, '');
               modelId = this.getModel('embedding'); // Create abort controller for this request
               abortController = this._createAbortController();
-              _context7.prev = 2;
+              _context9.prev = 3;
               client = this.getClient();
-              _context7.next = 3;
+              _context9.next = 4;
               return embed({
                 model: client.embeddingModel(modelId),
                 value: text,
                 abortSignal: abortController.signal
               });
-            case 3:
-              _yield$embed = _context7.sent;
-              embedding = _yield$embed.embedding;
-              return _context7.abrupt("return", embedding);
             case 4:
-              _context7.prev = 4;
-              _t8 = _context7["catch"](2);
-              if (!(_t8.name === 'AI_APICallError')) {
-                _context7.next = 5;
+              _yield$embed = _context9.sent;
+              embedding = _yield$embed.embedding;
+              return _context9.abrupt("return", embedding);
+            case 5:
+              _context9.prev = 5;
+              _t11 = _context9["catch"](3);
+              if (!(_t11.name === 'AI_APICallError')) {
+                _context9.next = 6;
                 break;
               }
-              throw new Error("API call error: ".concat(_t8.responseBody, " URL: ").concat(_t8.url));
-            case 5:
-              throw _t8;
+              throw new Error("API call error: ".concat(_t11.responseBody, " URL: ").concat(_t11.url));
             case 6:
-              _context7.prev = 6;
+              throw _t11;
+            case 7:
+              _context9.prev = 7;
               // Remove the abort controller from the array when request is finished
               this._removeAbortController(abortController);
-              return _context7.finish(6);
-            case 7:
+              return _context9.finish(7);
+            case 8:
             case "end":
-              return _context7.stop();
+              return _context9.stop();
           }
-        }, _callee7, this, [[2, 4, 6, 7]]);
+        }, _callee8, this, [[3, 5, 7, 8]]);
       }));
-      function requestEmbedding(_x8) {
+      function requestEmbedding(_x11) {
         return _requestEmbedding.apply(this, arguments);
       }
       return requestEmbedding;
     }()
     /**
+     * Clear cache for a specific model by its index.
+     * @param {number} modelIndex - 1-based index of the model
+     * @returns {Promise<string>} - A promise that resolves to status message
+     */
+    )
+  }, {
+    key: "clearBrowserLLMModelCache",
+    value: (function () {
+      var _clearBrowserLLMModelCache = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee9(modelIndex) {
+        var apiType, models, idx, targetModelId, _this$_parseModelId, targetRepo, targetDtype, deleteCount, cacheNames, _iterator6, _step6, cacheName, cache, requests, _iterator7, _step7, req, url, repo, match, pathParts, resolveIdx, dtype, dtypeMatch, isModelFile, success, _t12, _t13, _t14;
+        return _regeneratorRuntime.wrap(function (_context0) {
+          while (1) switch (_context0.prev = _context0.next) {
+            case 0:
+              apiType = this.getApiType();
+              if (!(apiType !== 'BrowserLLM')) {
+                _context0.next = 1;
+                break;
+              }
+              return _context0.abrupt("return", 'API type is not BrowserLLM');
+            case 1:
+              _context0.next = 2;
+              return this.getModels();
+            case 2:
+              models = _context0.sent;
+              idx = Math.round(modelIndex) - 1;
+              if (!(idx < 0 || idx >= models.length)) {
+                _context0.next = 3;
+                break;
+              }
+              return _context0.abrupt("return", "Model index ".concat(modelIndex, " out of bounds"));
+            case 3:
+              targetModelId = models[idx].id;
+              _this$_parseModelId = this._parseModelId(targetModelId), targetRepo = _this$_parseModelId.name, targetDtype = _this$_parseModelId.dtype;
+              console.log("[BrowserAI] Starting cache clear for model ID: \"".concat(targetModelId, "\"") + " (Repo: ".concat(targetRepo, ", Dtype: ").concat(targetDtype, ", Index: ").concat(modelIndex, ")"));
+              deleteCount = 0;
+              _context0.prev = 4;
+              if (!(typeof caches !== 'undefined')) {
+                _context0.next = 21;
+                break;
+              }
+              _context0.next = 5;
+              return caches.keys();
+            case 5:
+              cacheNames = _context0.sent;
+              _iterator6 = _createForOfIteratorHelper$2(cacheNames);
+              _context0.prev = 6;
+              _iterator6.s();
+            case 7:
+              if ((_step6 = _iterator6.n()).done) {
+                _context0.next = 18;
+                break;
+              }
+              cacheName = _step6.value;
+              if (!(cacheName.includes('transformers') || cacheName.includes('onnxruntime'))) {
+                _context0.next = 17;
+                break;
+              }
+              console.log("[BrowserAI] Scanning cache: ".concat(cacheName));
+              _context0.next = 8;
+              return caches.open(cacheName);
+            case 8:
+              cache = _context0.sent;
+              _context0.next = 9;
+              return cache.keys();
+            case 9:
+              requests = _context0.sent;
+              _iterator7 = _createForOfIteratorHelper$2(requests);
+              _context0.prev = 10;
+              _iterator7.s();
+            case 11:
+              if ((_step7 = _iterator7.n()).done) {
+                _context0.next = 14;
+                break;
+              }
+              req = _step7.value;
+              url = req.url;
+              repo = null;
+              match = url.match(/\/([^/]+)\/([^/]+)\/resolve\//);
+              if (match) {
+                repo = "".concat(match[1], "/").concat(match[2]);
+              } else {
+                try {
+                  pathParts = new URL(url).pathname.split('/');
+                  resolveIdx = pathParts.indexOf('resolve');
+                  if (resolveIdx >= 2) {
+                    repo = "".concat(pathParts[resolveIdx - 2], "/").concat(pathParts[resolveIdx - 1]);
+                  }
+                } catch (e) {
+                  // Ignore
+                }
+              }
+              if (!(repo === targetRepo)) {
+                _context0.next = 13;
+                break;
+              }
+              dtype = 'fp32';
+              if (url.includes('.onnx') || url.includes('.onnx_data')) {
+                dtypeMatch = url.match(/[_/](q4f16|q4|q2f16|q2|q8|fp16|fp32)(?:\.onnx|_|[/]|\b)/i);
+                if (dtypeMatch) {
+                  dtype = dtypeMatch[1].toLowerCase();
+                }
+              }
+              isModelFile = url.includes('.onnx') || url.includes('.onnx_data');
+              if (!(!isModelFile || dtype === targetDtype)) {
+                _context0.next = 13;
+                break;
+              }
+              console.log("[BrowserAI] Deleting cached file: ".concat(url));
+              _context0.next = 12;
+              return cache.delete(req);
+            case 12:
+              success = _context0.sent;
+              if (success) {
+                deleteCount++;
+              }
+            case 13:
+              _context0.next = 11;
+              break;
+            case 14:
+              _context0.next = 16;
+              break;
+            case 15:
+              _context0.prev = 15;
+              _t12 = _context0["catch"](10);
+              _iterator7.e(_t12);
+            case 16:
+              _context0.prev = 16;
+              _iterator7.f();
+              return _context0.finish(16);
+            case 17:
+              _context0.next = 7;
+              break;
+            case 18:
+              _context0.next = 20;
+              break;
+            case 19:
+              _context0.prev = 19;
+              _t13 = _context0["catch"](6);
+              _iterator6.e(_t13);
+            case 20:
+              _context0.prev = 20;
+              _iterator6.f();
+              return _context0.finish(20);
+            case 21:
+              _context0.next = 23;
+              break;
+            case 22:
+              _context0.prev = 22;
+              _t14 = _context0["catch"](4);
+              console.warn('[BrowserAI] Failed to delete cache for model:', _t14);
+              return _context0.abrupt("return", "Error clearing cache: ".concat(_t14.message));
+            case 23:
+              console.log("[BrowserAI] Successfully cleared ".concat(deleteCount, " cache entries for model \"").concat(targetModelId, "\""));
+
+              // Reset models list for all adapters to force re-scanning
+              Object.values(AIAdapter.ADAPTERS).forEach(function (adapter) {
+                adapter.models = [];
+              });
+
+              // Also reset memory cache if it was active
+              if (this._browserAI) {
+                if (this._browserAI.model === targetModelId) {
+                  this._browserAI._pipe = null;
+                }
+                if (this._browserAI.embeddingModel === targetModelId) {
+                  this._browserAI._embeddingPipe = null;
+                }
+                this._browserAI.resetCache();
+              }
+              this._removeRecordedModel(targetModelId);
+              return _context0.abrupt("return", "Cleared ".concat(deleteCount, " cache entries for model \"").concat(targetModelId, "\""));
+            case 24:
+            case "end":
+              return _context0.stop();
+          }
+        }, _callee9, this, [[4, 22], [6, 19, 20, 21], [10, 15, 16, 17]]);
+      }));
+      function clearBrowserLLMModelCache(_x12) {
+        return _clearBrowserLLMModelCache.apply(this, arguments);
+      }
+      return clearBrowserLLMModelCache;
+    }()
+    /**
+     * Download specific BrowserLLM model (generative or embedding).
+     * @param {string} modelID - target model ID (with _dtype)
+     * @param {string} modelType - 'generative' | 'embedding'
+     * @param {function} progressCallback - callback function for download progress
+     * @returns {Promise<void>} - a Promise that resolves when the model is downloaded
+     */
+    )
+  }, {
+    key: "downloadBrowserLLMModel",
+    value: (function () {
+      var _downloadBrowserLLMModel = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee0(modelID, modelType, progressCallback) {
+        var effectiveBaseUrl, effectiveModelId, effectiveEmbeddingModelId;
+        return _regeneratorRuntime.wrap(function (_context1) {
+          while (1) switch (_context1.prev = _context1.next) {
+            case 0:
+              this.applyConfigFromVariables();
+              effectiveBaseUrl = this.baseUrl;
+              if (!effectiveBaseUrl || effectiveBaseUrl === PROVIDERS.Gemini.baseUrl || effectiveBaseUrl === PROVIDERS.OpenAI.baseUrl || effectiveBaseUrl === PROVIDERS.Anthropic.baseUrl || effectiveBaseUrl === PROVIDERS.OpenAICompatible.baseUrl) {
+                effectiveBaseUrl = PROVIDERS.BrowserLLM.baseUrl;
+              }
+              if (this._browserAI) {
+                this._browserAI.baseUrl = effectiveBaseUrl;
+              } else {
+                this._browserAI = new BrowserAIProvider(effectiveBaseUrl);
+              }
+              this._browserAI.onProgress = progressCallback;
+              this._browserAI._cancelDownload = false;
+              _context1.prev = 1;
+              if (!(modelType === 'generative')) {
+                _context1.next = 3;
+                break;
+              }
+              effectiveModelId = modelID || this.modelID;
+              if (!effectiveModelId || effectiveModelId === PROVIDERS.Gemini.defaultModels.generative || effectiveModelId === PROVIDERS.OpenAI.defaultModels.generative || effectiveModelId === PROVIDERS.Anthropic.defaultModels.generative || effectiveModelId === PROVIDERS.OpenAICompatible.defaultModels.generative) {
+                effectiveModelId = PROVIDERS.BrowserLLM.defaultModels.generative;
+              }
+              this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
+              this._browserAI.setModel(effectiveModelId);
+              _context1.next = 2;
+              return this._browserAI._getPipeline(true);
+            case 2:
+              this._recordDownloadedModel(effectiveModelId);
+              _context1.next = 5;
+              break;
+            case 3:
+              if (!(modelType === 'embedding')) {
+                _context1.next = 5;
+                break;
+              }
+              effectiveEmbeddingModelId = modelID || this.modelID;
+              if (!effectiveEmbeddingModelId || effectiveEmbeddingModelId === PROVIDERS.Gemini.defaultModels.embedding || effectiveEmbeddingModelId === PROVIDERS.OpenAI.defaultModels.embedding || effectiveEmbeddingModelId === PROVIDERS.OpenAICompatible.defaultModels.embedding) {
+                effectiveEmbeddingModelId = PROVIDERS.BrowserLLM.defaultModels.embedding;
+              }
+              this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
+              this._browserAI.setEmbeddingModel(effectiveEmbeddingModelId);
+              _context1.next = 4;
+              return this._browserAI._getEmbeddingPipeline(true);
+            case 4:
+              this._recordDownloadedModel(effectiveEmbeddingModelId);
+            case 5:
+              _context1.prev = 5;
+              this._browserAI.onProgress = null;
+              Object.values(AIAdapter.ADAPTERS).forEach(function (adapter) {
+                adapter.models = [];
+              });
+              return _context1.finish(5);
+            case 6:
+            case "end":
+              return _context1.stop();
+          }
+        }, _callee0, this, [[1,, 5, 6]]);
+      }));
+      function downloadBrowserLLMModel(_x13, _x14, _x15) {
+        return _downloadBrowserLLMModel.apply(this, arguments);
+      }
+      return downloadBrowserLLMModel;
+    }()
+    /**
+     * Cancel the ongoing browser LLM model download.
+     */
+    )
+  }, {
+    key: "cancelDownloadBrowserLLMModel",
+    value: function cancelDownloadBrowserLLMModel() {
+      if (this._browserAI) {
+        this._browserAI.cancelDownload();
+      }
+    }
+
+    /**
      * Get model code for specific model type.
      * @param {string} supportedType - type of model ('generative' | 'embedding')
      * @returns {string} - model code
      */
-    )
   }, {
     key: "getModel",
     value: function getModel() {
@@ -45511,6 +47780,117 @@ var AIAdapter = /*#__PURE__*/function () {
       var index = this.abortControllers.indexOf(abortController);
       if (index !== -1) {
         this.abortControllers.splice(index, 1);
+      }
+    }
+
+    /**
+     * Parse model ID into repository name and dtype.
+     * @param {string} modelId - model ID
+     * @returns {object} - {name: repository name, dtype: data type}
+     * @private
+     */
+  }, {
+    key: "_parseModelId",
+    value: function _parseModelId(modelId) {
+      if (!modelId) return {
+        name: '',
+        dtype: null
+      };
+      var knownDtypes = ['auto', 'q4f16', 'q4', 'q2f16', 'q2', 'q8', 'fp16', 'fp32'];
+      var repo = modelId;
+      var dtype = null;
+      var lastUnderscore = modelId.lastIndexOf('_');
+      if (lastUnderscore !== -1) {
+        var potentialDtype = modelId.substring(lastUnderscore + 1);
+        if (knownDtypes.includes(potentialDtype)) {
+          repo = modelId.substring(0, lastUnderscore);
+          dtype = potentialDtype;
+        }
+      }
+      return {
+        name: repo,
+        dtype: dtype
+      };
+    }
+
+    /**
+     * Get recorded dtypes map from localStorage.
+     * @returns {object} - map of repo -> array of dtypes
+     * @private
+     */
+  }, {
+    key: "_getRecordedDtypes",
+    value: function _getRecordedDtypes() {
+      if (typeof window === 'undefined' || !window.localStorage) return {};
+      try {
+        var data = window.localStorage.getItem('xcx_gai_downloaded_dtypes');
+        return data ? JSON.parse(data) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    /**
+     * Record downloaded model dtype in localStorage.
+     * @param {string} modelId - model ID
+     * @returns {void}
+     * @private
+     */
+  }, {
+    key: "_recordDownloadedModel",
+    value: function _recordDownloadedModel(modelId) {
+      if (!modelId) return;
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      var _this$_parseModelId2 = this._parseModelId(modelId),
+        repo = _this$_parseModelId2.name,
+        parsedDtype = _this$_parseModelId2.dtype;
+      var dtype = parsedDtype || 'q4f16'; // default fallback
+
+      try {
+        var dtypesMap = this._getRecordedDtypes();
+        if (!dtypesMap[repo]) {
+          dtypesMap[repo] = [];
+        }
+        if (!dtypesMap[repo].includes(dtype)) {
+          dtypesMap[repo].push(dtype);
+          window.localStorage.setItem('xcx_gai_downloaded_dtypes', JSON.stringify(dtypesMap));
+        }
+      } catch (e) {
+        // Ignore
+      }
+    }
+
+    /**
+     * Remove recorded model dtype from localStorage.
+     * @param {string} modelId - model ID
+     * @returns {void}
+     * @private
+     */
+  }, {
+    key: "_removeRecordedModel",
+    value: function _removeRecordedModel(modelId) {
+      if (!modelId) return;
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      var _this$_parseModelId3 = this._parseModelId(modelId),
+        repo = _this$_parseModelId3.name,
+        dtype = _this$_parseModelId3.dtype;
+      try {
+        var dtypesMap = this._getRecordedDtypes();
+        if (dtypesMap[repo]) {
+          if (dtype) {
+            dtypesMap[repo] = dtypesMap[repo].filter(function (d) {
+              return d !== dtype;
+            });
+          } else {
+            delete dtypesMap[repo];
+          }
+          if (dtypesMap[repo] && dtypesMap[repo].length === 0) {
+            delete dtypesMap[repo];
+          }
+          window.localStorage.setItem('xcx_gai_downloaded_dtypes', JSON.stringify(dtypesMap));
+        }
+      } catch (e) {
+        // Ignore
       }
     }
   }], [{
@@ -45903,9 +48283,9 @@ var insertImageAsSvgCostume = /*#__PURE__*/function () {
   };
 }();
 
-function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: true } : { done: false, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = true, u = false; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = true, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _createForOfIteratorHelper$1(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray$1(r)) || e) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: true } : { done: false, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = true, u = false; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = true, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray$1(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$1(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0; } }
+function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 /**
  * Parse content parts text.
  * @param {string} contentPartsText - content parts text
@@ -45915,7 +48295,7 @@ var parseContentPartsText = function parseContentPartsText(contentPartsText) {
   var parser = /(.*?)[\s\u3000"'`[{(,.]*(data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+)[\s\u3000"'`\]}),.]*|(.*)/gi;
   var contentPartDirectives = [];
   var matches = contentPartsText.matchAll(parser);
-  var _iterator = _createForOfIteratorHelper(matches),
+  var _iterator = _createForOfIteratorHelper$1(matches),
     _step;
   try {
     for (_iterator.s(); !(_step = _iterator.n()).done;) {
@@ -46020,6 +48400,199 @@ var cosineDistance = function cosineDistance(vectorA, vectorB) {
   return 1 - dotProd / (normA * normB);
 };
 
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: true } : { done: false, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = true, u = false; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = true, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+var DownloadProgressBar = /*#__PURE__*/function () {
+  function DownloadProgressBar() {
+    var title = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'Downloading Model...';
+    var onCancel = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+    _classCallCheck$1(this, DownloadProgressBar);
+    this.title = title;
+    this.onCancel = onCancel;
+    this.element = null;
+    this.progressFill = null;
+    this.progressText = null;
+    this.statusText = null;
+    this.styleSheet = null;
+    this.createDOM();
+  }
+  return _createClass$1(DownloadProgressBar, [{
+    key: "createDOM",
+    value: function createDOM() {
+      var _this = this;
+      var overlay = document.createElement('div');
+      overlay.id = 'xcx-gai-download-overlay';
+      Object.assign(overlay.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'rgba(15, 15, 23, 0.4)',
+        backdropFilter: 'blur(12px)',
+        webkitBackdropFilter: 'blur(12px)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: '999999',
+        fontFamily: '"Inter", "Helvetica Neue", Arial, sans-serif',
+        opacity: '0',
+        transition: 'opacity 0.3s ease'
+      });
+      var card = document.createElement('div');
+      Object.assign(card.style, {
+        backgroundColor: 'rgba(30, 30, 46, 0.85)',
+        color: '#cdd6f4',
+        borderRadius: '24px',
+        padding: '32px',
+        width: '420px',
+        boxShadow: '0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        transform: 'scale(0.95)',
+        transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+      });
+      var title = document.createElement('div');
+      title.innerText = this.title;
+      Object.assign(title.style, {
+        fontSize: '20px',
+        fontWeight: '700',
+        letterSpacing: '-0.5px',
+        background: 'linear-gradient(135deg, #cba6f7 0%, #f5c2e7 100%)',
+        webkitBackgroundClip: 'text',
+        webkitTextFillColor: 'transparent',
+        textAlign: 'center'
+      });
+      var progressContainer = document.createElement('div');
+      Object.assign(progressContainer.style, {
+        width: '100%',
+        height: '16px',
+        backgroundColor: '#313244',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        position: 'relative',
+        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.3)'
+      });
+      var progressFill = document.createElement('div');
+      Object.assign(progressFill.style, {
+        width: '0%',
+        height: '100%',
+        background: 'linear-gradient(90deg, #89b4fa, #cba6f7, #f5c2e7)',
+        backgroundSize: '200% 100%',
+        borderRadius: '8px',
+        transition: 'width 0.1s ease',
+        animation: 'gradientMove 2s linear infinite'
+      });
+      var styleSheet = document.createElement('style');
+      styleSheet.innerText = "\n            @keyframes gradientMove {\n                0% { background-position: 0% 50%; }\n                100% { background-position: 200% 50%; }\n            }\n        ";
+      document.head.appendChild(styleSheet);
+      this.styleSheet = styleSheet;
+      var infoContainer = document.createElement('div');
+      Object.assign(infoContainer.style, {
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: '13px',
+        fontWeight: '500',
+        color: '#a6adc8'
+      });
+      var statusText = document.createElement('div');
+      statusText.innerText = 'Initializing...';
+      Object.assign(statusText.style, {
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        maxWidth: '300px'
+      });
+      var progressText = document.createElement('div');
+      progressText.innerText = '0%';
+      Object.assign(progressText.style, {
+        fontVariantNumeric: 'tabular-nums'
+      });
+      progressContainer.appendChild(progressFill);
+      infoContainer.appendChild(statusText);
+      infoContainer.appendChild(progressText);
+      card.appendChild(title);
+      card.appendChild(progressContainer);
+      card.appendChild(infoContainer);
+      if (this.onCancel) {
+        var cancelBtn = document.createElement('button');
+        cancelBtn.innerText = '✕ Cancel';
+        Object.assign(cancelBtn.style, {
+          marginTop: '4px',
+          alignSelf: 'center',
+          background: 'transparent',
+          border: '1px solid rgba(205, 214, 244, 0.3)',
+          borderRadius: '8px',
+          color: '#a6adc8',
+          cursor: 'pointer',
+          fontSize: '13px',
+          fontWeight: '500',
+          padding: '6px 20px',
+          transition: 'background 0.15s, color 0.15s'
+        });
+        cancelBtn.addEventListener('mouseover', function () {
+          cancelBtn.style.background = 'rgba(243, 139, 168, 0.15)';
+          cancelBtn.style.color = '#f38ba8';
+        });
+        cancelBtn.addEventListener('mouseout', function () {
+          cancelBtn.style.background = 'transparent';
+          cancelBtn.style.color = '#a6adc8';
+        });
+        cancelBtn.addEventListener('click', function () {
+          cancelBtn.disabled = true;
+          cancelBtn.innerText = 'Cancelling...';
+          _this.onCancel();
+        });
+        card.appendChild(cancelBtn);
+      }
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+      requestAnimationFrame(function () {
+        overlay.style.opacity = '1';
+        card.style.transform = 'scale(1)';
+      });
+      this.element = overlay;
+      this.card = card;
+      this.progressFill = progressFill;
+      this.progressText = progressText;
+      this.statusText = statusText;
+    }
+  }, {
+    key: "update",
+    value: function update(progress, status) {
+      if (this.progressFill) {
+        this.progressFill.style.width = "".concat(progress, "%");
+      }
+      if (this.progressText) {
+        this.progressText.innerText = "".concat(Math.round(progress), "%");
+      }
+      if (this.statusText && status) {
+        this.statusText.innerText = status;
+      }
+    }
+  }, {
+    key: "destroy",
+    value: function destroy() {
+      var _this2 = this;
+      if (this.element) {
+        this.element.style.opacity = '0';
+        if (this.card) {
+          this.card.style.transform = 'scale(0.95)';
+        }
+        setTimeout(function () {
+          if (_this2.element && _this2.element.parentNode) {
+            _this2.element.parentNode.removeChild(_this2.element);
+          }
+          if (_this2.styleSheet && _this2.styleSheet.parentNode) {
+            _this2.styleSheet.parentNode.removeChild(_this2.styleSheet);
+          }
+        }, 300);
+      }
+    }
+  }]);
+}();
 /**
  * Get all user-defined procedures from the target
  * @param {Target} target - the target to get procedures from
@@ -46109,7 +48682,7 @@ var GAIBlocks = /*#__PURE__*/function () {
    * @param {Runtime} runtime - the Scratch 3.0 runtime.
    */
   function GAIBlocks(runtime) {
-    var _this = this;
+    var _this3 = this;
     _classCallCheck$1(this, GAIBlocks);
     /**
      * The Scratch 3.0 runtime.
@@ -46122,11 +48695,11 @@ var GAIBlocks = /*#__PURE__*/function () {
     }
     runtime.on('EXTENSION_ADDED', this.onExtensionAdded.bind(this));
     runtime.on('PROJECT_STOP_ALL', function () {
-      _this.stopListening();
+      _this3.stopListening();
       AIAdapter.abortAllRequests("Project stopped");
     });
     runtime.on('STOP_FOR_TARGET', function (target) {
-      _this.abortRequestsForTarget(target, "Request stopped for ".concat(target.sprite.name));
+      _this3.abortRequestsForTarget(target, "Request stopped for ".concat(target.sprite.name));
     });
     this.functionNamePrefix = 'func_';
     this.functionArgPrefix = 'arg_';
@@ -46440,6 +49013,8 @@ var GAIBlocks = /*#__PURE__*/function () {
           }
         }, {
           opcode: 'setGenerationConfig',
+          hideFromPalette: true,
+          // deprecated: generation config is now stored in sprite variables
           blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setGenerationConfig',
@@ -46459,6 +49034,8 @@ var GAIBlocks = /*#__PURE__*/function () {
           }
         }, {
           opcode: 'generationConfig',
+          hideFromPalette: true,
+          // deprecated: generation config is now stored in sprite variables
           blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
@@ -46505,6 +49082,8 @@ var GAIBlocks = /*#__PURE__*/function () {
           }
         }, '---', {
           opcode: 'setModel',
+          hideFromPalette: true,
+          // deprecated: model ID is now stored in the `modelID` sprite variable
           blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setModel',
@@ -46520,6 +49099,8 @@ var GAIBlocks = /*#__PURE__*/function () {
           }
         }, {
           opcode: 'getModel',
+          hideFromPalette: true,
+          // deprecated: model ID is now stored in the `modelID` sprite variable
           blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
@@ -46617,6 +49198,51 @@ var GAIBlocks = /*#__PURE__*/function () {
           }),
           func: 'getMaxGenerativeModelNumber',
           arguments: {}
+        }, {
+          opcode: 'downloadBrowserLLMModel',
+          blockType: BlockType.COMMAND,
+          text: formatMessage({
+            id: 'gai.downloadBrowserLLMModel',
+            default: 'download browser LLM model [MODEL_ID] as [MODEL_TYPE]',
+            description: 'download specific browser AI model'
+          }),
+          func: 'downloadBrowserLLMModel',
+          arguments: {
+            MODEL_ID: {
+              type: ArgumentType.STRING,
+              defaultValue: 'onnx-community/gemma-4-E2B-it-ONNX_q4f16'
+            },
+            MODEL_TYPE: {
+              type: ArgumentType.STRING,
+              menu: 'browserLLMModelTypeMenu',
+              defaultValue: 'generative'
+            }
+          }
+        }, {
+          opcode: 'cancelBrowserLLMModelDownload',
+          blockType: BlockType.COMMAND,
+          text: formatMessage({
+            id: 'gai.cancelBrowserLLMModelDownload',
+            default: 'cancel browser LLM model download',
+            description: 'cancel ongoing browser AI model download'
+          }),
+          func: 'cancelBrowserLLMModelDownload',
+          arguments: {}
+        }, {
+          opcode: 'clearBrowserLLMModelCache',
+          blockType: BlockType.COMMAND,
+          text: formatMessage({
+            id: 'gai.clearBrowserLLMModelCache',
+            default: 'clear cache for model at [MODEL_INDEX]',
+            description: 'clear cache for specific browser AI model'
+          }),
+          func: 'clearBrowserLLMModelCache',
+          arguments: {
+            MODEL_INDEX: {
+              type: ArgumentType.NUMBER,
+              defaultValue: 1
+            }
+          }
         }, '---', {
           opcode: 'getValueFromJson',
           blockType: BlockType.REPORTER,
@@ -46822,6 +49448,8 @@ var GAIBlocks = /*#__PURE__*/function () {
           }
         }, {
           opcode: 'setBaseUrl',
+          hideFromPalette: true,
+          // deprecated: base URL is now stored in the `baseUrl` sprite variable
           blockType: BlockType.COMMAND,
           text: formatMessage({
             id: 'gai.setBaseUrl',
@@ -46838,6 +49466,8 @@ var GAIBlocks = /*#__PURE__*/function () {
           }
         }, {
           opcode: 'baseUrl',
+          hideFromPalette: true,
+          // deprecated: base URL is now stored in the `baseUrl` sprite variable
           blockType: BlockType.REPORTER,
           disableMonitor: true,
           text: formatMessage({
@@ -46930,6 +49560,24 @@ var GAIBlocks = /*#__PURE__*/function () {
           adapterMenu: {
             acceptReporters: false,
             items: this.getAdapterMenu()
+          },
+          browserLLMModelTypeMenu: {
+            acceptReporters: true,
+            items: [{
+              text: formatMessage({
+                id: 'gai.modelType.generative',
+                default: 'text generation',
+                description: 'text generation model type'
+              }),
+              value: 'generative'
+            }, {
+              text: formatMessage({
+                id: 'gai.modelType.embedding',
+                default: 'embedding',
+                description: 'embedding model type'
+              }),
+              value: 'embedding'
+            }]
           }
         }
       };
@@ -47125,6 +49773,13 @@ var GAIBlocks = /*#__PURE__*/function () {
           description: 'Anthropic adapter'
         }),
         value: 'Anthropic'
+      }, {
+        text: formatMessage({
+          id: 'gai.adapterMenu.browserLLM',
+          default: 'Browser LLM',
+          description: 'Browser LLM AI adapter'
+        }),
+        value: 'BrowserLLM'
       }];
       return menu;
     }
@@ -47137,7 +49792,19 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "getAI",
     value: function getAI(target) {
-      return this.aiForTarget(target) || new AIAdapter(target);
+      var ai = this.aiForTarget(target);
+      if (!ai) {
+        ai = new AIAdapter(target);
+        // First AI use on this sprite: create the `skills` list so users can
+        // populate it with Agent Skills. Skills are injected into the prompt
+        // automatically once the list has items.
+        ensureSkillsList(target);
+        // Also create the AI config sprite variables (baseUrl, modelID,
+        // temperature, ...) so users control them with standard variable blocks.
+        // The adapter reads these before each request.
+        ensureConfigVariables(target);
+      }
+      return ai;
     }
 
     /**
@@ -47320,7 +49987,7 @@ var GAIBlocks = /*#__PURE__*/function () {
     key: "_requestAI",
     value: function _requestAI(prompt, isChat, util) {
       var _requestState$functio,
-        _this2 = this;
+        _this4 = this;
       var target = util.target;
       var ai = this.aiForTarget(target);
       var stackFrame = util.stackFrame;
@@ -47349,19 +50016,19 @@ var GAIBlocks = /*#__PURE__*/function () {
         this.updateFunctionRegistry(target);
         var responseTextHandler = function responseTextHandler(responseText) {
           if (responseText !== '') {
-            _this2.runtime.startHats('gai_whenResponseReceived', null, target);
+            _this4.runtime.startHats('gai_whenResponseReceived', null, target);
           }
         };
         var functionDispatcher = function functionDispatcher(call) {
           requestState.functionCalls = requestState.functionCalls || [];
           requestState.functionCalls.push(call);
-          return _this2._dispatchFunctionCall(call, target, util.runtime);
+          return _this4._dispatchFunctionCall(call, target, util.runtime);
         };
         var partialTextHandler;
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
           partialTextHandler = function partialTextHandler(partialText) {
             if (partialText !== '') {
-              _this2.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+              _this4.runtime.startHats('gai_whenPartialResponseReceived', null, target);
             }
           };
         }
@@ -47372,7 +50039,7 @@ var GAIBlocks = /*#__PURE__*/function () {
           requestState.error = error;
           // Surface the same localized error through the `response text`
           // reporter so both blocks show a consistent message on failure.
-          ai.setLastResponseText(_this2._formatAIError(error));
+          ai.setLastResponseText(_this4._formatAIError(error));
         });
       }
       util.yield();
@@ -47465,11 +50132,11 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "snapshotData",
     value: function snapshotData(args, util) {
-      var _this3 = this;
+      var _this5 = this;
       var runtime = this.runtime;
       var requester = util.target;
       return new Promise(function (resolve) {
-        _this3.runtime.renderer.requestSnapshot(function (imageDataURL) {
+        _this5.runtime.renderer.requestSnapshot(function (imageDataURL) {
           if (DEBUG) {
             insertImageAsSvgCostume(runtime, requester, imageDataURL, null, null, 'snapshot', requester.currentCostume + 1).catch(function (e) {
               console.error(e);
@@ -47513,20 +50180,20 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "startSoundRecorder",
     value: function startSoundRecorder() {
-      var _this4 = this;
+      var _this6 = this;
       return navigator.mediaDevices.getUserMedia({
         audio: true
       }).then(function (stream) {
-        _this4.runtime.emitMicListening(true);
+        _this6.runtime.emitMicListening(true);
         var mediaRecorder = new MediaRecorder(stream);
-        _this4.soundRecorder = mediaRecorder;
-        _this4.soundRecorderChunks = [];
+        _this6.soundRecorder = mediaRecorder;
+        _this6.soundRecorderChunks = [];
         mediaRecorder.ondataavailable = function (event) {
-          _this4.soundRecorderChunks.push(event.data);
+          _this6.soundRecorderChunks.push(event.data);
         };
         mediaRecorder.start();
-        _this4.listeningTimeout = setTimeout(function () {
-          _this4.stopSoundRecorder();
+        _this6.listeningTimeout = setTimeout(function () {
+          _this6.stopSoundRecorder();
         }, 60 * 1000);
       });
     }
@@ -47539,29 +50206,29 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "stopSoundRecorder",
     value: function stopSoundRecorder() {
-      var _this5 = this;
+      var _this7 = this;
       if (this.listeningTimeout) {
         clearTimeout(this.listeningTimeout);
         this.listeningTimeout = null;
       }
       if (this.soundRecorder) {
         return new Promise(function (resolve) {
-          _this5.soundRecorder.onstop = function () {
-            _this5.runtime.emitMicListening(false);
-            var audioBlob = new Blob(_this5.soundRecorderChunks, {
+          _this7.soundRecorder.onstop = function () {
+            _this7.runtime.emitMicListening(false);
+            var audioBlob = new Blob(_this7.soundRecorderChunks, {
               type: 'audio/wav'
             });
             var reader = new FileReader();
             reader.readAsDataURL(audioBlob);
             reader.onloadend = function () {
               var dataURL = reader.result;
-              _this5.recordedSoundData = dataURL;
-              _this5.isListening = false;
-              _this5.soundRecorder = null;
+              _this7.recordedSoundData = dataURL;
+              _this7.isListening = false;
+              _this7.soundRecorder = null;
               resolve(dataURL);
             };
           };
-          _this5.soundRecorder.stop();
+          _this7.soundRecorder.stop();
         });
       }
       return null;
@@ -47574,14 +50241,14 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "startListening",
     value: function startListening() {
-      var _this6 = this;
+      var _this8 = this;
       if (this.isListening) {
         return;
       }
       this.isListening = true;
       return this.startSoundRecorder().catch(function (e) {
         console.warn('Failed to start listening', e);
-        _this6.isListening = false;
+        _this8.isListening = false;
       });
     }
 
@@ -47669,6 +50336,12 @@ var GAIBlocks = /*#__PURE__*/function () {
         return '';
       }
       var detail = (error.message || error.name || '').trim();
+      if (detail === 'MODEL_NOT_DOWNLOADED') {
+        return formatMessage({
+          id: 'gai.error.modelNotDownloaded',
+          default: 'Browser LLM model is not downloaded. Please run the download block first.'
+        });
+      }
       var status = error.statusCode;
       if (error.name === 'AI_APICallError' || typeof status === 'number') {
         switch (status) {
@@ -47772,53 +50445,10 @@ var GAIBlocks = /*#__PURE__*/function () {
     key: "setGenerationConfig",
     value: function setGenerationConfig(args, util) {
       var target = util.target;
-      var ai = this.getAI(target);
-      var configKey = args.CONFIG;
-      var configValue = args.VALUE;
-      switch (configKey) {
-        case 'maxOutputTokens':
-          configValue = Math.max(1, parseInt(Cast.toString(configValue), 10));
-          break;
-        case 'stopSequences':
-          configValue = Cast.toString(configValue).split(',').map(function (s) {
-            return s.trim();
-          });
-          break;
-        case 'temperature':
-          configValue = Math.max(0.0, Math.min(1.0, Cast.toNumber(configValue)));
-          break;
-        case 'topP':
-          configValue = Math.max(0.0, Math.min(1.0, Cast.toNumber(configValue)));
-          break;
-        case 'topK':
-          configValue = Math.max(1, parseInt(Cast.toNumber(configValue), 10));
-          break;
-        case 'systemInstruction':
-          configValue = Cast.toString(configValue);
-          break;
-        case 'responseSchema':
-          try {
-            configValue = JSON.parse(configValue);
-          } catch (error) {
-            console.error("responseSchema: ".concat(error.message));
-          }
-          break;
-        default:
-          return "unknown config key: ".concat(configKey);
-      }
-      if (configValue === '') {
-        delete ai.generationConfig[configKey];
-        if (configKey === 'responseSchema') {
-          // Also remove responseMimeType when removing schema
-          delete ai.generationConfig.responseMimeType;
-        }
-        return "delete ".concat(configKey);
-      }
-      ai.generationConfig[configKey] = configValue;
-      if (configKey === 'responseSchema' && _typeof$2(configValue) === 'object') {
-        // Also set responseMimeType when setting schema
-        ai.generationConfig.responseMimeType = 'application/json';
-      }
+      // Ensure the config sprite variables exist, then store the raw value.
+      // Parsing into typed values happens when the adapter reads the variable.
+      this.getAI(target);
+      setConfigVariable(target, args.CONFIG, args.VALUE);
       return;
     }
 
@@ -47832,30 +50462,8 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "generationConfig",
     value: function generationConfig(args, util) {
-      var target = util.target;
-      var ai = this.getAI(target);
-      var configKey = args.CONFIG;
-      var configValue = ai.generationConfig[configKey];
-      if (configValue === null || typeof configValue === 'undefined') {
-        return '';
-      }
-      if (Array.isArray(configValue)) {
-        // Convert array to comma-separated string
-        return configValue.join(', ');
-      }
-      if (_typeof$2(configValue) === 'object') {
-        // Convert object to JSON string
-        return JSON.stringify(configValue);
-      }
-      if (typeof configValue === 'number') {
-        // Convert number to string
-        return String(configValue);
-      }
-      if (typeof configValue === 'boolean') {
-        // Convert boolean to string
-        return configValue ? 'true' : 'false';
-      }
-      return configValue;
+      // Read the raw value from the corresponding config sprite variable.
+      return getConfigVariableRaw(util.target, args.CONFIG);
     }
   }, {
     key: "getValueFromJson",
@@ -48226,8 +50834,8 @@ var GAIBlocks = /*#__PURE__*/function () {
       if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
         return 'error: invalid URL';
       }
-      var ai = this.getAI(util.target);
-      ai.setBaseUrl(baseUrl);
+      this.getAI(util.target);
+      setConfigVariable(util.target, 'baseUrl', baseUrl);
       return "set base URL to ".concat(baseUrl);
     }
 
@@ -48240,11 +50848,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "baseUrl",
     value: function baseUrl(_args, util) {
-      var ai = this.aiForTarget(util.target);
-      if (!ai) {
-        return '';
-      }
-      return ai.baseUrl || '';
+      return getConfigVariableRaw(util.target, 'baseUrl');
     }
 
     /**
@@ -48279,6 +50883,134 @@ var GAIBlocks = /*#__PURE__*/function () {
     }
 
     /**
+     * Clear cache for a specific model by its index.
+     * @param {object} args - the block's arguments.
+     * @param {number} args.MODEL_INDEX - model index
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - status message
+     */
+  }, {
+    key: "clearBrowserLLMModelCache",
+    value: function clearBrowserLLMModelCache(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      if (!ai) {
+        return Promise.resolve('AI is not available');
+      }
+      var modelIndex = Cast.toNumber(args.MODEL_INDEX);
+      return ai.clearBrowserLLMModelCache(modelIndex);
+    }
+
+    /**
+     * Download specific BrowserLLM model (generative or embedding).
+     * @param {object} args - the block's arguments.
+     * @param {string} args.MODEL_ID - model ID (with _dtype)
+     * @param {string} args.MODEL_TYPE - model type ('generative' | 'embedding')
+     * @param {object} util - utility object provided by the runtime.
+     * @returns {Promise<string>} - validation result message
+     */
+  }, {
+    key: "downloadBrowserLLMModel",
+    value: function downloadBrowserLLMModel(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      if (!ai) {
+        return Promise.resolve('AI is not available');
+      }
+      var modelID = Cast.toString(args.MODEL_ID).trim();
+      var modelType = Cast.toString(args.MODEL_TYPE) || 'generative';
+      var titleMsg = formatMessage({
+        id: 'gai.downloadingModel',
+        default: 'Downloading model...'
+      });
+
+      // Cancel promise — resolves immediately when the cancel button is clicked,
+      // so Promise.race unblocks the Scratch block without waiting for the
+      // download promise (which may hang if transformers.js swallows AbortError).
+      var cancelResolve;
+      var cancelPromise = new Promise(function (resolve) {
+        cancelResolve = resolve;
+      });
+      var progressBar = new DownloadProgressBar(titleMsg, function () {
+        ai.cancelDownloadBrowserLLMModel();
+        progressBar.destroy();
+        cancelResolve('Download cancelled');
+      });
+      var activeDownloads = new Map();
+      var maxProgress = 0;
+      var progressCallback = function progressCallback(data) {
+        if (data.status === 'initiate') {
+          activeDownloads.set(data.file, {
+            progress: 0
+          });
+        } else if (data.status === 'progress') {
+          activeDownloads.set(data.file, {
+            progress: data.progress
+          });
+        } else if (data.status === 'done') {
+          activeDownloads.set(data.file, {
+            progress: 100
+          });
+        }
+        var totalProgress = 0;
+        var fileCount = activeDownloads.size;
+        var _iterator = _createForOfIteratorHelper(activeDownloads),
+          _step;
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var _step$value = _slicedToArray(_step.value, 2),
+              _ = _step$value[0],
+              info = _step$value[1];
+            totalProgress += info.progress;
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+        var averageProgress = fileCount > 0 ? totalProgress / fileCount : 0;
+        maxProgress = Math.max(maxProgress, averageProgress);
+        var currentFileName = data.file ? data.file.split('/').pop() : '';
+        var statusText = '';
+        if (data.status === 'done') {
+          statusText = "Loaded ".concat(currentFileName);
+        } else if (currentFileName) {
+          statusText = "Downloading ".concat(currentFileName, "...");
+        } else {
+          statusText = 'Loading...';
+        }
+        progressBar.update(maxProgress, statusText);
+      };
+      var downloadPromise = ai.downloadBrowserLLMModel(modelID, modelType, progressCallback).then(function () {
+        progressBar.update(100, 'Complete!');
+        progressBar.destroy();
+        return 'Download complete';
+      }).catch(function (error) {
+        progressBar.destroy();
+        if (error.message && error.message.includes('DOWNLOAD_CANCELLED')) {
+          return 'Download cancelled';
+        }
+        console.error(error);
+        throw error;
+      });
+      return Promise.race([downloadPromise, cancelPromise]);
+    }
+
+    /**
+     * Cancel the ongoing browser LLM model download.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     */
+  }, {
+    key: "cancelBrowserLLMModelDownload",
+    value: function cancelBrowserLLMModelDownload(args, util) {
+      var target = util.target;
+      var ai = this.getAI(target);
+      if (!ai) return;
+      ai.cancelDownloadBrowserLLMModel();
+    }
+
+    /**
      * Set model code.
      * @param {object} args - the block's arguments.
      * @param {string} args.MODEL_ID - model code
@@ -48289,11 +51021,13 @@ var GAIBlocks = /*#__PURE__*/function () {
     key: "setModel",
     value: function setModel(args, util) {
       var target = util.target;
-      var ai = this.getAI(target);
+      this.getAI(target);
       var modelCode = Cast.toString(args.MODEL_ID).trim();
-      return ai.setModel(modelCode).catch(function (error) {
-        return "Error setting model: ".concat(error.message);
-      });
+      if (!modelCode) {
+        return 'Model ID is empty';
+      }
+      setConfigVariable(target, 'modelID', modelCode);
+      return "Model \"".concat(modelCode, "\" set successfully");
     }
 
     /**
@@ -48306,11 +51040,14 @@ var GAIBlocks = /*#__PURE__*/function () {
     key: "getModel",
     value: function getModel(args, util) {
       var target = util.target;
-      var ai = this.aiForTarget(target);
-      if (!ai) {
-        return '';
+      // Prefer the `modelID` sprite variable; fall back to the adapter's
+      // effective default (provider default) when the variable is unset.
+      var raw = getConfigVariableRaw(target, 'modelID');
+      if (raw !== '') {
+        return raw;
       }
-      return ai.getModel();
+      var ai = this.aiForTarget(target);
+      return ai ? ai.getModel() : '';
     }
 
     /**
@@ -48637,7 +51374,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this7 = this;
+      var _this9 = this;
       var targetName = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var defaultApiKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
       var customMessage = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
@@ -48714,7 +51451,7 @@ var GAIBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this7.apiKeyDialogOpened = false;
+        _this9.apiKeyDialogOpened = false;
       });
     }
 

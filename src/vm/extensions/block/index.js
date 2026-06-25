@@ -14,8 +14,9 @@ import {dotProduct, cosineDistance, euclideanDistance} from './math-util.js';
 
 
 class DownloadProgressBar {
-    constructor (title = 'Downloading Model...') {
+    constructor (title = 'Downloading Model...', onCancel = null) {
         this.title = title;
+        this.onCancel = onCancel;
         this.element = null;
         this.progressFill = null;
         this.progressText = null;
@@ -135,6 +136,39 @@ class DownloadProgressBar {
         card.appendChild(title);
         card.appendChild(progressContainer);
         card.appendChild(infoContainer);
+
+        if (this.onCancel) {
+            const cancelBtn = document.createElement('button');
+            cancelBtn.innerText = '✕ Cancel';
+            Object.assign(cancelBtn.style, {
+                marginTop: '4px',
+                alignSelf: 'center',
+                background: 'transparent',
+                border: '1px solid rgba(205, 214, 244, 0.3)',
+                borderRadius: '8px',
+                color: '#a6adc8',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                padding: '6px 20px',
+                transition: 'background 0.15s, color 0.15s'
+            });
+            cancelBtn.addEventListener('mouseover', () => {
+                cancelBtn.style.background = 'rgba(243, 139, 168, 0.15)';
+                cancelBtn.style.color = '#f38ba8';
+            });
+            cancelBtn.addEventListener('mouseout', () => {
+                cancelBtn.style.background = 'transparent';
+                cancelBtn.style.color = '#a6adc8';
+            });
+            cancelBtn.addEventListener('click', () => {
+                cancelBtn.disabled = true;
+                cancelBtn.innerText = 'Cancelling...';
+                this.onCancel();
+            });
+            card.appendChild(cancelBtn);
+        }
+
         overlay.appendChild(card);
 
         document.body.appendChild(overlay);
@@ -890,6 +924,17 @@ class GAIBlocks {
                             defaultValue: 'generative'
                         }
                     }
+                },
+                {
+                    opcode: 'cancelBrowserLLMModelDownload',
+                    blockType: BlockType.COMMAND,
+                    text: formatMessage({
+                        id: 'gai.cancelBrowserLLMModelDownload',
+                        default: 'cancel browser LLM model download',
+                        description: 'cancel ongoing browser AI model download'
+                    }),
+                    func: 'cancelBrowserLLMModelDownload',
+                    arguments: {}
                 },
                 {
                     opcode: 'clearBrowserLLMModelCache',
@@ -2527,7 +2572,20 @@ class GAIBlocks {
             id: 'gai.downloadingModel',
             default: 'Downloading model...'
         });
-        const progressBar = new DownloadProgressBar(titleMsg);
+
+        // Cancel promise — resolves immediately when the cancel button is clicked,
+        // so Promise.race unblocks the Scratch block without waiting for the
+        // download promise (which may hang if transformers.js swallows AbortError).
+        let cancelResolve;
+        const cancelPromise = new Promise(resolve => {
+            cancelResolve = resolve;
+        });
+
+        const progressBar = new DownloadProgressBar(titleMsg, () => {
+            ai.cancelDownloadBrowserLLMModel();
+            progressBar.destroy();
+            cancelResolve('Download cancelled');
+        });
 
         const activeDownloads = new Map();
         let maxProgress = 0;
@@ -2561,7 +2619,7 @@ class GAIBlocks {
             progressBar.update(maxProgress, statusText);
         };
 
-        return ai.downloadBrowserLLMModel(modelID, modelType, progressCallback)
+        const downloadPromise = ai.downloadBrowserLLMModel(modelID, modelType, progressCallback)
             .then(() => {
                 progressBar.update(100, 'Complete!');
                 progressBar.destroy();
@@ -2569,9 +2627,26 @@ class GAIBlocks {
             })
             .catch(error => {
                 progressBar.destroy();
+                if (error.message && error.message.includes('DOWNLOAD_CANCELLED')) {
+                    return 'Download cancelled';
+                }
                 console.error(error);
                 throw error;
             });
+
+        return Promise.race([downloadPromise, cancelPromise]);
+    }
+
+    /**
+     * Cancel the ongoing browser LLM model download.
+     * @param {object} args - the block's arguments.
+     * @param {object} util - utility object provided by the runtime.
+     */
+    cancelBrowserLLMModelDownload (args, util) {
+        const target = util.target;
+        const ai = this.getAI(target);
+        if (!ai) return;
+        ai.cancelDownloadBrowserLLMModel();
     }
 
     /**
