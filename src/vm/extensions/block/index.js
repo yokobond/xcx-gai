@@ -2581,17 +2581,25 @@ class GAIBlocks {
             cancelResolve = resolve;
         });
 
+        // Handle identifying this specific download. A previous download may
+        // still be unwinding in the background (Promise.race returns early on
+        // cancel), so only clear _activeDownload when it still points at us.
+        const handle = {};
+
         const doCancel = () => {
             ai.cancelDownloadBrowserLLMModel();
             progressBar.destroy();
             cancelResolve('Download cancelled');
-            this._activeDownload = null;
+            if (this._activeDownload === handle) {
+                this._activeDownload = null;
+            }
         };
 
         const progressBar = new DownloadProgressBar(titleMsg, doCancel);
 
         // Store the cancel function so the cancel block can call it.
-        this._activeDownload = {cancel: doCancel};
+        handle.cancel = doCancel;
+        this._activeDownload = handle;
 
         const activeDownloads = new Map();
         let maxProgress = 0;
@@ -2629,12 +2637,16 @@ class GAIBlocks {
             .then(() => {
                 progressBar.update(100, 'Complete!');
                 progressBar.destroy();
-                this._activeDownload = null;
+                if (this._activeDownload === handle) {
+                    this._activeDownload = null;
+                }
                 return 'Download complete';
             })
             .catch(error => {
                 progressBar.destroy();
-                this._activeDownload = null;
+                if (this._activeDownload === handle) {
+                    this._activeDownload = null;
+                }
                 if (error.message && error.message.includes('DOWNLOAD_CANCELLED')) {
                     return 'Download cancelled';
                 }

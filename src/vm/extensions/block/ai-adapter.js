@@ -1699,7 +1699,22 @@ Do not write any other text if you call a function.
             this._browserAI = new BrowserAIProvider(effectiveBaseUrl);
         }
 
+        // Serialize downloads: if a previous download is still unwinding (the
+        // Scratch block returns early on cancel via Promise.race, so the real
+        // pipeline promise keeps running), cancel it and wait for its teardown
+        // before starting a new one. Otherwise the new download's fetch
+        // interceptor would be installed on top of the old, aborted one.
+        if (this._browserAI._downloadInFlight) {
+            this._browserAI.cancelDownload();
+            try {
+                await this._browserAI._downloadInFlight;
+            } catch (e) {
+                // ignore cancellation/error from the previous download
+            }
+        }
+
         this._browserAI.onProgress = progressCallback;
+        this._browserAI._cancelDownload = false;
 
         try {
             if (modelType === 'generative') {
@@ -1713,7 +1728,13 @@ Do not write any other text if you call a function.
                 }
                 this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
                 this._browserAI.setModel(effectiveModelId);
-                await this._browserAI._getPipeline(true);
+                const pipelinePromise = this._browserAI._getPipeline(true);
+                this._browserAI._downloadInFlight = pipelinePromise;
+                try {
+                    await pipelinePromise;
+                } finally {
+                    this._browserAI._downloadInFlight = null;
+                }
                 this._recordDownloadedModel(effectiveModelId);
             } else if (modelType === 'embedding') {
                 let effectiveEmbeddingModelId = modelID || this.modelID;
@@ -1725,7 +1746,13 @@ Do not write any other text if you call a function.
                 }
                 this._browserAI.setBrowserLLMDtype(this.browserLLMDtype);
                 this._browserAI.setEmbeddingModel(effectiveEmbeddingModelId);
-                await this._browserAI._getEmbeddingPipeline(true);
+                const pipelinePromise = this._browserAI._getEmbeddingPipeline(true);
+                this._browserAI._downloadInFlight = pipelinePromise;
+                try {
+                    await pipelinePromise;
+                } finally {
+                    this._browserAI._downloadInFlight = null;
+                }
                 this._recordDownloadedModel(effectiveEmbeddingModelId);
             }
         } finally {
@@ -1733,6 +1760,15 @@ Do not write any other text if you call a function.
             Object.values(AIAdapter.ADAPTERS).forEach(adapter => {
                 adapter.models = [];
             });
+        }
+    }
+
+    /**
+     * Cancel the ongoing browser LLM model download.
+     */
+    cancelDownloadBrowserLLMModel () {
+        if (this._browserAI) {
+            this._browserAI.cancelDownload();
         }
     }
 

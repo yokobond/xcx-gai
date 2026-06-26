@@ -1,3 +1,4 @@
+/* global globalThis */
 const TRANSFORMERS_CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4';
 
 const DEFAULT_MODEL = 'onnx-community/gemma-4-E2B-it-ONNX';
@@ -15,6 +16,10 @@ export class BrowserAIProvider {
         this._pastKeyValues = null;
         this._lastMessages = null;
         this.onProgress = null;
+        this._cancelDownload = false;
+        this._downloadAbortController = null;
+        this._interceptorFetch = null;
+        this._downloadInFlight = null;
     }
 
     _parseModelId (modelId) {
@@ -76,6 +81,106 @@ export class BrowserAIProvider {
     resetCache () {
         this._pastKeyValues = null;
         this._lastMessages = null;
+    }
+
+    /**
+     * Cancel the ongoing model download.
+     * Aborts the in-flight fetch requests via AbortController and
+     * sets a flag so the progress callback also throws.
+     */
+    cancelDownload () {
+        this._cancelDownload = true;
+        if (this._downloadAbortController) {
+            this._downloadAbortController.abort();
+        }
+    }
+
+    /**
+     * Check if an error was caused by download cancellation.
+     * @param {Error} err - error to check
+     * @returns {boolean} true if the error is a cancellation
+     */
+    static _isCancelledError (err) {
+        if (!err) return false;
+        if (err.name === 'AbortError') return true;
+        return err.message && err.message.includes('DOWNLOAD_CANCELLED');
+    }
+
+    /**
+     * Install a fetch interceptor that injects an AbortSignal.
+     * All fetch calls will be aborted when cancelDownload() is called.
+     * Must be paired with _uninstallFetchInterceptor() in a finally block.
+     *
+     * IMPORTANT: transformers.js captures the value of globalThis.fetch at its
+     * first import and keeps calling that exact function. Since we install the
+     * interceptor before importing transformers.js, it captures our wrapper.
+     * Therefore the wrapper must be a single stable instance that reads the
+     * CURRENT abort controller dynamically — never a per-download closure over
+     * one signal. Otherwise, once the first download's signal is aborted (on
+     * cancel), the captured wrapper would reject every subsequent fetch, and
+     * re-downloads would never progress.
+     */
+    _installFetchInterceptor () {
+        // Capture the genuine native fetch exactly once.
+        if (!BrowserAIProvider._nativeFetch) {
+            BrowserAIProvider._nativeFetch = globalThis.fetch.bind(globalThis);
+        }
+        // Fresh controller for THIS download. The wrapper reads it dynamically.
+        this._downloadAbortController = new AbortController();
+        // Create the wrapper once and reuse the same instance forever, so the
+        // function transformers.js captured stays valid across downloads.
+        if (!this._interceptorFetch) {
+            const nativeFetch = BrowserAIProvider._nativeFetch;
+            this._interceptorFetch = (input, init = {}) => {
+                const controller = this._downloadAbortController;
+                const abortSignal = controller ? controller.signal : null;
+                // No active download: pass straight through to native fetch.
+                if (!abortSignal) {
+                    return nativeFetch(input, init);
+                }
+                if (abortSignal.aborted) {
+                    return Promise.reject(
+                        new DOMException('Download cancelled', 'AbortError')
+                    );
+                }
+                // Combine with any existing signal
+                const existingSignal = init.signal;
+                if (existingSignal) {
+                    const combined = new AbortController();
+                    abortSignal.addEventListener('abort', () => combined.abort(), {once: true});
+                    existingSignal.addEventListener('abort', () => combined.abort(), {once: true});
+                    init = {...init, signal: combined.signal};
+                } else {
+                    init = {...init, signal: abortSignal};
+                }
+                return nativeFetch(input, init);
+            };
+        }
+        globalThis.fetch = this._interceptorFetch;
+    }
+
+    /**
+     * Neutralize the fetch interceptor after a download finishes.
+     * The wrapper instance is intentionally left installed (transformers.js may
+     * keep calling the wrapper it captured at first import); clearing the
+     * controller turns it into a transparent pass-through to native fetch.
+     */
+    _uninstallFetchInterceptor () {
+        this._downloadAbortController = null;
+    }
+
+    /**
+     * Build a progress callback that checks the cancel flag before forwarding.
+     * @returns {function|undefined} wrapped callback or undefined
+     */
+    _buildProgressCallback () {
+        if (!this.onProgress) return undefined;
+        return data => {
+            if (this._cancelDownload) {
+                throw new Error('DOWNLOAD_CANCELLED');
+            }
+            this.onProgress(data);
+        };
     }
 
     async _getPipeline (allowDownload = false) {
@@ -142,55 +247,77 @@ export class BrowserAIProvider {
         let lastError = null;
         let loaded = false;
 
-        for (const device of devicesToTry) {
-            if (loaded) break;
+        if (allowDownload) {
+            this._installFetchInterceptor();
+        }
 
-            for (const dtype of dtypesToTry) {
-                try {
-                    console.log(`[BrowserAI] Loading text-generation pipeline with device: ${device}, dtype: ${dtype}`);
-                    this._pipe = await pipeline('text-generation', this.model, {
-                        device: device,
-                        dtype: dtype,
-                        ...(this.onProgress && {progress_callback: this.onProgress})
-                    });
-                    console.log(`[BrowserAI] Pipeline loaded successfully with device: ${device}, dtype: ${dtype}`);
-                    lastError = null;
-                    loaded = true;
-                    break;
-                } catch (err) {
-                    console.warn(
-                        `[BrowserAI] Failed to load pipeline with device: ${device}, dtype: ${dtype}. Error:`, err
-                    );
-                    lastError = err;
+        try {
+            for (const device of devicesToTry) {
+                if (loaded) break;
 
-                    const isFileNotFound = err.message && (
-                        err.message.includes('Could not locate file') ||
-                        err.message.includes('404') ||
-                        err.message.includes('not found')
-                    );
-
-                    const isSessionError = err.message && (
-                        err.message.includes("Can't create a session") ||
-                        err.message.includes('session') ||
-                        err.message.includes('GatherBlockQuantized')
-                    );
-
-                    if (isFileNotFound) {
-                        if (!allowDownload) {
-                            throw new Error('MODEL_NOT_DOWNLOADED');
+                for (const dtype of dtypesToTry) {
+                    try {
+                        if (this._cancelDownload) {
+                            throw new Error('DOWNLOAD_CANCELLED');
                         }
-                        continue;
-                    } else if (isSessionError && device === 'webgpu') {
-                        console.warn(`[BrowserAI] WebGPU session creation failed. Will fallback to wasm.`);
-                        break; // exit dtype loop to try wasm device
-                    } else {
-                        continue;
+                        console.log(`[BrowserAI] Loading text-generation pipeline with device: ${device}, dtype: ${dtype}`);
+                        const progressCb = this._buildProgressCallback();
+                        this._pipe = await pipeline('text-generation', this.model, {
+                            device: device,
+                            dtype: dtype,
+                            ...(progressCb && {progress_callback: progressCb})
+                        });
+                        console.log(`[BrowserAI] Pipeline loaded successfully with device: ${device}, dtype: ${dtype}`);
+                        lastError = null;
+                        loaded = true;
+                        break;
+                    } catch (err) {
+                        console.warn(
+                            `[BrowserAI] Failed to load pipeline with device: ${device}, dtype: ${dtype}. Error:`, err
+                        );
+                        lastError = err;
+
+                        if (BrowserAIProvider._isCancelledError(err)) {
+                            throw err;
+                        }
+
+                        const isFileNotFound = err.message && (
+                            err.message.includes('Could not locate file') ||
+                            err.message.includes('404') ||
+                            err.message.includes('not found')
+                        );
+
+                        const isSessionError = err.message && (
+                            err.message.includes("Can't create a session") ||
+                            err.message.includes('session') ||
+                            err.message.includes('GatherBlockQuantized')
+                        );
+
+                        if (isFileNotFound) {
+                            if (!allowDownload) {
+                                throw new Error('MODEL_NOT_DOWNLOADED');
+                            }
+                            continue;
+                        } else if (isSessionError && device === 'webgpu') {
+                            console.warn(`[BrowserAI] WebGPU session creation failed. Will fallback to wasm.`);
+                            break; // exit dtype loop to try wasm device
+                        } else {
+                            continue;
+                        }
                     }
                 }
+            }
+        } finally {
+            if (allowDownload) {
+                this._uninstallFetchInterceptor();
             }
         }
 
         if (lastError) {
+            if (BrowserAIProvider._isCancelledError(lastError)) {
+                this._pipe = null;
+                throw new Error('DOWNLOAD_CANCELLED');
+            }
             console.error(`[BrowserAI] All device/dtype attempts failed for model: ${this.model}`);
             const isDownloadRequired = !allowDownload && lastError.message && (
                 lastError.message.includes('Could not locate file') ||
@@ -268,58 +395,80 @@ export class BrowserAIProvider {
         let lastError = null;
         let loaded = false;
 
-        for (const device of devicesToTry) {
-            if (loaded) break;
+        if (allowDownload) {
+            this._installFetchInterceptor();
+        }
 
-            for (const dtype of embeddingDtypesToTry) {
-                try {
-                    console.log(`[BrowserAI] Loading embedding pipeline with device: ${device}, dtype: ${dtype}`);
-                    this._embeddingPipe = await pipeline('feature-extraction', this.embeddingModel, {
-                        device: device,
-                        dtype: dtype,
-                        ...(this.onProgress && {progress_callback: this.onProgress})
-                    });
-                    console.log(
-                        `[BrowserAI] Embedding pipeline loaded successfully with device: ${device}, dtype: ${dtype}`
-                    );
-                    lastError = null;
-                    loaded = true;
-                    break;
-                } catch (err) {
-                    console.warn(
-                        `[BrowserAI] Failed to load embedding pipeline` +
-                        ` with device: ${device}, dtype: ${dtype}. Error:`, err
-                    );
-                    lastError = err;
+        try {
+            for (const device of devicesToTry) {
+                if (loaded) break;
 
-                    const isFileNotFound = err.message && (
-                        err.message.includes('Could not locate file') ||
-                        err.message.includes('404') ||
-                        err.message.includes('not found')
-                    );
-
-                    const isSessionError = err.message && (
-                        err.message.includes("Can't create a session") ||
-                        err.message.includes('session') ||
-                        err.message.includes('GatherBlockQuantized')
-                    );
-
-                    if (isFileNotFound) {
-                        if (!allowDownload) {
-                            throw new Error('MODEL_NOT_DOWNLOADED');
+                for (const dtype of embeddingDtypesToTry) {
+                    try {
+                        if (this._cancelDownload) {
+                            throw new Error('DOWNLOAD_CANCELLED');
                         }
-                        continue;
-                    } else if (isSessionError && device === 'webgpu') {
-                        console.warn(`[BrowserAI] WebGPU embedding session creation failed. Will fallback to wasm.`);
-                        break; // exit dtype loop to try wasm device
-                    } else {
-                        continue;
+                        console.log(`[BrowserAI] Loading embedding pipeline with device: ${device}, dtype: ${dtype}`);
+                        const progressCb = this._buildProgressCallback();
+                        this._embeddingPipe = await pipeline('feature-extraction', this.embeddingModel, {
+                            device: device,
+                            dtype: dtype,
+                            ...(progressCb && {progress_callback: progressCb})
+                        });
+                        console.log(
+                            `[BrowserAI] Embedding pipeline loaded successfully with device: ${device}, dtype: ${dtype}`
+                        );
+                        lastError = null;
+                        loaded = true;
+                        break;
+                    } catch (err) {
+                        console.warn(
+                            `[BrowserAI] Failed to load embedding pipeline` +
+                            ` with device: ${device}, dtype: ${dtype}. Error:`, err
+                        );
+                        lastError = err;
+
+                        if (BrowserAIProvider._isCancelledError(err)) {
+                            throw err;
+                        }
+
+                        const isFileNotFound = err.message && (
+                            err.message.includes('Could not locate file') ||
+                            err.message.includes('404') ||
+                            err.message.includes('not found')
+                        );
+
+                        const isSessionError = err.message && (
+                            err.message.includes("Can't create a session") ||
+                            err.message.includes('session') ||
+                            err.message.includes('GatherBlockQuantized')
+                        );
+
+                        if (isFileNotFound) {
+                            if (!allowDownload) {
+                                throw new Error('MODEL_NOT_DOWNLOADED');
+                            }
+                            continue;
+                        } else if (isSessionError && device === 'webgpu') {
+                            console.warn(`[BrowserAI] WebGPU embedding session creation failed. Will fallback to wasm.`);
+                            break; // exit dtype loop to try wasm device
+                        } else {
+                            continue;
+                        }
                     }
                 }
+            }
+        } finally {
+            if (allowDownload) {
+                this._uninstallFetchInterceptor();
             }
         }
 
         if (lastError) {
+            if (BrowserAIProvider._isCancelledError(lastError)) {
+                this._embeddingPipe = null;
+                throw new Error('DOWNLOAD_CANCELLED');
+            }
             console.error(`[BrowserAI] All device/dtype attempts failed for embedding model: ${this.embeddingModel}`);
             const isDownloadRequired = !allowDownload && lastError.message && (
                 lastError.message.includes('Could not locate file') ||

@@ -91,7 +91,8 @@
     "gai.modelType.generative": "text generation",
     "gai.modelType.embedding": "embedding",
     "gai.downloadingModel": "Downloading model...",
-    "gai.error.modelNotDownloaded": "Browser LLM model is not downloaded. Please run the download block first."
+    "gai.error.modelNotDownloaded": "Browser LLM model is not downloaded. Please run the download block first.",
+    "gai.cancelBrowserLLMModelDownload": "cancel browser LLM model download"
   },
   "ja": {
     "gai.name": "GAI",
@@ -185,7 +186,8 @@
     "gai.modelType.generative": "文章生成",
     "gai.modelType.embedding": "埋め込み",
     "gai.downloadingModel": "モデルをダウンロード中...",
-    "gai.error.modelNotDownloaded": "ブラウザLLMモデルがダウンロードされていません。先にダウンロードブロックを実行してください。"
+    "gai.error.modelNotDownloaded": "ブラウザLLMモデルがダウンロードされていません。先にダウンロードブロックを実行してください。",
+    "gai.cancelBrowserLLMModelDownload": "ブラウザLLMモデルのダウンロードを中断する"
   },
   "ja-Hira": {
     "gai.name": "GAI",
@@ -279,6 +281,7 @@
     "gai.modelType.generative": "ぶんしょうせいせい",
     "gai.modelType.embedding": "うめこみ",
     "gai.downloadingModel": "モデルをダウンロードちゅう...",
-    "gai.error.modelNotDownloaded": "ブラウザLLMモデルがダウンロードされていません。さきにダウンロードブロックをじっこうしてください。"
+    "gai.error.modelNotDownloaded": "ブラウザLLMモデルがダウンロードされていません。さきにダウンロードブロックをじっこうしてください。",
+    "gai.cancelBrowserLLMModelDownload": "ブラウザLLMモデルのダウンロードをちゅうだんする"
   }
 }
