@@ -257,6 +257,55 @@ AI will generate a structured response like this:
 - This feature may not be available with some AI providers that don't support it
 
 
+## Browser LLM
+
+Browser LLM is an AI provider that runs Hugging Face ONNX models directly in your browser. No external API key is required, and it can run AI features without an internet connection once the model has been downloaded.
+
+### Selecting the Provider
+
+To use Browser LLM, use the ```use (provider) for AI``` block and select ```Browser LLM```.
+
+### Downloading a Model
+
+Before using Browser LLM, you must download a model to the browser first.
+
+Use the ```download browser LLM model [MODEL_ID] as [MODEL_TYPE]``` block to download a model.
+
+- **[MODEL_ID]** - Specifies the Hugging Face model ID. You can append `_dtype` to set the data type (e.g., `onnx-community/gemma-4-E2B-it-ONNX_q4f16`).
+  - If no dtype is specified, or `auto` is used, the system automatically selects the best available dtype for the model.
+  - Available dtypes: `q4f16` (default), `q4`, `q2f16`, `q2`, `q8`, `fp16`, `fp32`
+- **[MODEL_TYPE]** - Select either `text generation` or `embedding`.
+
+A progress bar shows download progress. The model is cached in the browser, so subsequent uses do not require re-downloading.
+
+If you try to use a model that has not been downloaded, an error message will be shown: "Browser LLM model is not downloaded. Please run the download block first."
+
+### Clearing the Cache
+
+To delete a downloaded model from the browser cache, use the ```clear cache for model at [MODEL_INDEX]``` block. Specify the model number (starting from 1) for `[MODEL_INDEX]`.
+
+### How the Model Runs
+
+Browser LLM automatically selects the best available device:
+
+1. **WebGPU** – Uses GPU acceleration (fast)
+2. **WASM** – Fallback when WebGPU is not available (compatible)
+
+If the specified dtype is not supported by the model, it automatically falls back to an available dtype.
+
+### Default Models
+
+- Text generation: `onnx-community/gemma-4-E2B-it-ONNX` (`q4f16` quantization)
+- Embedding: `onnx-community/all-MiniLM-L6-v2`
+
+### Notes
+
+- The first use requires downloading the model (which may be several hundred MB to several GB depending on the model).
+- Performance is best on WebGPU-enabled browsers (Chrome 113 or later, etc.).
+- Some features such as Function Calls and Response Schema (structured output) are not supported by Browser LLM.
+- Streaming responses (```when partial response received```) are supported.
+
+
 ## Embeddings
 
 The ```embedding of ( )``` block retrieves embeddings for the input text.
