@@ -12,6 +12,9 @@ export class BrowserAIProvider {
         this.browserLLMDtype = DEFAULT_BROWSER_LLM_DTYPE;
         this.baseUrl = baseUrl;
         this._pipe = null;
+        this._processor = null;
+        this._multimodalModel = null;
+        this._pipeDevice = null;
         this._embeddingPipe = null;
         this._pastKeyValues = null;
         this._lastMessages = null;
@@ -47,6 +50,9 @@ export class BrowserAIProvider {
                     this.browserLLMDtype = parsed.dtype;
                 }
                 this._pipe = null;
+                this._processor = null;
+                this._multimodalModel = null;
+                this._pipeDevice = null;
                 this._pastKeyValues = null;
             }
         }
@@ -268,6 +274,7 @@ export class BrowserAIProvider {
                             ...(progressCb && {progress_callback: progressCb})
                         });
                         console.log(`[BrowserAI] Pipeline loaded successfully with device: ${device}, dtype: ${dtype}`);
+                        this._pipeDevice = device;
                         lastError = null;
                         loaded = true;
                         break;
@@ -486,7 +493,8 @@ export class BrowserAIProvider {
 
     async generate (messages, options = {}) {
         console.log(`[BrowserAI] Starting generate. Messages:`, messages, `Options:`, options);
-        const {DynamicCache, TextStreamer} = await import(TRANSFORMERS_CDN);
+        console.log(`[BrowserAI] DEBUG_LOG_V2: Entered generate method. Checking module version.`);
+        const {DynamicCache, TextStreamer, RawImage} = await import(TRANSFORMERS_CDN);
         console.log(`[BrowserAI] Getting pipeline...`);
         const pipe = await this._getPipeline(false);
 
@@ -495,9 +503,13 @@ export class BrowserAIProvider {
         let isContextContinued = false;
         if (useCache && this._pastKeyValues && this._lastMessages) {
             if (messages.length >= this._lastMessages.length) {
-                isContextContinued = this._lastMessages.every(
-                    (msg, idx) => msg.role === messages[idx].role && msg.content === messages[idx].content
-                );
+                isContextContinued = this._lastMessages.every((msg, idx) => {
+                    if (msg.role !== messages[idx].role) return false;
+                    if (typeof msg.content === 'string' && typeof messages[idx].content === 'string') {
+                        return msg.content === messages[idx].content;
+                    }
+                    return JSON.stringify(msg.content) === JSON.stringify(messages[idx].content);
+                });
             }
         }
 
@@ -527,8 +539,120 @@ export class BrowserAIProvider {
 
         const doSample = typeof options.temperature === 'number' && options.temperature > 0;
 
+        // Parse any dataURL images into RawImage objects
+        const parsedMessages = [];
+        const rawImages = [];
+        for (const m of messages) {
+            if (Array.isArray(m.content)) {
+                const parsedContent = [];
+                for (const part of m.content) {
+                    if (part.type === 'image' && typeof part.image === 'string') {
+                        try {
+                            const rawImage = await RawImage.read(part.image);
+                            rawImages.push(rawImage);
+                            parsedContent.push({
+                                type: 'image'
+                            });
+                        } catch (e) {
+                            console.error(`[BrowserAI] Failed to load image:`, e);
+                            parsedContent.push(part);
+                        }
+                    } else {
+                        parsedContent.push(part);
+                    }
+                }
+                parsedMessages.push({
+                    ...m,
+                    content: parsedContent
+                });
+            } else {
+                parsedMessages.push(m);
+            }
+        }
+
+        console.log(`[BrowserAI] DEBUG_LOG_V2: rawImages count = ${rawImages.length}`);
+
+        const hasImages = rawImages.length > 0;
+
+        if (hasImages) {
+            console.log(`[BrowserAI] Multimodal generation path triggered.`);
+            try {
+                // text-generation pipeline has no processor — load AutoProcessor separately
+                if (!this._processor) {
+                    const {AutoProcessor} = await import(TRANSFORMERS_CDN);
+                    console.log(`[BrowserAI] Loading AutoProcessor for model: ${this.model}`);
+                    this._processor = await AutoProcessor.from_pretrained(this.model);
+                }
+                const processor = this._processor;
+
+                // text-generation pipeline model lacks vision encoder sessions.
+                // Load AutoModelForImageTextToText which includes them.
+                if (!this._multimodalModel) {
+                    const {AutoModelForImageTextToText} = await import(TRANSFORMERS_CDN);
+                    console.log(`[BrowserAI] Loading AutoModelForImageTextToText for model: ${this.model}`);
+                    this._multimodalModel = await AutoModelForImageTextToText.from_pretrained(
+                        this.model,
+                        {
+                            device: this._pipeDevice || 'webgpu',
+                            dtype: this.browserLLMDtype
+                        }
+                    );
+                }
+                const model = this._multimodalModel;
+
+                console.log(`[BrowserAI] Applying chat template via processor...`);
+                const prompt = processor.apply_chat_template(parsedMessages, {
+                    tokenize: false,
+                    add_generation_prompt: true
+                });
+                console.log(`[BrowserAI] Prompt:`, prompt);
+
+                console.log(`[BrowserAI] Preprocessing inputs (text + images)...`);
+                const inputs = await processor(prompt, rawImages.length === 1 ? rawImages[0] : rawImages);
+                console.log(`[BrowserAI] Processed inputs keys:`, Object.keys(inputs));
+                if (inputs.pixel_values) {
+                    console.log(`[BrowserAI] pixel_values shape:`, inputs.pixel_values.dims);
+                }
+
+                console.log(`[BrowserAI] Running model.generate...`);
+                const outputIds = await model.generate({
+                    ...inputs,
+                    max_new_tokens: options.maxOutputTokens || 256,
+                    do_sample: doSample,
+                    ...(doSample && {temperature: options.temperature}),
+                    ...(streamer && {streamer})
+                });
+
+                console.log(`[BrowserAI] Decoding outputs...`);
+                const inputLength = inputs.input_ids.size;
+                let generatedIds = outputIds.data;
+                console.log(`[BrowserAI] DEBUG_DECODE: inputLength = ${inputLength}, outputIds length = ${outputIds.data ? outputIds.data.length : 'undefined'}`);
+                if (outputIds.data && outputIds.data.length > inputLength) {
+                    generatedIds = outputIds.data.slice(inputLength);
+                }
+                console.log(`[BrowserAI] DEBUG_DECODE: generatedIds length = ${generatedIds ? generatedIds.length : 'undefined'}`, generatedIds);
+
+                if (!generatedIds || generatedIds.length === 0) {
+                    console.warn(`[BrowserAI] generatedIds is empty.`);
+                    return '';
+                }
+
+                // Convert BigInt to Number (e.g. BigInt64Array -> Number[]) to prevent decode error
+                const tokenIds = Array.from(generatedIds).map(x => typeof x === 'bigint' ? Number(x) : x);
+
+                const decoded = (processor.tokenizer || processor).decode(tokenIds, {
+                    skip_special_tokens: true
+                });
+                console.log(`[BrowserAI] Decoded:`, decoded);
+                return decoded;
+            } catch (err) {
+                console.error(`[BrowserAI] Error during multimodal generation:`, err);
+                throw err;
+            }
+        }
+
         try {
-            const output = await pipe(messages, {
+            const output = await pipe(parsedMessages, {
                 add_generation_prompt: true,
                 ...(useCache && {past_key_values: this._pastKeyValues}),
                 max_new_tokens: options.maxOutputTokens || 256,

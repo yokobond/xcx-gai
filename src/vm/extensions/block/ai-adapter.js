@@ -1148,12 +1148,44 @@ export class AIAdapter {
         const messages = isChat ? this.messages : [];
         messages.push(promptMessage);
 
-        const chatMessages = messages.map(m => ({
-            role: m.role,
-            content: typeof m.content === 'string' ? m.content :
-                (Array.isArray(m.content) ? m.content.filter(p => p.type === 'text').map(p => p.text)
-                    .join('') : String(m.content))
-        }));
+        const chatMessages = messages.map(m => {
+            if (typeof m.content === 'string') {
+                return {
+                    role: m.role,
+                    content: m.content
+                };
+            }
+            if (Array.isArray(m.content)) {
+                const contentParts = [];
+                for (const p of m.content) {
+                    if (p.type === 'text') {
+                        contentParts.push({
+                            type: 'text',
+                            text: p.text
+                        });
+                    } else if (p.type === 'file' && p.mediaType && p.mediaType.startsWith('image/')) {
+                        contentParts.push({
+                            type: 'image',
+                            image: p.data
+                        });
+                    }
+                }
+                if (contentParts.length === 1 && contentParts[0].type === 'text') {
+                    return {
+                        role: m.role,
+                        content: contentParts[0].text
+                    };
+                }
+                return {
+                    role: m.role,
+                    content: contentParts
+                };
+            }
+            return {
+                role: m.role,
+                content: String(m.content)
+            };
+        });
 
         let systemInstruction = this._composeSystemInstruction() || '';
         

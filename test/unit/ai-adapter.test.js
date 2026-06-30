@@ -1481,7 +1481,56 @@ describe('AIAdapter', () => {
 
             delete global.window.localStorage;
             adapter._browserAI = null;
-            jest.restoreAllMocks();
+        });
+    });
+
+    describe('BrowserLLM generation with image', () => {
+        let originalBrowserAI;
+
+        beforeEach(() => {
+            originalBrowserAI = adapter._browserAI;
+        });
+
+        afterEach(() => {
+            adapter._browserAI = originalBrowserAI;
+        });
+
+        it('should preserve image parts in messages sent to browserAI.generate', async () => {
+            const mockBrowserAI = {
+                setBrowserLLMDtype: jest.fn(),
+                setModel: jest.fn(),
+                generate: jest.fn().mockResolvedValue('This is a 1x1 black pixel image.'),
+                onProgress: null
+            };
+            adapter._browserAI = mockBrowserAI;
+            adapter.setApiType('BrowserLLM');
+
+            const prompt = [
+                { type: 'text', data: 'What is this?' },
+                { type: 'dataURL', data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' }
+            ];
+
+            const responseTextHandler = jest.fn();
+            const functionDispatcher = jest.fn();
+
+            await adapter.requestGenerate(prompt, responseTextHandler, functionDispatcher, null, false);
+
+            expect(mockBrowserAI.generate).toHaveBeenCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        role: 'user',
+                        content: [
+                            {
+                                type: 'image',
+                                image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                            },
+                            { type: 'text', text: 'What is this?' }
+                        ]
+                    })
+                ]),
+                expect.any(Object)
+            );
+            expect(responseTextHandler).toHaveBeenCalledWith('This is a 1x1 black pixel image.');
         });
     });
 
