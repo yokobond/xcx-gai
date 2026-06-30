@@ -2586,16 +2586,18 @@ class GAIBlocks {
         // cancel), so only clear _activeDownload when it still points at us.
         const handle = {};
 
+        // eslint-disable-next-line prefer-const
+        let progressBar;
         const doCancel = () => {
             ai.cancelDownloadBrowserLLMModel();
-            progressBar.destroy();
+            if (progressBar) progressBar.destroy();
             cancelResolve('Download cancelled');
             if (this._activeDownload === handle) {
                 this._activeDownload = null;
             }
         };
 
-        const progressBar = new DownloadProgressBar(titleMsg, doCancel);
+        progressBar = new DownloadProgressBar(titleMsg, doCancel);
 
         // Store the cancel function so the cancel block can call it.
         handle.cancel = doCancel;
