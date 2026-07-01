@@ -180,7 +180,7 @@ export class BrowserAIProvider {
      * @returns {function|undefined} wrapped callback or undefined
      */
     _buildProgressCallback () {
-        if (!this.onProgress) return undefined;
+        if (!this.onProgress) return;
         return data => {
             if (this._cancelDownload) {
                 throw new Error('DOWNLOAD_CANCELLED');
@@ -266,7 +266,10 @@ export class BrowserAIProvider {
                         if (this._cancelDownload) {
                             throw new Error('DOWNLOAD_CANCELLED');
                         }
-                        console.log(`[BrowserAI] Loading text-generation pipeline with device: ${device}, dtype: ${dtype}`);
+                        console.log(
+                            `[BrowserAI] Loading text-generation pipeline with ` +
+                            `device: ${device}, dtype: ${dtype}`
+                        );
                         const progressCb = this._buildProgressCallback();
                         this._pipe = await pipeline('text-generation', this.model, {
                             device: device,
@@ -457,7 +460,10 @@ export class BrowserAIProvider {
                             }
                             continue;
                         } else if (isSessionError && device === 'webgpu') {
-                            console.warn(`[BrowserAI] WebGPU embedding session creation failed. Will fallback to wasm.`);
+                            console.warn(
+                                `[BrowserAI] WebGPU embedding session creation failed. ` +
+                                `Will fallback to wasm.`
+                            );
                             break; // exit dtype loop to try wasm device
                         } else {
                             continue;
@@ -494,7 +500,7 @@ export class BrowserAIProvider {
     async generate (messages, options = {}) {
         console.log(`[BrowserAI] Starting generate. Messages:`, messages, `Options:`, options);
         console.log(`[BrowserAI] DEBUG_LOG_V2: Entered generate method. Checking module version.`);
-        const {DynamicCache, TextStreamer, RawImage} = await import(TRANSFORMERS_CDN);
+        const {DynamicCache, TextStreamer, RawImage, read_audio: readAudio} = await import(TRANSFORMERS_CDN);
         console.log(`[BrowserAI] Getting pipeline...`);
         const pipe = await this._getPipeline(false);
 
@@ -539,9 +545,10 @@ export class BrowserAIProvider {
 
         const doSample = typeof options.temperature === 'number' && options.temperature > 0;
 
-        // Parse any dataURL images into RawImage objects
+        // Parse any dataURL images into RawImage objects and audio into Float32Array
         const parsedMessages = [];
         const rawImages = [];
+        const rawAudios = [];
         for (const m of messages) {
             if (Array.isArray(m.content)) {
                 const parsedContent = [];
@@ -557,6 +564,38 @@ export class BrowserAIProvider {
                             console.error(`[BrowserAI] Failed to load image:`, e);
                             parsedContent.push(part);
                         }
+                    } else if (part.type === 'audio' && typeof part.audio === 'string') {
+                        try {
+                            const res = await fetch(part.audio);
+                            const blob = await res.blob();
+                            console.log(`[BrowserAI] Audio blob size: ${blob.size}, type: ${blob.type}`);
+                            const blobUrl = URL.createObjectURL(blob);
+                            const audioData = await readAudio(blobUrl, 16000);
+                            URL.revokeObjectURL(blobUrl);
+                            // Debug: check audio data quality
+                            const len = audioData.length;
+                            let min = Infinity;
+                            let max = -Infinity;
+                            let sumSq = 0;
+                            for (let i = 0; i < len; i++) {
+                                const v = audioData[i];
+                                if (v < min) min = v;
+                                if (v > max) max = v;
+                                sumSq += v * v;
+                            }
+                            const rms = Math.sqrt(sumSq / len);
+                            console.log(
+                                `[BrowserAI] Audio data: length=${len}, ` +
+                                `min=${min.toFixed(4)}, max=${max.toFixed(4)}, rms=${rms.toFixed(6)}`
+                            );
+                            rawAudios.push(audioData);
+                            parsedContent.push({
+                                type: 'audio'
+                            });
+                        } catch (e) {
+                            console.error(`[BrowserAI] Failed to load audio:`, e);
+                            parsedContent.push(part);
+                        }
                     } else {
                         parsedContent.push(part);
                     }
@@ -570,33 +609,49 @@ export class BrowserAIProvider {
             }
         }
 
-        console.log(`[BrowserAI] DEBUG_LOG_V2: rawImages count = ${rawImages.length}`);
+        console.log(
+            `[BrowserAI] DEBUG_LOG_V2: rawImages count = ${rawImages.length}, ` +
+            `rawAudios count = ${rawAudios.length}`
+        );
 
         const hasImages = rawImages.length > 0;
+        const hasAudio = rawAudios.length > 0;
 
-        if (hasImages) {
+        if (hasImages || hasAudio) {
             console.log(`[BrowserAI] Multimodal generation path triggered.`);
             try {
                 // text-generation pipeline has no processor — load AutoProcessor separately
                 if (!this._processor) {
                     const {AutoProcessor} = await import(TRANSFORMERS_CDN);
-                    console.log(`[BrowserAI] Loading AutoProcessor for model: ${this.model}`);
+                    console.log(
+                        `[BrowserAI] Loading AutoProcessor for model: ${this.model}`
+                    );
                     this._processor = await AutoProcessor.from_pretrained(this.model);
                 }
                 const processor = this._processor;
 
-                // text-generation pipeline model lacks vision encoder sessions.
-                // Load AutoModelForImageTextToText which includes them.
+                // text-generation pipeline model lacks vision/audio encoder sessions.
+                // Load Gemma4ForConditionalGeneration which includes all encoder sessions.
                 if (!this._multimodalModel) {
-                    const {AutoModelForImageTextToText} = await import(TRANSFORMERS_CDN);
-                    console.log(`[BrowserAI] Loading AutoModelForImageTextToText for model: ${this.model}`);
-                    this._multimodalModel = await AutoModelForImageTextToText.from_pretrained(
+                    const {Gemma4ForConditionalGeneration} = await import(TRANSFORMERS_CDN);
+                    console.log(`[BrowserAI] Loading Gemma4ForConditionalGeneration for model: ${this.model}`);
+                    this._multimodalModel = await Gemma4ForConditionalGeneration.from_pretrained(
                         this.model,
                         {
                             device: this._pipeDevice || 'webgpu',
                             dtype: this.browserLLMDtype
                         }
                     );
+                    // Debug: check which ONNX sessions were loaded
+                    if (this._multimodalModel.sessions) {
+                        const sessionKeys = Object.keys(this._multimodalModel.sessions);
+                        console.log(`[BrowserAI] Loaded model sessions:`, sessionKeys);
+                        for (const key of sessionKeys) {
+                            const session = this._multimodalModel.sessions[key];
+                            console.log(`[BrowserAI]   session '${key}':`,
+                                session ? (session.inputNames || 'loaded (no inputNames)') : 'null/undefined');
+                        }
+                    }
                 }
                 const model = this._multimodalModel;
 
@@ -607,14 +662,44 @@ export class BrowserAIProvider {
                 });
                 console.log(`[BrowserAI] Prompt:`, prompt);
 
-                console.log(`[BrowserAI] Preprocessing inputs (text + images)...`);
-                const inputs = await processor(prompt, rawImages.length === 1 ? rawImages[0] : rawImages);
+                console.log(`[BrowserAI] Preprocessing inputs (text + images + audio)...`);
+                const imageArg = rawImages.length > 0 ?
+                    (rawImages.length === 1 ? rawImages[0] : rawImages) : void 0;
+                const audioArg = rawAudios.length > 0 ?
+                    (rawAudios.length === 1 ? rawAudios[0] : rawAudios) : void 0;
+                const inputs = await processor(prompt, imageArg, audioArg);
                 console.log(`[BrowserAI] Processed inputs keys:`, Object.keys(inputs));
                 if (inputs.pixel_values) {
                     console.log(`[BrowserAI] pixel_values shape:`, inputs.pixel_values.dims);
                 }
+                if (inputs.input_features) {
+                    console.log(`[BrowserAI] input_features shape:`, inputs.input_features.dims);
+                }
 
                 console.log(`[BrowserAI] Running model.generate...`);
+                // Debug: monkey-patch forward to check input_features flow
+                if (!model._origForward) {
+                    model._origForward = model.forward.bind(model);
+                    let forwardCallCount = 0;
+                    model.forward = function (args) {
+                        forwardCallCount++;
+                        if (forwardCallCount <= 2) {
+                            console.log(`[BrowserAI] forward() call #${forwardCallCount}, keys:`, Object.keys(args));
+                            if (args.input_features) {
+                                console.log(
+                                    `[BrowserAI] forward() has input_features shape:`,
+                                    args.input_features.dims
+                                );
+                            } else {
+                                console.log(`[BrowserAI] forward() NO input_features`);
+                            }
+                            if (args.input_ids) {
+                                console.log(`[BrowserAI] forward() input_ids dims:`, args.input_ids.dims);
+                            }
+                        }
+                        return model._origForward(args);
+                    };
+                }
                 const outputIds = await model.generate({
                     ...inputs,
                     max_new_tokens: options.maxOutputTokens || 256,
@@ -626,11 +711,18 @@ export class BrowserAIProvider {
                 console.log(`[BrowserAI] Decoding outputs...`);
                 const inputLength = inputs.input_ids.size;
                 let generatedIds = outputIds.data;
-                console.log(`[BrowserAI] DEBUG_DECODE: inputLength = ${inputLength}, outputIds length = ${outputIds.data ? outputIds.data.length : 'undefined'}`);
+                console.log(
+                    `[BrowserAI] DEBUG_DECODE: inputLength = ${inputLength}, ` +
+                    `outputIds length = ${outputIds.data ? outputIds.data.length : 'undefined'}`
+                );
                 if (outputIds.data && outputIds.data.length > inputLength) {
                     generatedIds = outputIds.data.slice(inputLength);
                 }
-                console.log(`[BrowserAI] DEBUG_DECODE: generatedIds length = ${generatedIds ? generatedIds.length : 'undefined'}`, generatedIds);
+                console.log(
+                    `[BrowserAI] DEBUG_DECODE: generatedIds length = ` +
+                    `${generatedIds ? generatedIds.length : 'undefined'}`,
+                    generatedIds
+                );
 
                 if (!generatedIds || generatedIds.length === 0) {
                     console.warn(`[BrowserAI] generatedIds is empty.`);
@@ -638,7 +730,7 @@ export class BrowserAIProvider {
                 }
 
                 // Convert BigInt to Number (e.g. BigInt64Array -> Number[]) to prevent decode error
-                const tokenIds = Array.from(generatedIds).map(x => typeof x === 'bigint' ? Number(x) : x);
+                const tokenIds = Array.from(generatedIds).map(x => (typeof x === 'bigint' ? Number(x) : x));
 
                 const decoded = (processor.tokenizer || processor).decode(tokenIds, {
                     skip_special_tokens: true

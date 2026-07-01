@@ -1168,6 +1168,11 @@ export class AIAdapter {
                             type: 'image',
                             image: p.data
                         });
+                    } else if (p.type === 'file' && p.mediaType && p.mediaType.startsWith('audio/')) {
+                        contentParts.push({
+                            type: 'audio',
+                            audio: p.data
+                        });
                     }
                 }
                 if (contentParts.length === 1 && contentParts[0].type === 'text') {
