@@ -364,7 +364,7 @@ class GAIBlocks {
 
         runtime.on('PROJECT_STOP_ALL', () => {
             this.stopListening();
-            AIAdapter.abortAllRequests(`Project stopped`);
+            this.abortAllRequests(`Project stopped`);
         });
 
         runtime.on('STOP_FOR_TARGET', target => {
@@ -1546,7 +1546,7 @@ class GAIBlocks {
      * @returns {?AIAdapter} - the AI adapter for the target
      */
     aiForTarget (target) {
-        return AIAdapter.ADAPTERS[target.id];
+        return target.getCustomState(AIAdapter.STATE_KEY);
     }
 
     /**
@@ -1689,6 +1689,19 @@ class GAIBlocks {
         if (ai) {
             ai.abortRequests(reason);
         }
+    }
+
+    /**
+     * Stop all ongoing requests for all targets.
+     * @param {string} reason - reason for aborting
+     */
+    abortAllRequests (reason) {
+        this.runtime.targets.forEach(target => {
+            const ai = this.aiForTarget(target);
+            if (ai) {
+                ai.abortRequests(reason);
+            }
+        });
     }
 
     /**

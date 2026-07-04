@@ -37,6 +37,22 @@ import {createOpenAICompatible} from '@ai-sdk/openai-compatible';
 import {createAnthropic} from '@ai-sdk/anthropic';
 import {generateText, streamText, tool, jsonSchema, stepCountIs, embed, Output} from 'ai';
 
+/**
+ * Create a mock target with the custom state API used by AIAdapter.
+ * @param {string} id - target id
+ * @returns {object} mock target
+ */
+const createMockTarget = id => {
+    const state = {};
+    return {
+        id,
+        getCustomState: key => state[key],
+        setCustomState: (key, value) => {
+            state[key] = value;
+        }
+    };
+};
+
 describe('AIAdapter', () => {
     let mockTarget;
     let adapter;
@@ -46,13 +62,8 @@ describe('AIAdapter', () => {
         // Reset all mocks
         jest.clearAllMocks();
 
-        // Clear static adapters
-        AIAdapter.removeAllAdapter();
-
         // Mock target object
-        mockTarget = {
-            id: 'test-target-id'
-        };
+        mockTarget = createMockTarget('test-target-id');
 
         // Mock client
         mockClient = {
@@ -99,7 +110,6 @@ describe('AIAdapter', () => {
 
     afterEach(() => {
         // Clean up static state
-        AIAdapter.removeAllAdapter();
         AIAdapter.setApiKey(null);
         delete global.fetch;
     });
@@ -140,24 +150,6 @@ describe('AIAdapter', () => {
             });
         });
 
-        describe('removeAllAdapter', () => {
-            it('should remove all adapters', () => {
-                const target1 = {id: 'target1'};
-                const target2 = {id: 'target2'};
-
-                AIAdapter.getForTarget(target1);
-                AIAdapter.getForTarget(target2);
-
-                expect(AIAdapter.existsForTarget(target1)).toBe(true);
-                expect(AIAdapter.existsForTarget(target2)).toBe(true);
-
-                AIAdapter.removeAllAdapter();
-
-                expect(AIAdapter.existsForTarget(target1)).toBe(false);
-                expect(AIAdapter.existsForTarget(target2)).toBe(false);
-            });
-        });
-
         describe('API Key management', () => {
             it('should set and get API key', () => {
                 const testKey = 'test-api-key-123';
@@ -191,8 +183,8 @@ describe('AIAdapter', () => {
                 expect(adapter.abortControllers).toEqual([]);
             });
 
-            it('should register itself in static adapters', () => {
-                expect(AIAdapter.ADAPTERS[mockTarget.id]).toBe(adapter);
+            it('should register itself in the target custom state', () => {
+                expect(mockTarget.getCustomState(AIAdapter.STATE_KEY)).toBe(adapter);
             });
         });
 

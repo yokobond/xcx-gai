@@ -12,12 +12,14 @@ describe("AIAdapter Generation Config", () => {
     let adapter;
 
     beforeEach(() => {
-        // Clear static adapters
-        AIAdapter.removeAllAdapter();
-
-        // Mock target object
+        // Mock target object with the custom state API used by AIAdapter
+        const state = {};
         mockTarget = {
-            id: 'test-target-id'
+            id: 'test-target-id',
+            getCustomState: key => state[key],
+            setCustomState: (key, value) => {
+                state[key] = value;
+            }
         };
 
         // Set API key for tests
@@ -29,7 +31,6 @@ describe("AIAdapter Generation Config", () => {
 
     afterEach(() => {
         // Clean up static state
-        AIAdapter.removeAllAdapter();
         AIAdapter.setApiKey(null);
     });
 

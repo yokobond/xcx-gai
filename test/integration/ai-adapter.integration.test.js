@@ -39,10 +39,18 @@ console.log('ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? 'Set' : 'Not s
 const skipIf = (condition) => (condition ? it.skip : it);
 
 describe('AIAdapter Integration Tests', () => {
-    const mockTarget = {id: 'integration-test-target'};
-    
-    afterEach(() => {
-        AIAdapter.removeAllAdapter();
+    let mockTarget;
+
+    beforeEach(() => {
+        // Fresh mock target per test so adapters do not leak between tests
+        const state = {};
+        mockTarget = {
+            id: 'integration-test-target',
+            getCustomState: key => state[key],
+            setCustomState: (key, value) => {
+                state[key] = value;
+            }
+        };
     });
 
     describe('Gemini Integration', () => {

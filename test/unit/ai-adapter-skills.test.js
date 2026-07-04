@@ -46,8 +46,15 @@ const GREETING_SKILL = [
  * @returns {object} a minimal Target-like object
  */
 const fakeTarget = function (id, skills) {
+    const state = {};
     return {
         id,
+        getCustomState (key) {
+            return state[key];
+        },
+        setCustomState (key, value) {
+            state[key] = value;
+        },
         lookupVariableByNameAndType (name, type) {
             return (skills && name === 'skills' && type === 'list') ? {value: skills} : null;
         }
@@ -57,7 +64,6 @@ const fakeTarget = function (id, skills) {
 describe('AIAdapter Agent Skills', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        AIAdapter.removeAllAdapter();
     });
 
     describe('_composeSystemInstruction', () => {

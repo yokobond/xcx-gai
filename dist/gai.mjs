@@ -44691,6 +44691,9 @@ var BrowserAIProvider = /*#__PURE__*/function () {
     this.browserLLMDtype = DEFAULT_BROWSER_LLM_DTYPE;
     this.baseUrl = baseUrl;
     this._pipe = null;
+    this._processor = null;
+    this._multimodalModel = null;
+    this._pipeDevice = null;
     this._embeddingPipe = null;
     this._pastKeyValues = null;
     this._lastMessages = null;
@@ -44734,6 +44737,9 @@ var BrowserAIProvider = /*#__PURE__*/function () {
             this.browserLLMDtype = parsed.dtype;
           }
           this._pipe = null;
+          this._processor = null;
+          this._multimodalModel = null;
+          this._pipeDevice = null;
           this._pastKeyValues = null;
         }
       }
@@ -44881,7 +44887,7 @@ var BrowserAIProvider = /*#__PURE__*/function () {
     key: "_buildProgressCallback",
     value: function _buildProgressCallback() {
       var _this2 = this;
-      if (!this.onProgress) return undefined;
+      if (!this.onProgress) return;
       return function (data) {
         if (_this2._cancelDownload) {
           throw new Error('DOWNLOAD_CANCELLED');
@@ -45050,7 +45056,7 @@ var BrowserAIProvider = /*#__PURE__*/function () {
               }
               throw new Error('DOWNLOAD_CANCELLED');
             case 17:
-              console.log("[BrowserAI] Loading text-generation pipeline with device: ".concat(device, ", dtype: ").concat(_dtype));
+              console.log("[BrowserAI] Loading text-generation pipeline with " + "device: ".concat(device, ", dtype: ").concat(_dtype));
               progressCb = this._buildProgressCallback();
               _context.next = 18;
               return pipeline('text-generation', this.model, _objectSpread$1({
@@ -45062,6 +45068,7 @@ var BrowserAIProvider = /*#__PURE__*/function () {
             case 18:
               this._pipe = _context.sent;
               console.log("[BrowserAI] Pipeline loaded successfully with device: ".concat(device, ", dtype: ").concat(_dtype));
+              this._pipeDevice = device;
               lastError = null;
               loaded = true;
               return _context.abrupt("continue", 25);
@@ -45359,7 +45366,7 @@ var BrowserAIProvider = /*#__PURE__*/function () {
                 _context2.next = 23;
                 break;
               }
-              console.warn("[BrowserAI] WebGPU embedding session creation failed. Will fallback to wasm.");
+              console.warn("[BrowserAI] WebGPU embedding session creation failed. " + "Will fallback to wasm.");
               return _context2.abrupt("continue", 25);
             case 23:
               return _context2.abrupt("continue", 24);
@@ -45429,28 +45436,83 @@ var BrowserAIProvider = /*#__PURE__*/function () {
           _yield$import3,
           DynamicCache,
           TextStreamer,
+          RawImage,
+          readAudio,
           pipe,
           useCache,
           isContextContinued,
           useStreaming,
           streamer,
           doSample,
+          parsedMessages,
+          rawImages,
+          rawAudios,
+          _iterator3,
+          _step3,
+          m,
+          parsedContent,
+          _iterator4,
+          _step4,
+          part,
+          rawImage,
+          res,
+          blob,
+          blobUrl,
+          audioData,
+          len,
+          min,
+          max,
+          sumSq,
+          i,
+          v,
+          rms,
+          hasImages,
+          hasAudio,
+          _yield$import4,
+          AutoProcessor,
+          processor,
+          _yield$import5,
+          Gemma4ForConditionalGeneration,
+          sessionKeys,
+          _i5,
+          _sessionKeys,
+          key,
+          session,
+          model,
+          prompt,
+          imageArg,
+          audioArg,
+          inputs,
+          forwardCallCount,
+          outputIds,
+          inputLength,
+          generatedIds,
+          tokenIds,
+          decoded,
           output,
           generated,
           last,
           _args3 = arguments,
-          _t7;
+          _t7,
+          _t8,
+          _t9,
+          _t0,
+          _t1,
+          _t10;
         return _regeneratorRuntime.wrap(function (_context3) {
           while (1) switch (_context3.prev = _context3.next) {
             case 0:
               options = _args3.length > 1 && _args3[1] !== undefined ? _args3[1] : {};
               console.log("[BrowserAI] Starting generate. Messages:", messages, "Options:", options);
+              console.log("[BrowserAI] DEBUG_LOG_V2: Entered generate method. Checking module version.");
               _context3.next = 1;
               return import(TRANSFORMERS_CDN);
             case 1:
               _yield$import3 = _context3.sent;
               DynamicCache = _yield$import3.DynamicCache;
               TextStreamer = _yield$import3.TextStreamer;
+              RawImage = _yield$import3.RawImage;
+              readAudio = _yield$import3.read_audio;
               console.log("[BrowserAI] Getting pipeline...");
               _context3.next = 2;
               return this._getPipeline(false);
@@ -45461,7 +45523,11 @@ var BrowserAIProvider = /*#__PURE__*/function () {
               if (useCache && this._pastKeyValues && this._lastMessages) {
                 if (messages.length >= this._lastMessages.length) {
                   isContextContinued = this._lastMessages.every(function (msg, idx) {
-                    return msg.role === messages[idx].role && msg.content === messages[idx].content;
+                    if (msg.role !== messages[idx].role) return false;
+                    if (typeof msg.content === 'string' && typeof messages[idx].content === 'string') {
+                      return msg.content === messages[idx].content;
+                    }
+                    return JSON.stringify(msg.content) === JSON.stringify(messages[idx].content);
                   });
                 }
               }
@@ -45485,10 +45551,283 @@ var BrowserAIProvider = /*#__PURE__*/function () {
                   options.onToken(token);
                 }
               }) : null;
-              doSample = typeof options.temperature === 'number' && options.temperature > 0;
+              doSample = typeof options.temperature === 'number' && options.temperature > 0; // Parse any dataURL images into RawImage objects and audio into Float32Array
+              parsedMessages = [];
+              rawImages = [];
+              rawAudios = [];
+              _iterator3 = _createForOfIteratorHelper$3(messages);
               _context3.prev = 3;
+              _iterator3.s();
+            case 4:
+              if ((_step3 = _iterator3.n()).done) {
+                _context3.next = 26;
+                break;
+              }
+              m = _step3.value;
+              if (!Array.isArray(m.content)) {
+                _context3.next = 24;
+                break;
+              }
+              parsedContent = [];
+              _iterator4 = _createForOfIteratorHelper$3(m.content);
+              _context3.prev = 5;
+              _iterator4.s();
+            case 6:
+              if ((_step4 = _iterator4.n()).done) {
+                _context3.next = 20;
+                break;
+              }
+              part = _step4.value;
+              if (!(part.type === 'image' && typeof part.image === 'string')) {
+                _context3.next = 11;
+                break;
+              }
+              _context3.prev = 7;
+              _context3.next = 8;
+              return RawImage.read(part.image);
+            case 8:
+              rawImage = _context3.sent;
+              rawImages.push(rawImage);
+              parsedContent.push({
+                type: 'image'
+              });
+              _context3.next = 10;
+              break;
+            case 9:
+              _context3.prev = 9;
+              _t7 = _context3["catch"](7);
+              console.error("[BrowserAI] Failed to load image:", _t7);
+              parsedContent.push(part);
+            case 10:
+              _context3.next = 19;
+              break;
+            case 11:
+              if (!(part.type === 'audio' && typeof part.audio === 'string')) {
+                _context3.next = 18;
+                break;
+              }
+              _context3.prev = 12;
+              _context3.next = 13;
+              return fetch(part.audio);
+            case 13:
+              res = _context3.sent;
+              _context3.next = 14;
+              return res.blob();
+            case 14:
+              blob = _context3.sent;
+              console.log("[BrowserAI] Audio blob size: ".concat(blob.size, ", type: ").concat(blob.type));
+              blobUrl = URL.createObjectURL(blob);
+              _context3.next = 15;
+              return readAudio(blobUrl, 16000);
+            case 15:
+              audioData = _context3.sent;
+              URL.revokeObjectURL(blobUrl);
+              // Debug: check audio data quality
+              len = audioData.length;
+              min = Infinity;
+              max = -Infinity;
+              sumSq = 0;
+              for (i = 0; i < len; i++) {
+                v = audioData[i];
+                if (v < min) min = v;
+                if (v > max) max = v;
+                sumSq += v * v;
+              }
+              rms = Math.sqrt(sumSq / len);
+              console.log("[BrowserAI] Audio data: length=".concat(len, ", ") + "min=".concat(min.toFixed(4), ", max=").concat(max.toFixed(4), ", rms=").concat(rms.toFixed(6)));
+              rawAudios.push(audioData);
+              parsedContent.push({
+                type: 'audio'
+              });
+              _context3.next = 17;
+              break;
+            case 16:
+              _context3.prev = 16;
+              _t8 = _context3["catch"](12);
+              console.error("[BrowserAI] Failed to load audio:", _t8);
+              parsedContent.push(part);
+            case 17:
+              _context3.next = 19;
+              break;
+            case 18:
+              parsedContent.push(part);
+            case 19:
+              _context3.next = 6;
+              break;
+            case 20:
+              _context3.next = 22;
+              break;
+            case 21:
+              _context3.prev = 21;
+              _t9 = _context3["catch"](5);
+              _iterator4.e(_t9);
+            case 22:
+              _context3.prev = 22;
+              _iterator4.f();
+              return _context3.finish(22);
+            case 23:
+              parsedMessages.push(_objectSpread$1(_objectSpread$1({}, m), {}, {
+                content: parsedContent
+              }));
+              _context3.next = 25;
+              break;
+            case 24:
+              parsedMessages.push(m);
+            case 25:
               _context3.next = 4;
-              return pipe(messages, _objectSpread$1(_objectSpread$1(_objectSpread$1({
+              break;
+            case 26:
+              _context3.next = 28;
+              break;
+            case 27:
+              _context3.prev = 27;
+              _t0 = _context3["catch"](3);
+              _iterator3.e(_t0);
+            case 28:
+              _context3.prev = 28;
+              _iterator3.f();
+              return _context3.finish(28);
+            case 29:
+              console.log("[BrowserAI] DEBUG_LOG_V2: rawImages count = ".concat(rawImages.length, ", ") + "rawAudios count = ".concat(rawAudios.length));
+              hasImages = rawImages.length > 0;
+              hasAudio = rawAudios.length > 0;
+              if (!(hasImages || hasAudio)) {
+                _context3.next = 41;
+                break;
+              }
+              console.log("[BrowserAI] Multimodal generation path triggered.");
+              _context3.prev = 30;
+              if (this._processor) {
+                _context3.next = 33;
+                break;
+              }
+              _context3.next = 31;
+              return import(TRANSFORMERS_CDN);
+            case 31:
+              _yield$import4 = _context3.sent;
+              AutoProcessor = _yield$import4.AutoProcessor;
+              console.log("[BrowserAI] Loading AutoProcessor for model: ".concat(this.model));
+              _context3.next = 32;
+              return AutoProcessor.from_pretrained(this.model);
+            case 32:
+              this._processor = _context3.sent;
+            case 33:
+              processor = this._processor; // text-generation pipeline model lacks vision/audio encoder sessions.
+              // Load Gemma4ForConditionalGeneration which includes all encoder sessions.
+              if (this._multimodalModel) {
+                _context3.next = 36;
+                break;
+              }
+              _context3.next = 34;
+              return import(TRANSFORMERS_CDN);
+            case 34:
+              _yield$import5 = _context3.sent;
+              Gemma4ForConditionalGeneration = _yield$import5.Gemma4ForConditionalGeneration;
+              console.log("[BrowserAI] Loading Gemma4ForConditionalGeneration for model: ".concat(this.model));
+              _context3.next = 35;
+              return Gemma4ForConditionalGeneration.from_pretrained(this.model, {
+                device: this._pipeDevice || 'webgpu',
+                dtype: this.browserLLMDtype
+              });
+            case 35:
+              this._multimodalModel = _context3.sent;
+              // Debug: check which ONNX sessions were loaded
+              if (this._multimodalModel.sessions) {
+                sessionKeys = Object.keys(this._multimodalModel.sessions);
+                console.log("[BrowserAI] Loaded model sessions:", sessionKeys);
+                for (_i5 = 0, _sessionKeys = sessionKeys; _i5 < _sessionKeys.length; _i5++) {
+                  key = _sessionKeys[_i5];
+                  session = this._multimodalModel.sessions[key];
+                  console.log("[BrowserAI]   session '".concat(key, "':"), session ? session.inputNames || 'loaded (no inputNames)' : 'null/undefined');
+                }
+              }
+            case 36:
+              model = this._multimodalModel;
+              console.log("[BrowserAI] Applying chat template via processor...");
+              prompt = processor.apply_chat_template(parsedMessages, {
+                tokenize: false,
+                add_generation_prompt: true
+              });
+              console.log("[BrowserAI] Prompt:", prompt);
+              console.log("[BrowserAI] Preprocessing inputs (text + images + audio)...");
+              imageArg = rawImages.length > 0 ? rawImages.length === 1 ? rawImages[0] : rawImages : void 0;
+              audioArg = rawAudios.length > 0 ? rawAudios.length === 1 ? rawAudios[0] : rawAudios : void 0;
+              _context3.next = 37;
+              return processor(prompt, imageArg, audioArg);
+            case 37:
+              inputs = _context3.sent;
+              console.log("[BrowserAI] Processed inputs keys:", Object.keys(inputs));
+              if (inputs.pixel_values) {
+                console.log("[BrowserAI] pixel_values shape:", inputs.pixel_values.dims);
+              }
+              if (inputs.input_features) {
+                console.log("[BrowserAI] input_features shape:", inputs.input_features.dims);
+              }
+              console.log("[BrowserAI] Running model.generate...");
+              // Debug: monkey-patch forward to check input_features flow
+              if (!model._origForward) {
+                model._origForward = model.forward.bind(model);
+                forwardCallCount = 0;
+                model.forward = function (args) {
+                  forwardCallCount++;
+                  if (forwardCallCount <= 2) {
+                    console.log("[BrowserAI] forward() call #".concat(forwardCallCount, ", keys:"), Object.keys(args));
+                    if (args.input_features) {
+                      console.log("[BrowserAI] forward() has input_features shape:", args.input_features.dims);
+                    } else {
+                      console.log("[BrowserAI] forward() NO input_features");
+                    }
+                    if (args.input_ids) {
+                      console.log("[BrowserAI] forward() input_ids dims:", args.input_ids.dims);
+                    }
+                  }
+                  return model._origForward(args);
+                };
+              }
+              _context3.next = 38;
+              return model.generate(_objectSpread$1(_objectSpread$1(_objectSpread$1({}, inputs), {}, {
+                max_new_tokens: options.maxOutputTokens || 256,
+                do_sample: doSample
+              }, doSample && {
+                temperature: options.temperature
+              }), streamer && {
+                streamer: streamer
+              }));
+            case 38:
+              outputIds = _context3.sent;
+              console.log("[BrowserAI] Decoding outputs...");
+              inputLength = inputs.input_ids.size;
+              generatedIds = outputIds.data;
+              console.log("[BrowserAI] DEBUG_DECODE: inputLength = ".concat(inputLength, ", ") + "outputIds length = ".concat(outputIds.data ? outputIds.data.length : 'undefined'));
+              if (outputIds.data && outputIds.data.length > inputLength) {
+                generatedIds = outputIds.data.slice(inputLength);
+              }
+              console.log("[BrowserAI] DEBUG_DECODE: generatedIds length = " + "".concat(generatedIds ? generatedIds.length : 'undefined'), generatedIds);
+              if (!(!generatedIds || generatedIds.length === 0)) {
+                _context3.next = 39;
+                break;
+              }
+              console.warn("[BrowserAI] generatedIds is empty.");
+              return _context3.abrupt("return", '');
+            case 39:
+              // Convert BigInt to Number (e.g. BigInt64Array -> Number[]) to prevent decode error
+              tokenIds = Array.from(generatedIds).map(function (x) {
+                return typeof x === 'bigint' ? Number(x) : x;
+              });
+              decoded = (processor.tokenizer || processor).decode(tokenIds, {
+                skip_special_tokens: true
+              });
+              console.log("[BrowserAI] Decoded:", decoded);
+              return _context3.abrupt("return", decoded);
+            case 40:
+              _context3.prev = 40;
+              _t1 = _context3["catch"](30);
+              console.error("[BrowserAI] Error during multimodal generation:", _t1);
+              throw _t1;
+            case 41:
+              _context3.prev = 41;
+              _context3.next = 42;
+              return pipe(parsedMessages, _objectSpread$1(_objectSpread$1(_objectSpread$1({
                 add_generation_prompt: true
               }, useCache && {
                 past_key_values: this._pastKeyValues
@@ -45500,35 +45839,35 @@ var BrowserAIProvider = /*#__PURE__*/function () {
               }), streamer && {
                 streamer: streamer
               }));
-            case 4:
+            case 42:
               output = _context3.sent;
               console.log("[BrowserAI] Pipeline execution completed. Raw output:", output);
               if (!(Array.isArray(output) && output.length > 0)) {
-                _context3.next = 6;
+                _context3.next = 44;
                 break;
               }
               generated = output[0].generated_text;
               console.log("[BrowserAI] Generated content:", generated);
               if (!Array.isArray(generated)) {
-                _context3.next = 5;
+                _context3.next = 43;
                 break;
               }
               last = generated[generated.length - 1];
               return _context3.abrupt("return", last && last.content ? last.content : String(last));
-            case 5:
+            case 43:
               return _context3.abrupt("return", String(generated));
-            case 6:
+            case 44:
               return _context3.abrupt("return", '');
-            case 7:
-              _context3.prev = 7;
-              _t7 = _context3["catch"](3);
-              console.error("[BrowserAI] Error during pipeline inference:", _t7);
-              throw _t7;
-            case 8:
+            case 45:
+              _context3.prev = 45;
+              _t10 = _context3["catch"](41);
+              console.error("[BrowserAI] Error during pipeline inference:", _t10);
+              throw _t10;
+            case 46:
             case "end":
               return _context3.stop();
           }
-        }, _callee3, this, [[3, 7]]);
+        }, _callee3, this, [[3, 27, 28, 29], [5, 21, 22, 23], [7, 9], [12, 16], [30, 40], [41, 45]]);
       }));
       function generate(_x) {
         return _generate.apply(this, arguments);
@@ -45767,9 +46106,6 @@ var PROVIDERS = {
   }
 };
 
-// Map of target.id to AIAdapter instances
-var AI_ADAPTERS = {};
-
 /**
  * Multi-provider AI Adapter class using Vercel AI SDK.
  * Provides unified interface for Gemini and OpenAI APIs.
@@ -45781,7 +46117,7 @@ var AIAdapter = /*#__PURE__*/function () {
    */
   function AIAdapter(target) {
     _classCallCheck$1(this, AIAdapter);
-    AIAdapter.ADAPTERS[target.id] = this;
+    target.setCustomState(AIAdapter.STATE_KEY, this);
     this.target = target;
     this.apiType = null;
     this.apiKey = null;
@@ -46866,13 +47202,55 @@ var AIAdapter = /*#__PURE__*/function () {
               messages = isChat ? this.messages : [];
               messages.push(promptMessage);
               chatMessages = messages.map(function (m) {
+                if (typeof m.content === 'string') {
+                  return {
+                    role: m.role,
+                    content: m.content
+                  };
+                }
+                if (Array.isArray(m.content)) {
+                  var contentParts = [];
+                  var _iterator6 = _createForOfIteratorHelper$2(m.content),
+                    _step6;
+                  try {
+                    for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+                      var p = _step6.value;
+                      if (p.type === 'text') {
+                        contentParts.push({
+                          type: 'text',
+                          text: p.text
+                        });
+                      } else if (p.type === 'file' && p.mediaType && p.mediaType.startsWith('image/')) {
+                        contentParts.push({
+                          type: 'image',
+                          image: p.data
+                        });
+                      } else if (p.type === 'file' && p.mediaType && p.mediaType.startsWith('audio/')) {
+                        contentParts.push({
+                          type: 'audio',
+                          audio: p.data
+                        });
+                      }
+                    }
+                  } catch (err) {
+                    _iterator6.e(err);
+                  } finally {
+                    _iterator6.f();
+                  }
+                  if (contentParts.length === 1 && contentParts[0].type === 'text') {
+                    return {
+                      role: m.role,
+                      content: contentParts[0].text
+                    };
+                  }
+                  return {
+                    role: m.role,
+                    content: contentParts
+                  };
+                }
                 return {
                   role: m.role,
-                  content: typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? m.content.filter(function (p) {
-                    return p.type === 'text';
-                  }).map(function (p) {
-                    return p.text;
-                  }).join('') : String(m.content)
+                  content: String(m.content)
                 };
               });
               systemInstruction = this._composeSystemInstruction() || ''; // Include tools in system instruction if enabled
@@ -47461,7 +47839,7 @@ var AIAdapter = /*#__PURE__*/function () {
     key: "clearBrowserLLMModelCache",
     value: (function () {
       var _clearBrowserLLMModelCache = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee9(modelIndex) {
-        var apiType, models, idx, targetModelId, _this$_parseModelId, targetRepo, targetDtype, deleteCount, cacheNames, _iterator6, _step6, cacheName, cache, requests, _iterator7, _step7, req, url, repo, match, pathParts, resolveIdx, dtype, dtypeMatch, isModelFile, success, _t12, _t13, _t14;
+        var apiType, models, idx, targetModelId, _this$_parseModelId, targetRepo, targetDtype, deleteCount, cacheNames, _iterator7, _step7, cacheName, cache, requests, _iterator8, _step8, req, url, repo, match, pathParts, resolveIdx, dtype, dtypeMatch, isModelFile, success, _t12, _t13, _t14;
         return _regeneratorRuntime.wrap(function (_context0) {
           while (1) switch (_context0.prev = _context0.next) {
             case 0:
@@ -47496,15 +47874,15 @@ var AIAdapter = /*#__PURE__*/function () {
               return caches.keys();
             case 5:
               cacheNames = _context0.sent;
-              _iterator6 = _createForOfIteratorHelper$2(cacheNames);
+              _iterator7 = _createForOfIteratorHelper$2(cacheNames);
               _context0.prev = 6;
-              _iterator6.s();
+              _iterator7.s();
             case 7:
-              if ((_step6 = _iterator6.n()).done) {
+              if ((_step7 = _iterator7.n()).done) {
                 _context0.next = 18;
                 break;
               }
-              cacheName = _step6.value;
+              cacheName = _step7.value;
               if (!(cacheName.includes('transformers') || cacheName.includes('onnxruntime'))) {
                 _context0.next = 17;
                 break;
@@ -47518,15 +47896,15 @@ var AIAdapter = /*#__PURE__*/function () {
               return cache.keys();
             case 9:
               requests = _context0.sent;
-              _iterator7 = _createForOfIteratorHelper$2(requests);
+              _iterator8 = _createForOfIteratorHelper$2(requests);
               _context0.prev = 10;
-              _iterator7.s();
+              _iterator8.s();
             case 11:
-              if ((_step7 = _iterator7.n()).done) {
+              if ((_step8 = _iterator8.n()).done) {
                 _context0.next = 14;
                 break;
               }
-              req = _step7.value;
+              req = _step8.value;
               url = req.url;
               repo = null;
               match = url.match(/\/([^/]+)\/([^/]+)\/resolve\//);
@@ -47576,10 +47954,10 @@ var AIAdapter = /*#__PURE__*/function () {
             case 15:
               _context0.prev = 15;
               _t12 = _context0["catch"](10);
-              _iterator7.e(_t12);
+              _iterator8.e(_t12);
             case 16:
               _context0.prev = 16;
-              _iterator7.f();
+              _iterator8.f();
               return _context0.finish(16);
             case 17:
               _context0.next = 7;
@@ -47590,10 +47968,10 @@ var AIAdapter = /*#__PURE__*/function () {
             case 19:
               _context0.prev = 19;
               _t13 = _context0["catch"](6);
-              _iterator6.e(_t13);
+              _iterator7.e(_t13);
             case 20:
               _context0.prev = 20;
-              _iterator6.f();
+              _iterator7.f();
               return _context0.finish(20);
             case 21:
               _context0.next = 23;
@@ -47607,9 +47985,7 @@ var AIAdapter = /*#__PURE__*/function () {
               console.log("[BrowserAI] Successfully cleared ".concat(deleteCount, " cache entries for model \"").concat(targetModelId, "\""));
 
               // Reset models list for all adapters to force re-scanning
-              Object.values(AIAdapter.ADAPTERS).forEach(function (adapter) {
-                adapter.models = [];
-              });
+              this._resetModelsForAllAdapters();
 
               // Also reset memory cache if it was active
               if (this._browserAI) {
@@ -47732,9 +48108,7 @@ var AIAdapter = /*#__PURE__*/function () {
             case 13:
               _context1.prev = 13;
               this._browserAI.onProgress = null;
-              Object.values(AIAdapter.ADAPTERS).forEach(function (adapter) {
-                adapter.models = [];
-              });
+              this._resetModelsForAllAdapters();
               return _context1.finish(13);
             case 14:
             case "end":
@@ -47748,9 +48122,29 @@ var AIAdapter = /*#__PURE__*/function () {
       return downloadBrowserLLMModel;
     }()
     /**
-     * Cancel the ongoing browser LLM model download.
+     * Reset the cached models list on every adapter so the next model menu
+     * access re-scans available models.
      */
     )
+  }, {
+    key: "_resetModelsForAllAdapters",
+    value: function _resetModelsForAllAdapters() {
+      this.models = [];
+      var runtime = this.target.runtime;
+      if (!runtime) {
+        return;
+      }
+      runtime.targets.forEach(function (target) {
+        var adapter = target.getCustomState(AIAdapter.STATE_KEY);
+        if (adapter) {
+          adapter.models = [];
+        }
+      });
+    }
+
+    /**
+     * Cancel the ongoing browser LLM model download.
+     */
   }, {
     key: "cancelDownloadBrowserLLMModel",
     value: function cancelDownloadBrowserLLMModel() {
@@ -47954,15 +48348,15 @@ var AIAdapter = /*#__PURE__*/function () {
       }
     }
   }], [{
-    key: "ADAPTERS",
+    key: "STATE_KEY",
     get:
     /**
-     * Get adapters map.
-     * @returns {object.<string, AIAdapter>} - adapters with target.id as key
+     * The key to load and store a target's AIAdapter in the target's custom state.
+     * @returns {string} - state key
      * @static
      */
     function get() {
-      return AI_ADAPTERS;
+      return 'xcxGAI.adapter';
     }
 
     /**
@@ -47980,7 +48374,7 @@ var AIAdapter = /*#__PURE__*/function () {
      * @public
      */
     function existsForTarget(target) {
-      return !!AIAdapter.ADAPTERS[target.id];
+      return !!target.getCustomState(AIAdapter.STATE_KEY);
     }
 
     /**
@@ -47991,7 +48385,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "getForTarget",
     value: function getForTarget(target) {
-      var ai = AIAdapter.ADAPTERS[target.id];
+      var ai = target.getCustomState(AIAdapter.STATE_KEY);
       if (ai) {
         return ai;
       }
@@ -48006,18 +48400,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "removeForTarget",
     value: function removeForTarget(target) {
-      delete AIAdapter.ADAPTERS[target.id];
-    }
-
-    /**
-     * Remove all AI Adapters.
-     */
-  }, {
-    key: "removeAllAdapter",
-    value: function removeAllAdapter() {
-      Object.keys(AIAdapter.ADAPTERS).forEach(function (key) {
-        delete AIAdapter.ADAPTERS[key];
-      });
+      target.setCustomState(AIAdapter.STATE_KEY, null);
     }
 
     /**
@@ -48039,18 +48422,6 @@ var AIAdapter = /*#__PURE__*/function () {
     key: "setApiKey",
     value: function setApiKey(key) {
       AIAdapter.apiKey = key;
-    }
-
-    /**
-     * Abort all requests for all adapters.
-     * @param {string} reason - reason for aborting requests
-     */
-  }, {
-    key: "abortAllRequests",
-    value: function abortAllRequests(reason) {
-      Object.values(AIAdapter.ADAPTERS).forEach(function (adapter) {
-        adapter.abortRequests(reason);
-      });
     }
   }]);
 }();
@@ -48756,7 +49127,7 @@ var GAIBlocks = /*#__PURE__*/function () {
     runtime.on('EXTENSION_ADDED', this.onExtensionAdded.bind(this));
     runtime.on('PROJECT_STOP_ALL', function () {
       _this3.stopListening();
-      AIAdapter.abortAllRequests("Project stopped");
+      _this3.abortAllRequests("Project stopped");
     });
     runtime.on('STOP_FOR_TARGET', function (target) {
       _this3.abortRequestsForTarget(target, "Request stopped for ".concat(target.sprite.name));
@@ -49875,7 +50246,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "aiForTarget",
     value: function aiForTarget(target) {
-      return AIAdapter.ADAPTERS[target.id];
+      return target.getCustomState(AIAdapter.STATE_KEY);
     }
 
     /**
@@ -50036,6 +50407,22 @@ var GAIBlocks = /*#__PURE__*/function () {
     }
 
     /**
+     * Stop all ongoing requests for all targets.
+     * @param {string} reason - reason for aborting
+     */
+  }, {
+    key: "abortAllRequests",
+    value: function abortAllRequests(reason) {
+      var _this4 = this;
+      this.runtime.targets.forEach(function (target) {
+        var ai = _this4.aiForTarget(target);
+        if (ai) {
+          ai.abortRequests(reason);
+        }
+      });
+    }
+
+    /**
      * Request AI to generate content or chat.
      * @param {string} prompt - the prompt to send to the AI.
      * @param {boolean} isChat - whether this is a chat request.
@@ -50047,7 +50434,7 @@ var GAIBlocks = /*#__PURE__*/function () {
     key: "_requestAI",
     value: function _requestAI(prompt, isChat, util) {
       var _requestState$functio,
-        _this4 = this;
+        _this5 = this;
       var target = util.target;
       var ai = this.aiForTarget(target);
       var stackFrame = util.stackFrame;
@@ -50076,19 +50463,19 @@ var GAIBlocks = /*#__PURE__*/function () {
         this.updateFunctionRegistry(target);
         var responseTextHandler = function responseTextHandler(responseText) {
           if (responseText !== '') {
-            _this4.runtime.startHats('gai_whenResponseReceived', null, target);
+            _this5.runtime.startHats('gai_whenResponseReceived', null, target);
           }
         };
         var functionDispatcher = function functionDispatcher(call) {
           requestState.functionCalls = requestState.functionCalls || [];
           requestState.functionCalls.push(call);
-          return _this4._dispatchFunctionCall(call, target, util.runtime);
+          return _this5._dispatchFunctionCall(call, target, util.runtime);
         };
         var partialTextHandler;
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
           partialTextHandler = function partialTextHandler(partialText) {
             if (partialText !== '') {
-              _this4.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+              _this5.runtime.startHats('gai_whenPartialResponseReceived', null, target);
             }
           };
         }
@@ -50099,7 +50486,7 @@ var GAIBlocks = /*#__PURE__*/function () {
           requestState.error = error;
           // Surface the same localized error through the `response text`
           // reporter so both blocks show a consistent message on failure.
-          ai.setLastResponseText(_this4._formatAIError(error));
+          ai.setLastResponseText(_this5._formatAIError(error));
         });
       }
       util.yield();
@@ -50192,11 +50579,11 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "snapshotData",
     value: function snapshotData(args, util) {
-      var _this5 = this;
+      var _this6 = this;
       var runtime = this.runtime;
       var requester = util.target;
       return new Promise(function (resolve) {
-        _this5.runtime.renderer.requestSnapshot(function (imageDataURL) {
+        _this6.runtime.renderer.requestSnapshot(function (imageDataURL) {
           if (DEBUG) {
             insertImageAsSvgCostume(runtime, requester, imageDataURL, null, null, 'snapshot', requester.currentCostume + 1).catch(function (e) {
               console.error(e);
@@ -50240,20 +50627,20 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "startSoundRecorder",
     value: function startSoundRecorder() {
-      var _this6 = this;
+      var _this7 = this;
       return navigator.mediaDevices.getUserMedia({
         audio: true
       }).then(function (stream) {
-        _this6.runtime.emitMicListening(true);
+        _this7.runtime.emitMicListening(true);
         var mediaRecorder = new MediaRecorder(stream);
-        _this6.soundRecorder = mediaRecorder;
-        _this6.soundRecorderChunks = [];
+        _this7.soundRecorder = mediaRecorder;
+        _this7.soundRecorderChunks = [];
         mediaRecorder.ondataavailable = function (event) {
-          _this6.soundRecorderChunks.push(event.data);
+          _this7.soundRecorderChunks.push(event.data);
         };
         mediaRecorder.start();
-        _this6.listeningTimeout = setTimeout(function () {
-          _this6.stopSoundRecorder();
+        _this7.listeningTimeout = setTimeout(function () {
+          _this7.stopSoundRecorder();
         }, 60 * 1000);
       });
     }
@@ -50266,29 +50653,29 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "stopSoundRecorder",
     value: function stopSoundRecorder() {
-      var _this7 = this;
+      var _this8 = this;
       if (this.listeningTimeout) {
         clearTimeout(this.listeningTimeout);
         this.listeningTimeout = null;
       }
       if (this.soundRecorder) {
         return new Promise(function (resolve) {
-          _this7.soundRecorder.onstop = function () {
-            _this7.runtime.emitMicListening(false);
-            var audioBlob = new Blob(_this7.soundRecorderChunks, {
+          _this8.soundRecorder.onstop = function () {
+            _this8.runtime.emitMicListening(false);
+            var audioBlob = new Blob(_this8.soundRecorderChunks, {
               type: 'audio/wav'
             });
             var reader = new FileReader();
             reader.readAsDataURL(audioBlob);
             reader.onloadend = function () {
               var dataURL = reader.result;
-              _this7.recordedSoundData = dataURL;
-              _this7.isListening = false;
-              _this7.soundRecorder = null;
+              _this8.recordedSoundData = dataURL;
+              _this8.isListening = false;
+              _this8.soundRecorder = null;
               resolve(dataURL);
             };
           };
-          _this7.soundRecorder.stop();
+          _this8.soundRecorder.stop();
         });
       }
       return null;
@@ -50301,14 +50688,14 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "startListening",
     value: function startListening() {
-      var _this8 = this;
+      var _this9 = this;
       if (this.isListening) {
         return;
       }
       this.isListening = true;
       return this.startSoundRecorder().catch(function (e) {
         console.warn('Failed to start listening', e);
-        _this8.isListening = false;
+        _this9.isListening = false;
       });
     }
 
@@ -50972,7 +51359,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "downloadBrowserLLMModel",
     value: function downloadBrowserLLMModel(args, util) {
-      var _this9 = this;
+      var _this0 = this;
       var target = util.target;
       var ai = this.getAI(target);
       if (!ai) {
@@ -50997,15 +51384,18 @@ var GAIBlocks = /*#__PURE__*/function () {
       // still be unwinding in the background (Promise.race returns early on
       // cancel), so only clear _activeDownload when it still points at us.
       var handle = {};
+
+      // eslint-disable-next-line prefer-const
+      var progressBar;
       var doCancel = function doCancel() {
         ai.cancelDownloadBrowserLLMModel();
-        progressBar.destroy();
+        if (progressBar) progressBar.destroy();
         cancelResolve('Download cancelled');
-        if (_this9._activeDownload === handle) {
-          _this9._activeDownload = null;
+        if (_this0._activeDownload === handle) {
+          _this0._activeDownload = null;
         }
       };
-      var progressBar = new DownloadProgressBar(titleMsg, doCancel);
+      progressBar = new DownloadProgressBar(titleMsg, doCancel);
 
       // Store the cancel function so the cancel block can call it.
       handle.cancel = doCancel;
@@ -51058,14 +51448,14 @@ var GAIBlocks = /*#__PURE__*/function () {
       var downloadPromise = ai.downloadBrowserLLMModel(modelID, modelType, progressCallback).then(function () {
         progressBar.update(100, 'Complete!');
         progressBar.destroy();
-        if (_this9._activeDownload === handle) {
-          _this9._activeDownload = null;
+        if (_this0._activeDownload === handle) {
+          _this0._activeDownload = null;
         }
         return 'Download complete';
       }).catch(function (error) {
         progressBar.destroy();
-        if (_this9._activeDownload === handle) {
-          _this9._activeDownload = null;
+        if (_this0._activeDownload === handle) {
+          _this0._activeDownload = null;
         }
         if (error.message && error.message.includes('DOWNLOAD_CANCELLED')) {
           return 'Download cancelled';
@@ -51458,7 +51848,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this0 = this;
+      var _this1 = this;
       var targetName = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var defaultApiKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
       var customMessage = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
@@ -51535,7 +51925,7 @@ var GAIBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this0.apiKeyDialogOpened = false;
+        _this1.apiKeyDialogOpened = false;
       });
     }
 

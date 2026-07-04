@@ -180,9 +180,6 @@ const PROVIDERS = {
     }
 };
 
-// Map of target.id to AIAdapter instances
-const AI_ADAPTERS = {};
-
 /**
  * Multi-provider AI Adapter class using Vercel AI SDK.
  * Provides unified interface for Gemini and OpenAI APIs.
@@ -190,12 +187,12 @@ const AI_ADAPTERS = {};
 export class AIAdapter {
 
     /**
-     * Get adapters map.
-     * @returns {object.<string, AIAdapter>} - adapters with target.id as key
+     * The key to load and store a target's AIAdapter in the target's custom state.
+     * @returns {string} - state key
      * @static
      */
-    static get ADAPTERS () {
-        return AI_ADAPTERS;
+    static get STATE_KEY () {
+        return 'xcxGAI.adapter';
     }
 
     /**
@@ -241,7 +238,7 @@ export class AIAdapter {
      * @public
      */
     static existsForTarget (target) {
-        return !!AIAdapter.ADAPTERS[target.id];
+        return !!target.getCustomState(AIAdapter.STATE_KEY);
     }
 
     /**
@@ -250,7 +247,7 @@ export class AIAdapter {
      * @returns {AIAdapter} - AI Adapter
      */
     static getForTarget (target) {
-        const ai = AIAdapter.ADAPTERS[target.id];
+        const ai = target.getCustomState(AIAdapter.STATE_KEY);
         if (ai) {
             return ai;
         }
@@ -263,16 +260,7 @@ export class AIAdapter {
      * @returns {void}
      */
     static removeForTarget (target) {
-        delete AIAdapter.ADAPTERS[target.id];
-    }
-
-    /**
-     * Remove all AI Adapters.
-     */
-    static removeAllAdapter () {
-        Object.keys(AIAdapter.ADAPTERS).forEach(key => {
-            delete AIAdapter.ADAPTERS[key];
-        });
+        target.setCustomState(AIAdapter.STATE_KEY, null);
     }
 
     /**
@@ -293,21 +281,11 @@ export class AIAdapter {
     }
 
     /**
-     * Abort all requests for all adapters.
-     * @param {string} reason - reason for aborting requests
-     */
-    static abortAllRequests (reason) {
-        Object.values(AIAdapter.ADAPTERS).forEach(adapter => {
-            adapter.abortRequests(reason);
-        });
-    }
-
-    /**
      * Constructor for AIAdapter.
      * @param {Target} target - target for the adapter
      */
     constructor (target) {
-        AIAdapter.ADAPTERS[target.id] = this;
+        target.setCustomState(AIAdapter.STATE_KEY, this);
 
         this.target = target;
         this.apiType = null;
@@ -1692,10 +1670,8 @@ Do not write any other text if you call a function.
         console.log(`[BrowserAI] Successfully cleared ${deleteCount} cache entries for model "${targetModelId}"`);
 
         // Reset models list for all adapters to force re-scanning
-        Object.values(AIAdapter.ADAPTERS).forEach(adapter => {
-            adapter.models = [];
-        });
-        
+        this._resetModelsForAllAdapters();
+
         // Also reset memory cache if it was active
         if (this._browserAI) {
             if (this._browserAI.model === targetModelId) {
@@ -1794,10 +1770,26 @@ Do not write any other text if you call a function.
             }
         } finally {
             this._browserAI.onProgress = null;
-            Object.values(AIAdapter.ADAPTERS).forEach(adapter => {
-                adapter.models = [];
-            });
+            this._resetModelsForAllAdapters();
         }
+    }
+
+    /**
+     * Reset the cached models list on every adapter so the next model menu
+     * access re-scans available models.
+     */
+    _resetModelsForAllAdapters () {
+        this.models = [];
+        const runtime = this.target.runtime;
+        if (!runtime) {
+            return;
+        }
+        runtime.targets.forEach(target => {
+            const adapter = target.getCustomState(AIAdapter.STATE_KEY);
+            if (adapter) {
+                adapter.models = [];
+            }
+        });
     }
 
     /**
