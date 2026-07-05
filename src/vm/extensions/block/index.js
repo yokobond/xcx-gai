@@ -11,6 +11,7 @@ import {interpretContentPartsText} from './content-directive.js';
 import {ensureSkillsList} from './skill-store.js';
 import {ensureConfigVariables, getConfigVariableRaw, setConfigVariable} from './config-store.js';
 import {dotProduct, cosineDistance, euclideanDistance} from './math-util.js';
+import {installExtensionInterop} from './interop.js';
 
 
 class DownloadProgressBar {
@@ -376,6 +377,80 @@ class GAIBlocks {
 
         // Default to Gemini adapter
         this.AIAdapter = AIAdapter;
+
+        // Let sibling xcx-* extensions call this extension's chat functionality
+        // through the shared runtime without importing this module directly.
+        installExtensionInterop(runtime);
+        this._registerExtensionInterface(runtime);
+    }
+
+    /**
+     * Register this extension's public cross-extension interface (V1) on the
+     * shared runtime so sibling xcx-* extensions can discover and call it via
+     * `runtime.getExtensionInterface('gai')` without importing this module.
+     * @param {Runtime} runtime - the Scratch 3.0 runtime.
+     * @returns {void}
+     * @private
+     */
+    _registerExtensionInterface (runtime) {
+        runtime.registerExtensionInterface('gai', {
+            /**
+             * Interface version. Bumped on breaking changes; callers should
+             * feature-detect members with `typeof` rather than assume a version.
+             */
+            version: 1,
+
+            /**
+             * Whether an AI adapter already exists for the target.
+             * @param {Target} target - the target to check.
+             * @returns {boolean} - true if an AI adapter has been created for the target.
+             */
+            hasAI: target => AIAdapter.existsForTarget(target),
+
+            /**
+             * Ensure an AI adapter (and its config sprite variables/skills list)
+             * exists for the target, creating them if needed.
+             * @param {Target} target - the target to prepare.
+             * @returns {void}
+             */
+            ensureAI: target => {
+                this.getAI(target);
+            },
+
+            /**
+             * Reset the chat history for the target's AI adapter, if any.
+             * @param {Target} target - the target whose chat history is reset.
+             * @returns {void}
+             */
+            resetHistory: target => {
+                const ai = this.aiForTarget(target);
+                if (ai) ai.startChat([]);
+            },
+
+            /**
+             * Abort ongoing AI requests for the target.
+             * @param {Target} target - the target whose requests are aborted.
+             * @param {string} reason - reason for aborting, surfaced in logs.
+             * @returns {void}
+             */
+            abort: (target, reason) => this.abortRequestsForTarget(target, reason),
+
+            /**
+             * Send a chat message to the target's AI and resolve with the response text.
+             * Never rejects: on failure it resolves with a localized error message,
+             * matching the `chat` block's error-as-text policy.
+             * @param {Target} target - the target to chat as.
+             * @param {string} promptText - the message to send.
+             * @param {object} [options] - optional settings.
+             * @param {Function} [options.onPartial] - called with the accumulated response
+             * text so far (or the latest JSON snapshot so far for structured output) while
+             * the response streams in.
+             * @param {boolean} [options.fireHats] - whether to fire the `gai_whenResponseReceived`
+             * and `gai_whenPartialResponseReceived` hat blocks (default false).
+             * @returns {Promise<string>} - a Promise that resolves with the response text.
+             */
+            chat: (target, promptText, options) => this._chatViaExternalApi(target, promptText, options)
+        });
     }
 
     onExtensionAdded (extensionInfo) {
@@ -1809,6 +1884,82 @@ class GAIBlocks {
         const promptText = Cast.toString(args.PROMPT);
         const prompt = interpretContentPartsText(promptText);
         return this._requestAI(prompt, true, util);
+    }
+
+    /**
+     * Chat to AI on behalf of a sibling extension via the cross-extension
+     * interface (see `_registerExtensionInterface`). Unlike the `chat` block,
+     * this creates the AI adapter/config on demand instead of requiring it to
+     * already exist, and it has no per-tick polling loop, so it drives
+     * `requestGenerate` directly instead of going through `_requestAI`.
+     *
+     * V1 limitation: custom-procedure function calling (user-defined Scratch
+     * procedures registered as AI functions) is not supported here because
+     * dispatching a procedure call requires yielding across VM ticks, which
+     * this non-block entry point cannot do. Calls to such functions resolve
+     * with a tool error instead of hanging. Agent Skills' `loadSkill` tool is
+     * plain JS (no thread involved) and keeps working normally.
+     * @param {Target} target - the target to chat as.
+     * @param {string} promptText - the message to send to AI.
+     * @param {object} [options] - optional settings; unknown keys are ignored
+     * for forward compatibility (a future V2 may add e.g. `tools`).
+     * @param {Function} [options.onPartial] - called with the accumulated response text
+     * so far while streaming (or the latest JSON snapshot so far when the target's AI is
+     * configured with a `responseSchema`, mirroring ai-adapter's own partial-text semantics).
+     * @param {boolean} [options.fireHats] - whether to fire the `gai_whenResponseReceived`
+     * and `gai_whenPartialResponseReceived` hat blocks (default false).
+     * @returns {Promise<string>} - a Promise that resolves with the response text;
+     * never rejects, resolving with a localized error message on failure instead.
+     * @private
+     */
+    _chatViaExternalApi (target, promptText, options) {
+        const {onPartial, fireHats = false} = options || {};
+        const ai = this.getAI(target);
+        this.updateFunctionRegistry(target);
+        const prompt = interpretContentPartsText(Cast.toString(promptText));
+
+        const responseTextHandler = fireHats ?
+            responseText => {
+                if (responseText !== '') {
+                    this.runtime.startHats('gai_whenResponseReceived', null, target);
+                }
+            } :
+            null;
+
+        // Custom-procedure function calling is unsupported via this entry point (see
+        // the method doc above): fail the call instead of dispatching to a thread that
+        // would never be polled to completion. Agent Skills' `loadSkill` tool does not
+        // go through this dispatcher, so it is unaffected.
+        const functionDispatcher = call => {
+            call.error = 'Function calling via cross-extension chat is not supported (V1).';
+            call.failed();
+        };
+
+        let partialTextHandler = null;
+        if (typeof onPartial === 'function' || fireHats) {
+            // ai-adapter's own partialTextHandler receives a text-stream *delta* chunk
+            // when streaming plain text, but the *full* JSON snapshot so far when a
+            // `responseSchema` is set (see ai-adapter.js requestGenerate, ~1413-1428).
+            // The facade contract promises callers the accumulated text so far in both
+            // cases, so accumulate deltas here ourselves; a schema snapshot is already
+            // whole and is passed through unchanged.
+            let accumulatedText = '';
+            partialTextHandler = partialText => {
+                const hasSchema = Object.prototype.hasOwnProperty.call(ai.generationConfig, 'responseSchema');
+                const accumulated = hasSchema ? partialText : (accumulatedText += partialText);
+                if (typeof onPartial === 'function') onPartial(accumulated);
+                if (fireHats && partialText !== '') {
+                    this.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+                }
+            };
+        }
+
+        return ai.requestGenerate(prompt, responseTextHandler, functionDispatcher, partialTextHandler, true)
+            .then(() => ai.getLastResponseText())
+            .catch(error => {
+                console.error(error);
+                return this._formatAIError(error);
+            });
     }
 
     /**

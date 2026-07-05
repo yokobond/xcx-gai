@@ -10,6 +10,7 @@ describe("blockClass", () => {
             return msg.default;
         },
         on: function () { },
+        emit: function () { },
     };
 
     let block;
@@ -217,6 +218,122 @@ describe("blockClass", () => {
                 mockAIAdapter.getResultFiles.mockReturnValue(null);
                 const result = await block.getMaxFileNumber({}, mockUtil);
                 expect(result).toBe(0);
+            });
+        });
+    });
+
+    describe('cross-extension interface', () => {
+        it('registers the "gai" facade with version 1 and the expected members', () => {
+            const iface = runtime.getExtensionInterface('gai');
+            expect(iface).toBeTruthy();
+            expect(iface.version).toBe(1);
+            expect(typeof iface.hasAI).toBe('function');
+            expect(typeof iface.ensureAI).toBe('function');
+            expect(typeof iface.resetHistory).toBe('function');
+            expect(typeof iface.abort).toBe('function');
+            expect(typeof iface.chat).toBe('function');
+        });
+
+        it('emits EXTENSION_INTERFACE_REGISTERED with "gai" when registering', () => {
+            const emitSpy = jest.fn();
+            const freshRuntime = {
+                formatMessage: msg => msg.default,
+                on: () => {},
+                emit: emitSpy
+            };
+            new blockClass(freshRuntime);
+            expect(emitSpy).toHaveBeenCalledWith('EXTENSION_INTERFACE_REGISTERED', 'gai');
+        });
+
+        it('does not replace an already-installed registerExtensionInterface polyfill', () => {
+            const existingRegister = jest.fn();
+            const existingGetter = jest.fn().mockReturnValue(null);
+            const customRuntime = {
+                formatMessage: msg => msg.default,
+                on: () => {},
+                emit: () => {},
+                registerExtensionInterface: existingRegister,
+                getExtensionInterface: existingGetter
+            };
+            new blockClass(customRuntime);
+            // installExtensionInterop is a no-op here because the polyfill already
+            // existed; the extension still registers itself through it.
+            expect(customRuntime.registerExtensionInterface).toBe(existingRegister);
+            expect(existingRegister).toHaveBeenCalledWith('gai', expect.any(Object));
+        });
+
+        describe('chat', () => {
+            it('resolves with the last response text on success', async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                mockAIAdapter.requestGenerate = jest.fn().mockResolvedValue();
+                mockAIAdapter.getLastResponseText = jest.fn().mockReturnValue('hi there');
+
+                const iface = runtime.getExtensionInterface('gai');
+                const result = await iface.chat(mockTarget, 'hello');
+
+                expect(result).toBe('hi there');
+                expect(block.updateFunctionRegistry).toHaveBeenCalledWith(mockTarget);
+            });
+
+            it('resolves with error text instead of rejecting when the request fails', async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                mockAIAdapter.requestGenerate = jest.fn().mockRejectedValue(new Error('boom'));
+                mockAIAdapter.getLastResponseText = jest.fn();
+
+                const result = await block._chatViaExternalApi(mockTarget, 'hello');
+
+                expect(result).toBe('boom');
+                expect(mockAIAdapter.getLastResponseText).not.toHaveBeenCalled();
+            });
+
+            it('passes onPartial the accumulated text, not the raw delta chunks', async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                // ai-adapter's requestGenerate passes text-stream *delta* chunks to its
+                // partialTextHandler when streaming plain text (no responseSchema set).
+                mockAIAdapter.generationConfig = {};
+                mockAIAdapter.requestGenerate = jest.fn().mockImplementation(
+                    (prompt, responseTextHandler, functionDispatcher, partialTextHandler) => {
+                        partialTextHandler('モック応');
+                        partialTextHandler('答 2 ');
+                        partialTextHandler('番です。');
+                        return Promise.resolve();
+                    }
+                );
+                mockAIAdapter.getLastResponseText = jest.fn().mockReturnValue('モック応答 2 番です。');
+
+                const onPartial = jest.fn();
+                await block._chatViaExternalApi(mockTarget, 'hello', {onPartial});
+
+                expect(onPartial).toHaveBeenCalledTimes(3);
+                expect(onPartial).toHaveBeenNthCalledWith(1, 'モック応');
+                expect(onPartial).toHaveBeenNthCalledWith(2, 'モック応答 2 ');
+                expect(onPartial).toHaveBeenNthCalledWith(3, 'モック応答 2 番です。');
+            });
+
+            it('passes onPartial the schema snapshot unchanged when responseSchema is set', async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                // With a responseSchema set, ai-adapter passes the full JSON snapshot so
+                // far (not a delta), so it must be forwarded to onPartial unchanged.
+                mockAIAdapter.generationConfig = {responseSchema: {type: 'object'}};
+                mockAIAdapter.requestGenerate = jest.fn().mockImplementation(
+                    (prompt, responseTextHandler, functionDispatcher, partialTextHandler) => {
+                        partialTextHandler('{"a":1}');
+                        partialTextHandler('{"a":1,"b":2}');
+                        return Promise.resolve();
+                    }
+                );
+                mockAIAdapter.getLastResponseText = jest.fn().mockReturnValue('{"a":1,"b":2}');
+
+                const onPartial = jest.fn();
+                await block._chatViaExternalApi(mockTarget, 'hello', {onPartial});
+
+                expect(onPartial).toHaveBeenCalledTimes(2);
+                expect(onPartial).toHaveBeenNthCalledWith(1, '{"a":1}');
+                expect(onPartial).toHaveBeenNthCalledWith(2, '{"a":1,"b":2}');
             });
         });
     });

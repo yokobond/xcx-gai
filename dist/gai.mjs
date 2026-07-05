@@ -19,7 +19,7 @@ var translations$1 = {
 }
 };
 
-var version$2 = "1.3.0";
+var version$2 = "1.4.0";
 
 /**
  * This is an extension for Xcratch.
@@ -48831,6 +48831,41 @@ var cosineDistance = function cosineDistance(vectorA, vectorB) {
   return 1 - dotProd / (normA * normB);
 };
 
+/**
+ * Cross-extension interop registry for xcx-* extensions.
+ * Installs an idempotent polyfill on the shared scratch-vm runtime so that
+ * extensions loaded as separate ES modules can discover each other's public
+ * interfaces without importing each other's code.
+ * The first extension to load installs the registry; later installs are no-ops.
+ * @param {Runtime} runtime - the Scratch 3.0 runtime shared by all extensions.
+ * @returns {void}
+ */
+var installExtensionInterop = function installExtensionInterop(runtime) {
+  if (!runtime || typeof runtime.registerExtensionInterface === 'function') return;
+  var registry = runtime._extensionInterfaces || new Map();
+  runtime._extensionInterfaces = registry;
+
+  /**
+   * Register an extension's public interface so other extensions can call it.
+   * @param {string} extensionId - the ID of the extension registering its interface.
+   * @param {object} api - the public interface object to expose.
+   * @returns {void}
+   */
+  runtime.registerExtensionInterface = function (extensionId, api) {
+    registry.set(extensionId, api);
+    this.emit('EXTENSION_INTERFACE_REGISTERED', extensionId);
+  };
+
+  /**
+   * Look up a previously registered extension interface.
+   * @param {string} extensionId - the ID of the extension whose interface is requested.
+   * @returns {?object} - the registered interface, or null if not registered.
+   */
+  runtime.getExtensionInterface = function (extensionId) {
+    return registry.get(extensionId) || null;
+  };
+};
+
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: true } : { done: false, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = true, u = false; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = true, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
@@ -49137,8 +49172,86 @@ var GAIBlocks = /*#__PURE__*/function () {
 
     // Default to Gemini adapter
     this.AIAdapter = AIAdapter;
+
+    // Let sibling xcx-* extensions call this extension's chat functionality
+    // through the shared runtime without importing this module directly.
+    installExtensionInterop(runtime);
+    this._registerExtensionInterface(runtime);
   }
+
+  /**
+   * Register this extension's public cross-extension interface (V1) on the
+   * shared runtime so sibling xcx-* extensions can discover and call it via
+   * `runtime.getExtensionInterface('gai')` without importing this module.
+   * @param {Runtime} runtime - the Scratch 3.0 runtime.
+   * @returns {void}
+   * @private
+   */
   return _createClass$1(GAIBlocks, [{
+    key: "_registerExtensionInterface",
+    value: function _registerExtensionInterface(runtime) {
+      var _this4 = this;
+      runtime.registerExtensionInterface('gai', {
+        /**
+         * Interface version. Bumped on breaking changes; callers should
+         * feature-detect members with `typeof` rather than assume a version.
+         */
+        version: 1,
+        /**
+         * Whether an AI adapter already exists for the target.
+         * @param {Target} target - the target to check.
+         * @returns {boolean} - true if an AI adapter has been created for the target.
+         */
+        hasAI: function hasAI(target) {
+          return AIAdapter.existsForTarget(target);
+        },
+        /**
+         * Ensure an AI adapter (and its config sprite variables/skills list)
+         * exists for the target, creating them if needed.
+         * @param {Target} target - the target to prepare.
+         * @returns {void}
+         */
+        ensureAI: function ensureAI(target) {
+          _this4.getAI(target);
+        },
+        /**
+         * Reset the chat history for the target's AI adapter, if any.
+         * @param {Target} target - the target whose chat history is reset.
+         * @returns {void}
+         */
+        resetHistory: function resetHistory(target) {
+          var ai = _this4.aiForTarget(target);
+          if (ai) ai.startChat([]);
+        },
+        /**
+         * Abort ongoing AI requests for the target.
+         * @param {Target} target - the target whose requests are aborted.
+         * @param {string} reason - reason for aborting, surfaced in logs.
+         * @returns {void}
+         */
+        abort: function abort(target, reason) {
+          return _this4.abortRequestsForTarget(target, reason);
+        },
+        /**
+         * Send a chat message to the target's AI and resolve with the response text.
+         * Never rejects: on failure it resolves with a localized error message,
+         * matching the `chat` block's error-as-text policy.
+         * @param {Target} target - the target to chat as.
+         * @param {string} promptText - the message to send.
+         * @param {object} [options] - optional settings.
+         * @param {Function} [options.onPartial] - called with the accumulated response
+         * text so far (or the latest JSON snapshot so far for structured output) while
+         * the response streams in.
+         * @param {boolean} [options.fireHats] - whether to fire the `gai_whenResponseReceived`
+         * and `gai_whenPartialResponseReceived` hat blocks (default false).
+         * @returns {Promise<string>} - a Promise that resolves with the response text.
+         */
+        chat: function chat(target, promptText, options) {
+          return _this4._chatViaExternalApi(target, promptText, options);
+        }
+      });
+    }
+  }, {
     key: "onExtensionAdded",
     value: function onExtensionAdded(extensionInfo) {
       if (extensionInfo.id === 'gai') {
@@ -50413,9 +50526,9 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "abortAllRequests",
     value: function abortAllRequests(reason) {
-      var _this4 = this;
+      var _this5 = this;
       this.runtime.targets.forEach(function (target) {
-        var ai = _this4.aiForTarget(target);
+        var ai = _this5.aiForTarget(target);
         if (ai) {
           ai.abortRequests(reason);
         }
@@ -50434,7 +50547,7 @@ var GAIBlocks = /*#__PURE__*/function () {
     key: "_requestAI",
     value: function _requestAI(prompt, isChat, util) {
       var _requestState$functio,
-        _this5 = this;
+        _this6 = this;
       var target = util.target;
       var ai = this.aiForTarget(target);
       var stackFrame = util.stackFrame;
@@ -50463,19 +50576,19 @@ var GAIBlocks = /*#__PURE__*/function () {
         this.updateFunctionRegistry(target);
         var responseTextHandler = function responseTextHandler(responseText) {
           if (responseText !== '') {
-            _this5.runtime.startHats('gai_whenResponseReceived', null, target);
+            _this6.runtime.startHats('gai_whenResponseReceived', null, target);
           }
         };
         var functionDispatcher = function functionDispatcher(call) {
           requestState.functionCalls = requestState.functionCalls || [];
           requestState.functionCalls.push(call);
-          return _this5._dispatchFunctionCall(call, target, util.runtime);
+          return _this6._dispatchFunctionCall(call, target, util.runtime);
         };
         var partialTextHandler;
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
           partialTextHandler = function partialTextHandler(partialText) {
             if (partialText !== '') {
-              _this5.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+              _this6.runtime.startHats('gai_whenPartialResponseReceived', null, target);
             }
           };
         }
@@ -50486,7 +50599,7 @@ var GAIBlocks = /*#__PURE__*/function () {
           requestState.error = error;
           // Surface the same localized error through the `response text`
           // reporter so both blocks show a consistent message on failure.
-          ai.setLastResponseText(_this5._formatAIError(error));
+          ai.setLastResponseText(_this6._formatAIError(error));
         });
       }
       util.yield();
@@ -50527,6 +50640,83 @@ var GAIBlocks = /*#__PURE__*/function () {
       var promptText = Cast.toString(args.PROMPT);
       var prompt = interpretContentPartsText(promptText);
       return this._requestAI(prompt, true, util);
+    }
+
+    /**
+     * Chat to AI on behalf of a sibling extension via the cross-extension
+     * interface (see `_registerExtensionInterface`). Unlike the `chat` block,
+     * this creates the AI adapter/config on demand instead of requiring it to
+     * already exist, and it has no per-tick polling loop, so it drives
+     * `requestGenerate` directly instead of going through `_requestAI`.
+     *
+     * V1 limitation: custom-procedure function calling (user-defined Scratch
+     * procedures registered as AI functions) is not supported here because
+     * dispatching a procedure call requires yielding across VM ticks, which
+     * this non-block entry point cannot do. Calls to such functions resolve
+     * with a tool error instead of hanging. Agent Skills' `loadSkill` tool is
+     * plain JS (no thread involved) and keeps working normally.
+     * @param {Target} target - the target to chat as.
+     * @param {string} promptText - the message to send to AI.
+     * @param {object} [options] - optional settings; unknown keys are ignored
+     * for forward compatibility (a future V2 may add e.g. `tools`).
+     * @param {Function} [options.onPartial] - called with the accumulated response text
+     * so far while streaming (or the latest JSON snapshot so far when the target's AI is
+     * configured with a `responseSchema`, mirroring ai-adapter's own partial-text semantics).
+     * @param {boolean} [options.fireHats] - whether to fire the `gai_whenResponseReceived`
+     * and `gai_whenPartialResponseReceived` hat blocks (default false).
+     * @returns {Promise<string>} - a Promise that resolves with the response text;
+     * never rejects, resolving with a localized error message on failure instead.
+     * @private
+     */
+  }, {
+    key: "_chatViaExternalApi",
+    value: function _chatViaExternalApi(target, promptText, options) {
+      var _this7 = this;
+      var _ref5 = options || {},
+        onPartial = _ref5.onPartial,
+        _ref5$fireHats = _ref5.fireHats,
+        fireHats = _ref5$fireHats === void 0 ? false : _ref5$fireHats;
+      var ai = this.getAI(target);
+      this.updateFunctionRegistry(target);
+      var prompt = interpretContentPartsText(Cast.toString(promptText));
+      var responseTextHandler = fireHats ? function (responseText) {
+        if (responseText !== '') {
+          _this7.runtime.startHats('gai_whenResponseReceived', null, target);
+        }
+      } : null;
+
+      // Custom-procedure function calling is unsupported via this entry point (see
+      // the method doc above): fail the call instead of dispatching to a thread that
+      // would never be polled to completion. Agent Skills' `loadSkill` tool does not
+      // go through this dispatcher, so it is unaffected.
+      var functionDispatcher = function functionDispatcher(call) {
+        call.error = 'Function calling via cross-extension chat is not supported (V1).';
+        call.failed();
+      };
+      var partialTextHandler = null;
+      if (typeof onPartial === 'function' || fireHats) {
+        // ai-adapter's own partialTextHandler receives a text-stream *delta* chunk
+        // when streaming plain text, but the *full* JSON snapshot so far when a
+        // `responseSchema` is set (see ai-adapter.js requestGenerate, ~1413-1428).
+        // The facade contract promises callers the accumulated text so far in both
+        // cases, so accumulate deltas here ourselves; a schema snapshot is already
+        // whole and is passed through unchanged.
+        var accumulatedText = '';
+        partialTextHandler = function partialTextHandler(partialText) {
+          var hasSchema = Object.prototype.hasOwnProperty.call(ai.generationConfig, 'responseSchema');
+          var accumulated = hasSchema ? partialText : accumulatedText += partialText;
+          if (typeof onPartial === 'function') onPartial(accumulated);
+          if (fireHats && partialText !== '') {
+            _this7.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+          }
+        };
+      }
+      return ai.requestGenerate(prompt, responseTextHandler, functionDispatcher, partialTextHandler, true).then(function () {
+        return ai.getLastResponseText();
+      }).catch(function (error) {
+        console.error(error);
+        return _this7._formatAIError(error);
+      });
     }
 
     /**
@@ -50579,11 +50769,11 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "snapshotData",
     value: function snapshotData(args, util) {
-      var _this6 = this;
+      var _this8 = this;
       var runtime = this.runtime;
       var requester = util.target;
       return new Promise(function (resolve) {
-        _this6.runtime.renderer.requestSnapshot(function (imageDataURL) {
+        _this8.runtime.renderer.requestSnapshot(function (imageDataURL) {
           if (DEBUG) {
             insertImageAsSvgCostume(runtime, requester, imageDataURL, null, null, 'snapshot', requester.currentCostume + 1).catch(function (e) {
               console.error(e);
@@ -50627,20 +50817,20 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "startSoundRecorder",
     value: function startSoundRecorder() {
-      var _this7 = this;
+      var _this9 = this;
       return navigator.mediaDevices.getUserMedia({
         audio: true
       }).then(function (stream) {
-        _this7.runtime.emitMicListening(true);
+        _this9.runtime.emitMicListening(true);
         var mediaRecorder = new MediaRecorder(stream);
-        _this7.soundRecorder = mediaRecorder;
-        _this7.soundRecorderChunks = [];
+        _this9.soundRecorder = mediaRecorder;
+        _this9.soundRecorderChunks = [];
         mediaRecorder.ondataavailable = function (event) {
-          _this7.soundRecorderChunks.push(event.data);
+          _this9.soundRecorderChunks.push(event.data);
         };
         mediaRecorder.start();
-        _this7.listeningTimeout = setTimeout(function () {
-          _this7.stopSoundRecorder();
+        _this9.listeningTimeout = setTimeout(function () {
+          _this9.stopSoundRecorder();
         }, 60 * 1000);
       });
     }
@@ -50653,29 +50843,29 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "stopSoundRecorder",
     value: function stopSoundRecorder() {
-      var _this8 = this;
+      var _this0 = this;
       if (this.listeningTimeout) {
         clearTimeout(this.listeningTimeout);
         this.listeningTimeout = null;
       }
       if (this.soundRecorder) {
         return new Promise(function (resolve) {
-          _this8.soundRecorder.onstop = function () {
-            _this8.runtime.emitMicListening(false);
-            var audioBlob = new Blob(_this8.soundRecorderChunks, {
+          _this0.soundRecorder.onstop = function () {
+            _this0.runtime.emitMicListening(false);
+            var audioBlob = new Blob(_this0.soundRecorderChunks, {
               type: 'audio/wav'
             });
             var reader = new FileReader();
             reader.readAsDataURL(audioBlob);
             reader.onloadend = function () {
               var dataURL = reader.result;
-              _this8.recordedSoundData = dataURL;
-              _this8.isListening = false;
-              _this8.soundRecorder = null;
+              _this0.recordedSoundData = dataURL;
+              _this0.isListening = false;
+              _this0.soundRecorder = null;
               resolve(dataURL);
             };
           };
-          _this8.soundRecorder.stop();
+          _this0.soundRecorder.stop();
         });
       }
       return null;
@@ -50688,14 +50878,14 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "startListening",
     value: function startListening() {
-      var _this9 = this;
+      var _this1 = this;
       if (this.isListening) {
         return;
       }
       this.isListening = true;
       return this.startSoundRecorder().catch(function (e) {
         console.warn('Failed to start listening', e);
-        _this9.isListening = false;
+        _this1.isListening = false;
       });
     }
 
@@ -50844,10 +51034,10 @@ var GAIBlocks = /*#__PURE__*/function () {
 
             // Replace argument names with their codes
             if (functionSpec.argumentDict) {
-              Object.entries(functionSpec.argumentDict).forEach(function (_ref5) {
-                var _ref6 = _slicedToArray(_ref5, 2),
-                  argName = _ref6[0],
-                  argCode = _ref6[1];
+              Object.entries(functionSpec.argumentDict).forEach(function (_ref6) {
+                var _ref7 = _slicedToArray(_ref6, 2),
+                  argName = _ref7[0],
+                  argCode = _ref7[1];
                 // Replace argument name with argument code in the response text
                 responseText = responseText.replace(new RegExp(argName, 'g'), argCode);
               });
@@ -51359,7 +51549,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "downloadBrowserLLMModel",
     value: function downloadBrowserLLMModel(args, util) {
-      var _this0 = this;
+      var _this10 = this;
       var target = util.target;
       var ai = this.getAI(target);
       if (!ai) {
@@ -51391,8 +51581,8 @@ var GAIBlocks = /*#__PURE__*/function () {
         ai.cancelDownloadBrowserLLMModel();
         if (progressBar) progressBar.destroy();
         cancelResolve('Download cancelled');
-        if (_this0._activeDownload === handle) {
-          _this0._activeDownload = null;
+        if (_this10._activeDownload === handle) {
+          _this10._activeDownload = null;
         }
       };
       progressBar = new DownloadProgressBar(titleMsg, doCancel);
@@ -51448,14 +51638,14 @@ var GAIBlocks = /*#__PURE__*/function () {
       var downloadPromise = ai.downloadBrowserLLMModel(modelID, modelType, progressCallback).then(function () {
         progressBar.update(100, 'Complete!');
         progressBar.destroy();
-        if (_this0._activeDownload === handle) {
-          _this0._activeDownload = null;
+        if (_this10._activeDownload === handle) {
+          _this10._activeDownload = null;
         }
         return 'Download complete';
       }).catch(function (error) {
         progressBar.destroy();
-        if (_this0._activeDownload === handle) {
-          _this0._activeDownload = null;
+        if (_this10._activeDownload === handle) {
+          _this10._activeDownload = null;
         }
         if (error.message && error.message.includes('DOWNLOAD_CANCELLED')) {
           return 'Download cancelled';
@@ -51848,7 +52038,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this1 = this;
+      var _this11 = this;
       var targetName = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var defaultApiKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
       var customMessage = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
@@ -51925,7 +52115,7 @@ var GAIBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this1.apiKeyDialogOpened = false;
+        _this11.apiKeyDialogOpened = false;
       });
     }
 

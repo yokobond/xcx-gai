@@ -110,6 +110,15 @@ npm run test
 ```
 
 
+### Cross-Extension Interface
+
+This extension exposes a `gai` interface on the shared scratch-vm `runtime` so
+sibling xcx-* extensions (e.g. `xcx-agent`) can call its chat functionality
+without importing this module directly. See
+[docs/cross-extension-interface.md](docs/cross-extension-interface.md) for
+the full contract.
+
+
 ## 🏠 Home Page
 
 Open this page from [https://yokobond.github.io/xcx-gai/](https://yokobond.github.io/xcx-gai/)
