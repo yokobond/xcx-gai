@@ -30,7 +30,7 @@ Each extension is responsible for calling `runtime.registerExtensionInterface`
 with its own `extensionId` and API object; the polyfill itself does not
 register anything automatically.
 
-## The `gai` Facade (V1)
+## The `gai` Facade (V2)
 
 xcx-gai registers itself under the extension ID `'gai'`. Another extension can
 call it like this:
@@ -47,12 +47,16 @@ if (gai) {
 
 | Member | Signature | Description |
 |---|---|---|
-| `version` | `number` | Interface version, currently `1`. Bumped only on breaking changes. |
+| `version` | `number` | Interface version, currently `2`. Bumped only on breaking changes (see "Versioning Policy" below for why this addition still bumped it). |
 | `hasAI` | `(target) => boolean` | Whether an AI adapter already exists for `target`. |
 | `ensureAI` | `(target) => void` | Create the AI adapter (and its config sprite variables / skills list) for `target` if it does not exist yet. |
 | `resetHistory` | `(target) => void` | Clear the chat history for `target`'s AI adapter, if any. No-op if no adapter exists. |
 | `abort` | `(target, reason) => void` | Abort any ongoing AI requests for `target`. `reason` is a string surfaced in logs. |
 | `chat` | `(target, promptText, options) => Promise<string>` | Send `promptText` to AI as a chat message (appended to conversation history) and resolve with the response text. |
+| `registerTools` | `(ownerExtensionId, factory) => void` | Register a `factory` that contributes plain-JS tools to this extension's AI function calling. See "External Tools (V2)" below. |
+| `unregisterTools` | `(ownerExtensionId) => void` | Remove a previously registered `factory` for `ownerExtensionId`. No-op if none is registered. |
+
+All V1 members keep their V1 signature and behavior unchanged.
 
 `options` (all optional; unknown keys are ignored for forward compatibility):
 
@@ -91,8 +95,54 @@ function resolves as a tool error to the AI (fails fast) rather than hanging.
 no Scratch thread involved, so it keeps working normally through the
 cross-extension facade.
 
-A future V2 may add support for tool calling (e.g. a `tools` option) once a
-non-blocking dispatch mechanism is available.
+This limitation is specific to the `chat`/`registerTools` cross-extension
+entry points; it does not apply to the `chat` *block* used directly within
+xcx-gai's own project, which still dispatches to procedure threads normally.
+
+### External Tools (V2)
+
+A sibling extension can contribute its own plain-JS tools to xcx-gai's AI
+function calling via `registerTools`, without xcx-gai importing that
+extension's code:
+
+```js
+const gai = runtime.getExtensionInterface('gai');
+if (gai && typeof gai.registerTools === 'function') {
+    gai.registerTools('my-extension-id', target => ({
+        myTool: {
+            description: 'Does something useful for the sprite.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    arg: {type: 'string', description: 'An argument.'}
+                },
+                required: ['arg']
+            },
+            execute: async ({arg}) => ({success: true, result: `did ${arg}`})
+        }
+    }));
+}
+```
+
+- `factory` is called with the `target` the AI request is running for each
+  time tools are built for a request, so it can return per-target tools (or
+  vary tools by target state).
+- `parameters` is a plain JSON Schema object (not a Zod schema).
+- `execute` must be a pure JS function (`async` or sync); its return value is
+  sent back to the AI as the tool result. Because there is no Scratch thread
+  involved, `execute` **cannot run Scratch procedures/blocks** — same
+  restriction as the V1 custom-procedure limitation above. If `execute`
+  throws, the facade catches it and returns `{success: false, error: <message>}`
+  to the AI instead of propagating the exception.
+- If a registered tool name collides with a tool xcx-gai already defines for
+  that request (a sprite's own custom-procedure function, or the built-in
+  `loadSkill` tool), the built-in tool wins; the external registration is
+  silently ignored for that name.
+- Registering again with the same `ownerExtensionId` replaces the previous
+  factory; `unregisterTools(ownerExtensionId)` removes it.
+- Gated by the same condition as `loadSkill`: available only when the
+  configured provider supports function calling and function calling mode is
+  not `none`.
 
 ## Versioning Policy
 
@@ -103,3 +153,9 @@ non-blocking dispatch mechanism is available.
   a backward-incompatible way (signature change, semantics change, or
   removal). Purely additive changes (new members) do not require a version
   bump.
+- V2's `registerTools`/`unregisterTools` are themselves purely additive (V1
+  members are unchanged), so per the rule above they would not strictly
+  require a bump; `version` was raised to `2` anyway to make the addition of
+  a new capability class (tool contribution, not just data calls) easy to
+  detect at a glance. Future purely-additive changes may continue to skip the
+  bump per the rule above.

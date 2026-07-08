@@ -807,6 +807,56 @@ export class AIAdapter {
     }
 
     /**
+     * Build tools contributed by sibling xcx-* extensions through the `gai`
+     * facade's `registerTools` (see `_registerExtensionInterface` in index.js).
+     * Gated by the same provider/function-calling-mode check as
+     * `_buildSkillTools`. The factory registry lives on the shared runtime
+     * (`runtime._gaiExternalToolFactories`), not on this adapter, so it
+     * survives this extension being reloaded; each registered factory is
+     * called with this adapter's `target` to build that target's tools.
+     * A factory that throws is logged and skipped; the rest still run.
+     * @returns {object} - tools map for Vercel AI SDK, or {} when unavailable
+     * @private
+     */
+    _buildExternalTools () {
+        if (!this.target || !this._canUseSkillTool()) {
+            return {};
+        }
+        const runtime = this.target.runtime;
+        const factories = runtime && runtime._gaiExternalToolFactories;
+        if (!factories || factories.size === 0) {
+            return {};
+        }
+        const tools = {};
+        factories.forEach((factory, ownerExtensionId) => {
+            let entries;
+            try {
+                entries = factory(this.target);
+            } catch (error) {
+                console.error(`gai: external tool factory for "${ownerExtensionId}" threw`, error);
+                return;
+            }
+            if (!entries) return;
+            Object.entries(entries).forEach(([name, spec]) => {
+                tools[name] = tool({
+                    description: spec.description,
+                    // Preserve v5 (non-strict) tool-schema behavior; v6 OpenAI defaults strict to true.
+                    strict: false,
+                    inputSchema: jsonSchema(spec.parameters),
+                    execute: async input => {
+                        try {
+                            return await spec.execute(input);
+                        } catch (error) {
+                            return {success: false, error: String((error && error.message) || error)};
+                        }
+                    }
+                });
+            });
+        });
+        return tools;
+    }
+
+    /**
      * Build tools array from registered functions.
      * @param {Function} functionDispatcher - function to dispatch the call
      * @returns {Array.<object>} - tools array for Vercel AI SDK
@@ -1363,6 +1413,19 @@ Do not write any other text if you call a function.
         try {
             const client = this.getClient();
             const tools = {...this._buildTools(functionDispatcher), ...this._buildSkillTools()};
+            // External tools (registered by sibling extensions via the `gai` facade's
+            // `registerTools`) are merged in last but must not win name collisions
+            // against this adapter's own tools above — an external registration
+            // should never be able to shadow a function the sprite author defined
+            // or the built-in `loadSkill` tool. Merge as an explicit "only if absent"
+            // step instead of a plain object spread (which would let the later
+            // source win).
+            const externalTools = this._buildExternalTools();
+            Object.keys(externalTools).forEach(name => {
+                if (!Object.prototype.hasOwnProperty.call(tools, name)) {
+                    tools[name] = externalTools[name];
+                }
+            });
             const functionCallingEnabled = this.functionCallingMode !== AIAdapter.FUNCTION_CALLING_NONE;
             const toolExists = Object.keys(tools).length > 0 && functionCallingEnabled;
             const generator = partialTextHandler ? streamText : generateText;

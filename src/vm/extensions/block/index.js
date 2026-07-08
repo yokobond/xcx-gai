@@ -385,9 +385,34 @@ class GAIBlocks {
     }
 
     /**
-     * Register this extension's public cross-extension interface (V1) on the
-     * shared runtime so sibling xcx-* extensions can discover and call it via
+     * Register this extension's public cross-extension interface on the shared
+     * runtime so sibling xcx-* extensions can discover and call it via
      * `runtime.getExtensionInterface('gai')` without importing this module.
+     *
+     * V2 adds `registerTools`/`unregisterTools`, letting sibling extensions
+     * contribute plain-JS tools to this extension's AI function calling.
+     * All V1 members (`hasAI`, `ensureAI`, `resetHistory`, `abort`, `chat`)
+     * keep their V1 signature and behavior unchanged; existing V1 callers are
+     * unaffected.
+     *
+     * `registerTools(ownerExtensionId, factory)` — register a `factory` that
+     * builds tools for a given target. `factory` has the shape
+     * `(target: Target) => {[toolName: string]: {description: string,
+     * parameters: object, execute: (input: object) => Promise<any>|any}}`,
+     * where `parameters` is a plain JSON Schema object describing the tool's
+     * input and `execute` is a pure JS function whose return value is sent
+     * back to the AI as the tool result. Because `execute` runs outside any
+     * Scratch thread, it can only do plain JS work — it cannot run Scratch
+     * procedures/blocks (unlike this extension's own custom-procedure
+     * function calling). Registering again with the same `ownerExtensionId`
+     * replaces the previous registration.
+     *
+     * `unregisterTools(ownerExtensionId)` — remove a previously registered
+     * factory for `ownerExtensionId`; a no-op if none is registered.
+     *
+     * The registry backing these two lives on the shared `runtime`
+     * (`runtime._gaiExternalToolFactories`), not on this extension instance,
+     * so registrations survive this extension being reloaded.
      * @param {Runtime} runtime - the Scratch 3.0 runtime.
      * @returns {void}
      * @private
@@ -398,7 +423,7 @@ class GAIBlocks {
              * Interface version. Bumped on breaking changes; callers should
              * feature-detect members with `typeof` rather than assume a version.
              */
-            version: 1,
+            version: 2,
 
             /**
              * Whether an AI adapter already exists for the target.
@@ -449,7 +474,36 @@ class GAIBlocks {
              * and `gai_whenPartialResponseReceived` hat blocks (default false).
              * @returns {Promise<string>} - a Promise that resolves with the response text.
              */
-            chat: (target, promptText, options) => this._chatViaExternalApi(target, promptText, options)
+            chat: (target, promptText, options) => this._chatViaExternalApi(target, promptText, options),
+
+            /**
+             * Register a factory that contributes plain-JS tools to this
+             * extension's AI function calling. See the `_registerExtensionInterface`
+             * doc above for the factory's shape and constraints.
+             * @param {string} ownerExtensionId - the id of the extension registering
+             * the tools (used to identify/replace/remove the registration).
+             * @param {Function} factory - `(target) => {[toolName]: {description,
+             * parameters, execute}}`.
+             * @returns {void}
+             */
+            registerTools: (ownerExtensionId, factory) => {
+                if (!ownerExtensionId || typeof factory !== 'function') return;
+                if (!runtime._gaiExternalToolFactories) {
+                    runtime._gaiExternalToolFactories = new Map();
+                }
+                runtime._gaiExternalToolFactories.set(ownerExtensionId, factory);
+            },
+
+            /**
+             * Remove a previously registered tool factory.
+             * @param {string} ownerExtensionId - the id passed to `registerTools`.
+             * @returns {void}
+             */
+            unregisterTools: ownerExtensionId => {
+                if (runtime._gaiExternalToolFactories) {
+                    runtime._gaiExternalToolFactories.delete(ownerExtensionId);
+                }
+            }
         });
     }
 

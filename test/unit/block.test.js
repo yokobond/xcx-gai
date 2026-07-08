@@ -223,15 +223,71 @@ describe("blockClass", () => {
     });
 
     describe('cross-extension interface', () => {
-        it('registers the "gai" facade with version 1 and the expected members', () => {
+        it('registers the "gai" facade with version 2 and the expected members', () => {
             const iface = runtime.getExtensionInterface('gai');
             expect(iface).toBeTruthy();
-            expect(iface.version).toBe(1);
+            expect(iface.version).toBe(2);
             expect(typeof iface.hasAI).toBe('function');
             expect(typeof iface.ensureAI).toBe('function');
             expect(typeof iface.resetHistory).toBe('function');
             expect(typeof iface.abort).toBe('function');
             expect(typeof iface.chat).toBe('function');
+            expect(typeof iface.registerTools).toBe('function');
+            expect(typeof iface.unregisterTools).toBe('function');
+        });
+
+        describe('registerTools / unregisterTools', () => {
+            it('stores the factory on runtime._gaiExternalToolFactories, keyed by ownerExtensionId', () => {
+                const iface = runtime.getExtensionInterface('gai');
+                const factory = () => ({});
+
+                iface.registerTools('owner-a', factory);
+
+                expect(runtime._gaiExternalToolFactories).toBeInstanceOf(Map);
+                expect(runtime._gaiExternalToolFactories.get('owner-a')).toBe(factory);
+            });
+
+            it('replaces a previous registration for the same ownerExtensionId', () => {
+                const iface = runtime.getExtensionInterface('gai');
+                const firstFactory = () => ({});
+                const secondFactory = () => ({});
+
+                iface.registerTools('owner-b', firstFactory);
+                iface.registerTools('owner-b', secondFactory);
+
+                expect(runtime._gaiExternalToolFactories.get('owner-b')).toBe(secondFactory);
+            });
+
+            it('ignores registration with a missing ownerExtensionId or non-function factory', () => {
+                const iface = runtime.getExtensionInterface('gai');
+
+                iface.registerTools('', () => ({}));
+                iface.registerTools('owner-c', 'not-a-function');
+
+                expect(runtime._gaiExternalToolFactories?.has('')).toBeFalsy();
+                expect(runtime._gaiExternalToolFactories?.has('owner-c')).toBeFalsy();
+            });
+
+            it('removes a registered factory via unregisterTools', () => {
+                const iface = runtime.getExtensionInterface('gai');
+                iface.registerTools('owner-d', () => ({}));
+
+                iface.unregisterTools('owner-d');
+
+                expect(runtime._gaiExternalToolFactories.has('owner-d')).toBe(false);
+            });
+
+            it('unregisterTools is a no-op when nothing is registered yet', () => {
+                const freshRuntime = {
+                    formatMessage: msg => msg.default,
+                    on: () => {},
+                    emit: () => {}
+                };
+                new blockClass(freshRuntime);
+                const iface = freshRuntime.getExtensionInterface('gai');
+
+                expect(() => iface.unregisterTools('nobody')).not.toThrow();
+            });
         });
 
         it('emits EXTENSION_INTERFACE_REGISTERED with "gai" when registering', () => {
