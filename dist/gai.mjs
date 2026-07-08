@@ -44182,6 +44182,38 @@ createIdGenerator({ prefix: "aiobj", size: 24 });
 createIdGenerator({ prefix: "aiobj", size: 24 });
 
 /**
+ * Locate the scratch-blocks main workspace through the rendered DOM + React
+ * fiber (this extension runs on the main thread with DOM access; the
+ * workspace object itself is GUI-private). Returns null when the DOM is
+ * absent (Jest) or the editor internals differ.
+ * @returns {?object} the scratch-blocks Workspace, or null
+ */
+var findBlocklyWorkspace = function findBlocklyWorkspace() {
+  if (typeof document === 'undefined') return null;
+  try {
+    var svg = document.querySelector('svg.blocklyWorkspace') || document.querySelector('.blocklyWorkspace');
+    var el = svg && svg.parentElement;
+    for (var depth = 0; depth < 20 && el; depth++) {
+      var fiberKey = Object.keys(el).find(function (k) {
+        return k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$');
+      });
+      if (fiberKey) {
+        var fiber = el[fiberKey];
+        while (fiber) {
+          var ws = fiber.stateNode && fiber.stateNode.workspace;
+          if (ws) return ws;
+          fiber = fiber.return;
+        }
+      }
+      el = el.parentElement;
+    }
+  } catch (e) {
+    // fall through to null: best-effort only
+  }
+  return null;
+};
+
+/**
  * Force the Blockly variable/list flyout to re-render so a just-created
  * variable or list shows up in the palette immediately.
  *
@@ -44197,35 +44229,77 @@ createIdGenerator({ prefix: "aiobj", size: 24 });
  * @returns {void}
  */
 var refreshVariablePalette = function refreshVariablePalette() {
-  if (typeof document === 'undefined') return;
+  var ws = findBlocklyWorkspace();
+  if (!ws || typeof ws.refreshToolboxSelection_ !== 'function') return;
   try {
-    var svg = document.querySelector('svg.blocklyWorkspace') || document.querySelector('.blocklyWorkspace');
-    var el = svg && svg.parentElement;
-    for (var depth = 0; depth < 20 && el; depth++) {
-      var fiberKey = Object.keys(el).find(function (k) {
-        return k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$');
-      });
-      if (fiberKey) {
-        var fiber = el[fiberKey];
-        while (fiber) {
-          var ws = fiber.stateNode && fiber.stateNode.workspace;
-          if (ws && typeof ws.refreshToolboxSelection_ === 'function') {
-            // The workspace XML reload (triggered by requestBlocksUpdate)
-            // leaves toolboxRefreshEnabled_ false, which makes
-            // refreshToolboxSelection_ a no-op. Re-enable it first, the
-            // same way the GUI's own updateToolbox does.
-            ws.toolboxRefreshEnabled_ = true;
-            ws.refreshToolboxSelection_();
-            return;
-          }
-          fiber = fiber.return;
-        }
-      }
-      el = el.parentElement;
-    }
+    // The workspace XML reload (triggered by requestBlocksUpdate)
+    // leaves toolboxRefreshEnabled_ false, which makes
+    // refreshToolboxSelection_ a no-op. Re-enable it first, the
+    // same way the GUI's own updateToolbox does.
+    ws.toolboxRefreshEnabled_ = true;
+    ws.refreshToolboxSelection_();
   } catch (e) {
     // best-effort only; ignore if the editor internals have changed
   }
+};
+
+// Delays (ms) for the post-reload glow resync passes: one right after the
+// current VM step (0), one after the script-glow OFF that normally follows a
+// finished script by a frame or two (150), and one late safety pass (450).
+var GLOW_RESYNC_DELAYS_MS = [0, 150, 450];
+
+/**
+ * Re-align the yellow script-glow outlines in the workspace with the VM's
+ * actual glow bookkeeping (`runtime._scriptGlowsPreviousFrame`).
+ *
+ * Reloading the workspace XML mid-execution (which requestBlocksUpdate does,
+ * e.g. when the AI adapter lazily creates its config variables / skills list
+ * while a script is running) destroys and re-creates every Blockly block,
+ * racing the VM's SCRIPT_GLOW_ON/OFF events: a glow applied to a re-created
+ * block can be orphaned (the VM already considers it un-glowed, so no OFF
+ * will ever remove it) and a running script's glow can be visually lost.
+ * Both are fixed by diffing: filters not backed by a VM glow are removed,
+ * VM glows missing their filter are re-applied.
+ * @param {?object} runtime - the shared scratch-vm Runtime
+ * @returns {void}
+ */
+var resyncScriptGlows = function resyncScriptGlows(runtime) {
+  var ws = findBlocklyWorkspace();
+  if (!ws || !runtime) return;
+  try {
+    var active = new Set(runtime._scriptGlowsPreviousFrame || []);
+    ws.getAllBlocks().forEach(function (block) {
+      if (typeof block.setGlowStack !== 'function') return;
+      var svg = block.getSvgRoot && block.getSvgRoot();
+      var filterValue = svg && svg.getAttribute && svg.getAttribute('filter');
+      if (filterValue && /stackglow/i.test(filterValue) && !active.has(block.id)) {
+        block.setGlowStack(false);
+      }
+    });
+    active.forEach(function (id) {
+      var block = ws.getBlockById(id);
+      if (block && typeof block.setGlowStack === 'function') block.setGlowStack(true);
+    });
+  } catch (e) {
+    // best-effort only
+  }
+};
+
+/**
+ * Schedule glow-resync passes after a mid-execution workspace reload (see
+ * resyncScriptGlows). Multiple delayed passes cover both orderings of the
+ * race: the glow that gets orphaned right after the reload, and the one
+ * orphaned when the script finishes a frame later. No-op without a DOM.
+ * @param {?object} runtime - the shared scratch-vm Runtime
+ * @returns {void}
+ */
+var scheduleGlowResync = function scheduleGlowResync(runtime) {
+  if (typeof document === 'undefined' || typeof setTimeout !== 'function') return;
+  GLOW_RESYNC_DELAYS_MS.forEach(function (delay) {
+    setTimeout(function () {
+      return resyncScriptGlows(runtime);
+    }, delay);
+  });
 };
 
 var SKILLS_LIST_NAME = 'skills';
@@ -44310,6 +44384,10 @@ var ensureSkillsList = function ensureSkillsList(target) {
       // Then force the (dynamic) variable/list flyout to re-render so the
       // list shows in the palette without re-opening the code tab.
       refreshVariablePalette();
+      // The workspace reload above races the script-glow events of
+      // whatever script triggered the adapter creation (see
+      // variable-util.js).
+      scheduleGlowResync(target.runtime);
     }
   }
   return list;
@@ -44591,6 +44669,9 @@ var ensureConfigVariables = function ensureConfigVariables(target) {
       target.runtime.requestBlocksUpdate();
     }
     refreshVariablePalette();
+    // The workspace reload above races the script-glow events of whatever
+    // script triggered the adapter creation (see variable-util.js).
+    scheduleGlowResync(target.runtime);
   }
 };
 
@@ -44668,6 +44749,9 @@ var setConfigVariable = function setConfigVariable(target, key, raw) {
     if (created && typeof target.runtime.requestBlocksUpdate === 'function') {
       target.runtime.requestBlocksUpdate();
       refreshVariablePalette();
+      // The workspace reload above races the script-glow events of the
+      // running script that set this config value (see variable-util.js).
+      scheduleGlowResync(target.runtime);
     }
   }
 };
@@ -46821,6 +46905,84 @@ var AIAdapter = /*#__PURE__*/function () {
     }
 
     /**
+     * Build tools contributed by sibling xcx-* extensions through the `gai`
+     * facade's `registerTools` (see `_registerExtensionInterface` in index.js).
+     * Gated by the same provider/function-calling-mode check as
+     * `_buildSkillTools`. The factory registry lives on the shared runtime
+     * (`runtime._gaiExternalToolFactories`), not on this adapter, so it
+     * survives this extension being reloaded; each registered factory is
+     * called with this adapter's `target` to build that target's tools.
+     * A factory that throws is logged and skipped; the rest still run.
+     * @returns {object} - tools map for Vercel AI SDK, or {} when unavailable
+     * @private
+     */
+  }, {
+    key: "_buildExternalTools",
+    value: function _buildExternalTools() {
+      var _this2 = this;
+      if (!this.target || !this._canUseSkillTool()) {
+        return {};
+      }
+      var runtime = this.target.runtime;
+      var factories = runtime && runtime._gaiExternalToolFactories;
+      if (!factories || factories.size === 0) {
+        return {};
+      }
+      var tools = {};
+      factories.forEach(function (factory, ownerExtensionId) {
+        var entries;
+        try {
+          entries = factory(_this2.target);
+        } catch (error) {
+          console.error("gai: external tool factory for \"".concat(ownerExtensionId, "\" threw"), error);
+          return;
+        }
+        if (!entries) return;
+        Object.entries(entries).forEach(function (_ref2) {
+          var _ref3 = _slicedToArray(_ref2, 2),
+            name = _ref3[0],
+            spec = _ref3[1];
+          tools[name] = tool({
+            description: spec.description,
+            // Preserve v5 (non-strict) tool-schema behavior; v6 OpenAI defaults strict to true.
+            strict: false,
+            inputSchema: jsonSchema(spec.parameters),
+            execute: function () {
+              var _execute = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(input) {
+                var _t7;
+                return _regeneratorRuntime.wrap(function (_context5) {
+                  while (1) switch (_context5.prev = _context5.next) {
+                    case 0:
+                      _context5.prev = 0;
+                      _context5.next = 1;
+                      return spec.execute(input);
+                    case 1:
+                      return _context5.abrupt("return", _context5.sent);
+                    case 2:
+                      _context5.prev = 2;
+                      _t7 = _context5["catch"](0);
+                      return _context5.abrupt("return", {
+                        success: false,
+                        error: String(_t7 && _t7.message || _t7)
+                      });
+                    case 3:
+                    case "end":
+                      return _context5.stop();
+                  }
+                }, _callee4, null, [[0, 2]]);
+              }));
+              function execute(_x) {
+                return _execute.apply(this, arguments);
+              }
+              return execute;
+            }()
+          });
+        });
+      });
+      return tools;
+    }
+
+    /**
      * Build tools array from registered functions.
      * @param {Function} functionDispatcher - function to dispatch the call
      * @returns {Array.<object>} - tools array for Vercel AI SDK
@@ -46829,7 +46991,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "_buildTools",
     value: function _buildTools(functionDispatcher) {
-      var _this2 = this;
+      var _this3 = this;
       var tools = {};
       Object.values(this.functionRegistry).forEach(function (funcSpec) {
         tools[funcSpec.name] = tool({
@@ -46838,46 +47000,46 @@ var AIAdapter = /*#__PURE__*/function () {
           strict: false,
           inputSchema: jsonSchema(funcSpec.parameters),
           execute: function () {
-            var _execute = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(input, options) {
-              var functionCall, result, _t7;
-              return _regeneratorRuntime.wrap(function (_context5) {
-                while (1) switch (_context5.prev = _context5.next) {
+            var _execute2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee5(input, options) {
+              var functionCall, result, _t8;
+              return _regeneratorRuntime.wrap(function (_context6) {
+                while (1) switch (_context6.prev = _context6.next) {
                   case 0:
-                    _context5.prev = 0;
+                    _context6.prev = 0;
                     functionCall = new FunctionCall(funcSpec, {
                       args: input,
                       options: options
                     }); // Function execution logic here
-                    _context5.next = 1;
-                    return _this2._executeFunctionCall(functionCall, functionDispatcher);
+                    _context6.next = 1;
+                    return _this3._executeFunctionCall(functionCall, functionDispatcher);
                   case 1:
-                    result = _context5.sent;
+                    result = _context6.sent;
                     if (!result) {
-                      _context5.next = 2;
+                      _context6.next = 2;
                       break;
                     }
-                    return _context5.abrupt("return", {
+                    return _context6.abrupt("return", {
                       success: true,
                       result: result
                     });
                   case 2:
-                    return _context5.abrupt("return");
+                    return _context6.abrupt("return");
                   case 3:
-                    _context5.prev = 3;
-                    _t7 = _context5["catch"](0);
-                    return _context5.abrupt("return", {
+                    _context6.prev = 3;
+                    _t8 = _context6["catch"](0);
+                    return _context6.abrupt("return", {
                       success: false,
-                      error: _t7.message,
-                      type: _t7.name || 'FunctionExecutionError'
+                      error: _t8.message,
+                      type: _t8.name || 'FunctionExecutionError'
                     });
                   case 4:
                   case "end":
-                    return _context5.stop();
+                    return _context6.stop();
                 }
-              }, _callee4, null, [[0, 3]]);
+              }, _callee5, null, [[0, 3]]);
             }));
-            function execute(_x, _x2) {
-              return _execute.apply(this, arguments);
+            function execute(_x2, _x3) {
+              return _execute2.apply(this, arguments);
             }
             return execute;
           }()
@@ -46894,7 +47056,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "getTextFromResponse",
     value: function getTextFromResponse(responses) {
-      var _this3 = this;
+      var _this4 = this;
       if (!responses) {
         return '';
       }
@@ -46903,7 +47065,7 @@ var AIAdapter = /*#__PURE__*/function () {
       }
       if (Array.isArray(responses)) {
         return responses.map(function (r) {
-          return _this3._extractTextFromSingleResponse(r);
+          return _this4._extractTextFromSingleResponse(r);
         }).join('');
       }
       return this._extractTextFromSingleResponse(responses);
@@ -46989,32 +47151,32 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "getResultFiles",
     value: (function () {
-      var _getResultFiles = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee5() {
+      var _getResultFiles = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee6() {
         var files;
-        return _regeneratorRuntime.wrap(function (_context6) {
-          while (1) switch (_context6.prev = _context6.next) {
+        return _regeneratorRuntime.wrap(function (_context7) {
+          while (1) switch (_context7.prev = _context7.next) {
             case 0:
               if (this.lastResult) {
-                _context6.next = 1;
+                _context7.next = 1;
                 break;
               }
-              return _context6.abrupt("return", []);
+              return _context7.abrupt("return", []);
             case 1:
-              _context6.prev = 1;
-              _context6.next = 2;
+              _context7.prev = 1;
+              _context7.next = 2;
               return this.lastResult.files;
             case 2:
-              files = _context6.sent;
-              return _context6.abrupt("return", Array.isArray(files) ? files : []);
+              files = _context7.sent;
+              return _context7.abrupt("return", Array.isArray(files) ? files : []);
             case 3:
-              _context6.prev = 3;
-              _context6["catch"](1);
-              return _context6.abrupt("return", []);
+              _context7.prev = 3;
+              _context7["catch"](1);
+              return _context7.abrupt("return", []);
             case 4:
             case "end":
-              return _context6.stop();
+              return _context7.stop();
           }
-        }, _callee5, this, [[1, 3]]);
+        }, _callee6, this, [[1, 3]]);
       }));
       function getResultFiles() {
         return _getResultFiles.apply(this, arguments);
@@ -47075,7 +47237,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "registerFunction",
     value: function registerFunction(procedureCode, functionDescription, procedureArguments) {
-      var _this4 = this;
+      var _this5 = this;
       var functionName;
       var existingSpec = this.getFunctionSpec(procedureCode);
       if (existingSpec) {
@@ -47093,7 +47255,7 @@ var AIAdapter = /*#__PURE__*/function () {
       var argumentDict = {};
       if (procedureArguments && procedureArguments.length > 0) {
         procedureArguments.forEach(function (argSpec, index) {
-          var paramName = "".concat(_this4.functionArgPrefix).concat(index);
+          var paramName = "".concat(_this5.functionArgPrefix).concat(index);
           parameters.properties[paramName] = {
             type: argSpec.type,
             description: argSpec.description
@@ -47145,9 +47307,9 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "clearRegisteredFunctions",
     value: function clearRegisteredFunctions() {
-      var _this5 = this;
+      var _this6 = this;
       Object.keys(this.functionRegistry).forEach(function (key) {
-        delete _this5.functionRegistry[key];
+        delete _this6.functionRegistry[key];
       });
       this.functionIndex = 0;
     }
@@ -47176,11 +47338,11 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "_requestGenerateBrowserLLM",
     value: (function () {
-      var _requestGenerateBrowserLLM2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee6(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
-        var _this6 = this;
-        var effectiveBaseUrl, effectiveModelId, promptMessage, messages, chatMessages, systemInstruction, functionCallingEnabled, localRegistry, useSkillTool, toolsPrompt, options, _this$generationConfi, temperature, maxOutputTokens, loopCount, maxLoops, text, callRequest, trimmed, parsed, name, instructions, _result, funcSpec, functionCall, resultVal, result, _t9;
-        return _regeneratorRuntime.wrap(function (_context7) {
-          while (1) switch (_context7.prev = _context7.next) {
+      var _requestGenerateBrowserLLM2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee7(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
+        var _this7 = this;
+        var effectiveBaseUrl, effectiveModelId, promptMessage, messages, chatMessages, systemInstruction, functionCallingEnabled, localRegistry, useSkillTool, toolsPrompt, options, _this$generationConfi, temperature, maxOutputTokens, loopCount, maxLoops, text, callRequest, trimmed, parsed, name, instructions, _result, funcSpec, functionCall, resultVal, result, _t0;
+        return _regeneratorRuntime.wrap(function (_context8) {
+          while (1) switch (_context8.prev = _context8.next) {
             case 0:
               effectiveBaseUrl = this.baseUrl;
               if (!effectiveBaseUrl || effectiveBaseUrl === PROVIDERS.Gemini.baseUrl || effectiveBaseUrl === PROVIDERS.OpenAI.baseUrl || effectiveBaseUrl === PROVIDERS.Anthropic.baseUrl || effectiveBaseUrl === PROVIDERS.OpenAICompatible.baseUrl) {
@@ -47290,7 +47452,7 @@ var AIAdapter = /*#__PURE__*/function () {
               options.useCache = isChat;
               if (typeof partialTextHandler === 'function') {
                 options.onToken = function (token) {
-                  _this6.setLastPartialText(token);
+                  _this7.setLastPartialText(token);
                   partialTextHandler(token);
                 };
               }
@@ -47299,13 +47461,13 @@ var AIAdapter = /*#__PURE__*/function () {
               text = '';
             case 1:
               if (!(loopCount < maxLoops)) {
-                _context7.next = 8;
+                _context8.next = 8;
                 break;
               }
-              _context7.next = 2;
+              _context8.next = 2;
               return this._browserAI.generate(chatMessages, options);
             case 2:
-              text = _context7.sent;
+              text = _context8.sent;
               // Check if model wants to call a function
               callRequest = null;
               trimmed = text.trim();
@@ -47320,11 +47482,11 @@ var AIAdapter = /*#__PURE__*/function () {
                 }
               }
               if (!(callRequest && functionCallingEnabled)) {
-                _context7.next = 7;
+                _context8.next = 7;
                 break;
               }
               if (!(callRequest.call === 'loadSkill' && useSkillTool)) {
-                _context7.next = 3;
+                _context8.next = 3;
                 break;
               }
               name = callRequest.arguments.name;
@@ -47356,22 +47518,22 @@ var AIAdapter = /*#__PURE__*/function () {
                 });
               }
               loopCount++;
-              return _context7.abrupt("continue", 1);
+              return _context8.abrupt("continue", 1);
             case 3:
               funcSpec = localRegistry[callRequest.call];
               if (!funcSpec) {
-                _context7.next = 7;
+                _context8.next = 7;
                 break;
               }
               functionCall = new FunctionCall(funcSpec, {
                 args: callRequest.arguments,
                 options: {}
               });
-              _context7.prev = 4;
-              _context7.next = 5;
+              _context8.prev = 4;
+              _context8.next = 5;
               return this._executeFunctionCall(functionCall, functionDispatcher);
             case 5:
-              resultVal = _context7.sent;
+              resultVal = _context8.sent;
               chatMessages.push({
                 role: 'assistant',
                 content: text
@@ -47391,17 +47553,17 @@ var AIAdapter = /*#__PURE__*/function () {
                 });
               }
               loopCount++;
-              return _context7.abrupt("continue", 1);
+              return _context8.abrupt("continue", 1);
             case 6:
-              _context7.prev = 6;
-              _t9 = _context7["catch"](4);
+              _context8.prev = 6;
+              _t0 = _context8["catch"](4);
               chatMessages.push({
                 role: 'assistant',
                 content: text
               });
               chatMessages.push({
                 role: 'user',
-                content: "Error executing ".concat(callRequest.call, ": ").concat(_t9.message)
+                content: "Error executing ".concat(callRequest.call, ": ").concat(_t0.message)
               });
               if (isChat) {
                 this.messages.push({
@@ -47410,13 +47572,13 @@ var AIAdapter = /*#__PURE__*/function () {
                 });
                 this.messages.push({
                   role: 'user',
-                  content: "Error executing ".concat(callRequest.call, ": ").concat(_t9.message)
+                  content: "Error executing ".concat(callRequest.call, ": ").concat(_t0.message)
                 });
               }
               loopCount++;
-              return _context7.abrupt("continue", 1);
+              return _context8.abrupt("continue", 1);
             case 7:
-              return _context7.abrupt("continue", 8);
+              return _context8.abrupt("continue", 8);
             case 8:
               this.setLastResponseText(text);
               if (typeof responseTextHandler === 'function') responseTextHandler(text);
@@ -47430,14 +47592,14 @@ var AIAdapter = /*#__PURE__*/function () {
                 text: text
               };
               this.setLastResult(result);
-              return _context7.abrupt("return", result);
+              return _context8.abrupt("return", result);
             case 9:
             case "end":
-              return _context7.stop();
+              return _context8.stop();
           }
-        }, _callee6, this, [[4, 6]]);
+        }, _callee7, this, [[4, 6]]);
       }));
-      function _requestGenerateBrowserLLM(_x3, _x4, _x5, _x6, _x7) {
+      function _requestGenerateBrowserLLM(_x4, _x5, _x6, _x7, _x8) {
         return _requestGenerateBrowserLLM2.apply(this, arguments);
       }
       return _requestGenerateBrowserLLM;
@@ -47456,30 +47618,42 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestGenerate",
     value: (function () {
-      var _requestGenerate = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee7(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
-        var _this7 = this;
-        var promptMessage, messages, abortController, client, tools, functionCallingEnabled, toolExists, generator, modelId, generationParams, streamError, result, hasSchema, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialObject, partialText, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, textPart, _this$messages, response, _t0, _t1, _t10;
-        return _regeneratorRuntime.wrap(function (_context8) {
-          while (1) switch (_context8.prev = _context8.next) {
+      var _requestGenerate = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee8(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
+        var _this8 = this;
+        var promptMessage, messages, abortController, client, tools, externalTools, functionCallingEnabled, toolExists, generator, modelId, generationParams, streamError, result, hasSchema, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialObject, partialText, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, textPart, _this$messages, response, _t1, _t10, _t11;
+        return _regeneratorRuntime.wrap(function (_context9) {
+          while (1) switch (_context9.prev = _context9.next) {
             case 0:
               this.lastStructuredOutput = null;
               // Load baseUrl/modelID/generation config from the sprite variables before
               // building the client and request params.
               this.applyConfigFromVariables();
               if (!(this.getApiType() === 'BrowserLLM')) {
-                _context8.next = 1;
+                _context9.next = 1;
                 break;
               }
-              return _context8.abrupt("return", this._requestGenerateBrowserLLM(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat));
+              return _context9.abrupt("return", this._requestGenerateBrowserLLM(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat));
             case 1:
               promptMessage = this._convertToMessage(prompt);
               messages = isChat ? this.messages : [];
               messages.push(promptMessage);
               // Create abort controller for this request
               abortController = this._createAbortController();
-              _context8.prev = 2;
+              _context9.prev = 2;
               client = this.getClient();
-              tools = _objectSpread(_objectSpread({}, this._buildTools(functionDispatcher)), this._buildSkillTools());
+              tools = _objectSpread(_objectSpread({}, this._buildTools(functionDispatcher)), this._buildSkillTools()); // External tools (registered by sibling extensions via the `gai` facade's
+              // `registerTools`) are merged in last but must not win name collisions
+              // against this adapter's own tools above — an external registration
+              // should never be able to shadow a function the sprite author defined
+              // or the built-in `loadSkill` tool. Merge as an explicit "only if absent"
+              // step instead of a plain object spread (which would let the later
+              // source win).
+              externalTools = this._buildExternalTools();
+              Object.keys(externalTools).forEach(function (name) {
+                if (!Object.prototype.hasOwnProperty.call(tools, name)) {
+                  tools[name] = externalTools[name];
+                }
+              });
               functionCallingEnabled = this.functionCallingMode !== AIAdapter.FUNCTION_CALLING_NONE;
               toolExists = Object.keys(tools).length > 0 && functionCallingEnabled;
               generator = partialTextHandler ? streamText : generateText;
@@ -47489,7 +47663,7 @@ var AIAdapter = /*#__PURE__*/function () {
               // (quota, network, API error) can be surfaced below rather than swallowed
               // as empty output or masked as a generic NoOutputGeneratedError.
               streamError = null;
-              _context8.next = 3;
+              _context9.next = 3;
               return generator(_objectSpread(_objectSpread(_objectSpread(_objectSpread({
                 model: client.languageModel(modelId),
                 messages: messages
@@ -47500,7 +47674,7 @@ var AIAdapter = /*#__PURE__*/function () {
                 abortSignal: abortController.signal,
                 stopWhen: stepCountIs(5),
                 onStepFinish: function onStepFinish(step) {
-                  _this7.setLastResponseText(step.text);
+                  _this8.setLastResponseText(step.text);
                   if (typeof responseTextHandler === 'function') {
                     responseTextHandler(step.text);
                   }
@@ -47520,14 +47694,14 @@ var AIAdapter = /*#__PURE__*/function () {
                 })
               }));
             case 3:
-              result = _context8.sent;
+              result = _context9.sent;
               hasSchema = Object.prototype.hasOwnProperty.call(this.generationConfig, 'responseSchema');
               if (!partialTextHandler) {
-                _context8.next = 28;
+                _context9.next = 28;
                 break;
               }
               if (!hasSchema) {
-                _context8.next = 16;
+                _context9.next = 16;
                 break;
               }
               // Structured output streams the growing partial object via
@@ -47535,14 +47709,14 @@ var AIAdapter = /*#__PURE__*/function () {
               // text-based partial handler keeps working.
               _iteratorAbruptCompletion = false;
               _didIteratorError = false;
-              _context8.prev = 4;
+              _context9.prev = 4;
               _iterator = _asyncIterator(result.partialOutputStream);
             case 5:
-              _context8.next = 6;
+              _context9.next = 6;
               return _iterator.next();
             case 6:
-              if (!(_iteratorAbruptCompletion = !(_step = _context8.sent).done)) {
-                _context8.next = 8;
+              if (!(_iteratorAbruptCompletion = !(_step = _context9.sent).done)) {
+                _context9.next = 8;
                 break;
               }
               partialObject = _step.value;
@@ -47551,50 +47725,50 @@ var AIAdapter = /*#__PURE__*/function () {
               partialTextHandler(partialText);
             case 7:
               _iteratorAbruptCompletion = false;
-              _context8.next = 5;
+              _context9.next = 5;
               break;
             case 8:
-              _context8.next = 10;
+              _context9.next = 10;
               break;
             case 9:
-              _context8.prev = 9;
-              _t0 = _context8["catch"](4);
+              _context9.prev = 9;
+              _t1 = _context9["catch"](4);
               _didIteratorError = true;
-              _iteratorError = _t0;
+              _iteratorError = _t1;
             case 10:
-              _context8.prev = 10;
-              _context8.prev = 11;
+              _context9.prev = 10;
+              _context9.prev = 11;
               if (!(_iteratorAbruptCompletion && _iterator.return != null)) {
-                _context8.next = 12;
+                _context9.next = 12;
                 break;
               }
-              _context8.next = 12;
+              _context9.next = 12;
               return _iterator.return();
             case 12:
-              _context8.prev = 12;
+              _context9.prev = 12;
               if (!_didIteratorError) {
-                _context8.next = 13;
+                _context9.next = 13;
                 break;
               }
               throw _iteratorError;
             case 13:
-              return _context8.finish(12);
+              return _context9.finish(12);
             case 14:
-              return _context8.finish(10);
+              return _context9.finish(10);
             case 15:
-              _context8.next = 28;
+              _context9.next = 28;
               break;
             case 16:
               _iteratorAbruptCompletion2 = false;
               _didIteratorError2 = false;
-              _context8.prev = 17;
+              _context9.prev = 17;
               _iterator2 = _asyncIterator(result.textStream);
             case 18:
-              _context8.next = 19;
+              _context9.next = 19;
               return _iterator2.next();
             case 19:
-              if (!(_iteratorAbruptCompletion2 = !(_step2 = _context8.sent).done)) {
-                _context8.next = 21;
+              if (!(_iteratorAbruptCompletion2 = !(_step2 = _context9.sent).done)) {
+                _context9.next = 21;
                 break;
               }
               textPart = _step2.value;
@@ -47602,39 +47776,39 @@ var AIAdapter = /*#__PURE__*/function () {
               partialTextHandler(textPart);
             case 20:
               _iteratorAbruptCompletion2 = false;
-              _context8.next = 18;
+              _context9.next = 18;
               break;
             case 21:
-              _context8.next = 23;
+              _context9.next = 23;
               break;
             case 22:
-              _context8.prev = 22;
-              _t1 = _context8["catch"](17);
+              _context9.prev = 22;
+              _t10 = _context9["catch"](17);
               _didIteratorError2 = true;
-              _iteratorError2 = _t1;
+              _iteratorError2 = _t10;
             case 23:
-              _context8.prev = 23;
-              _context8.prev = 24;
+              _context9.prev = 23;
+              _context9.prev = 24;
               if (!(_iteratorAbruptCompletion2 && _iterator2.return != null)) {
-                _context8.next = 25;
+                _context9.next = 25;
                 break;
               }
-              _context8.next = 25;
+              _context9.next = 25;
               return _iterator2.return();
             case 25:
-              _context8.prev = 25;
+              _context9.prev = 25;
               if (!_didIteratorError2) {
-                _context8.next = 26;
+                _context9.next = 26;
                 break;
               }
               throw _iteratorError2;
             case 26:
-              return _context8.finish(25);
+              return _context9.finish(25);
             case 27:
-              return _context8.finish(23);
+              return _context9.finish(23);
             case 28:
               if (!streamError) {
-                _context8.next = 29;
+                _context9.next = 29;
                 break;
               }
               this.setLastResult(streamError);
@@ -47646,40 +47820,40 @@ var AIAdapter = /*#__PURE__*/function () {
               // structured object (a schema/type validation failure rejects and
               // propagates via the surrounding catch).
               if (!hasSchema) {
-                _context8.next = 30;
+                _context9.next = 30;
                 break;
               }
-              _context8.next = 30;
+              _context9.next = 30;
               return result.output;
             case 30:
               if (!isChat) {
-                _context8.next = 32;
+                _context9.next = 32;
                 break;
               }
-              _context8.next = 31;
+              _context9.next = 31;
               return result.response;
             case 31:
-              response = _context8.sent;
+              response = _context9.sent;
               (_this$messages = this.messages).push.apply(_this$messages, _toConsumableArray(response.messages));
             case 32:
-              return _context8.abrupt("return", result);
+              return _context9.abrupt("return", result);
             case 33:
-              _context8.prev = 33;
-              _t10 = _context8["catch"](2);
-              this.setLastResult(_t10);
-              throw _t10;
+              _context9.prev = 33;
+              _t11 = _context9["catch"](2);
+              this.setLastResult(_t11);
+              throw _t11;
             case 34:
-              _context8.prev = 34;
+              _context9.prev = 34;
               // Remove the abort controller from the array when request is finished
               this._removeAbortController(abortController);
-              return _context8.finish(34);
+              return _context9.finish(34);
             case 35:
             case "end":
-              return _context8.stop();
+              return _context9.stop();
           }
-        }, _callee7, this, [[2, 33, 34, 35], [4, 9, 10, 15], [11,, 12, 14], [17, 22, 23, 28], [24,, 25, 27]]);
+        }, _callee8, this, [[2, 33, 34, 35], [4, 9, 10, 15], [11,, 12, 14], [17, 22, 23, 28], [24,, 25, 27]]);
       }));
-      function requestGenerate(_x8, _x9, _x0, _x1, _x10) {
+      function requestGenerate(_x9, _x0, _x1, _x10, _x11) {
         return _requestGenerate.apply(this, arguments);
       }
       return requestGenerate;
@@ -47758,24 +47932,24 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "requestEmbedding",
     value: (function () {
-      var _requestEmbedding = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee8(contentParts) {
-        var text, modelId, abortController, client, _yield$embed, embedding, _t11;
-        return _regeneratorRuntime.wrap(function (_context9) {
-          while (1) switch (_context9.prev = _context9.next) {
+      var _requestEmbedding = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee9(contentParts) {
+        var text, modelId, abortController, client, _yield$embed, embedding, _t12;
+        return _regeneratorRuntime.wrap(function (_context0) {
+          while (1) switch (_context0.prev = _context0.next) {
             case 0:
               // Load baseUrl/modelID from the sprite variables before building the client.
               this.applyConfigFromVariables();
               if (!(this.getApiType() === 'BrowserLLM')) {
-                _context9.next = 1;
+                _context0.next = 1;
                 break;
               }
-              return _context9.abrupt("return", this._requestEmbeddingBrowserLLM(contentParts));
+              return _context0.abrupt("return", this._requestEmbeddingBrowserLLM(contentParts));
             case 1:
               if (!(!contentParts || !contentParts.length)) {
-                _context9.next = 2;
+                _context0.next = 2;
                 break;
               }
-              return _context9.abrupt("return", []);
+              return _context0.abrupt("return", []);
             case 2:
               if (typeof contentParts === 'string') {
                 contentParts = [contentParts];
@@ -47791,40 +47965,40 @@ var AIAdapter = /*#__PURE__*/function () {
               }, '');
               modelId = this.getModel('embedding'); // Create abort controller for this request
               abortController = this._createAbortController();
-              _context9.prev = 3;
+              _context0.prev = 3;
               client = this.getClient();
-              _context9.next = 4;
+              _context0.next = 4;
               return embed({
                 model: client.embeddingModel(modelId),
                 value: text,
                 abortSignal: abortController.signal
               });
             case 4:
-              _yield$embed = _context9.sent;
+              _yield$embed = _context0.sent;
               embedding = _yield$embed.embedding;
-              return _context9.abrupt("return", embedding);
+              return _context0.abrupt("return", embedding);
             case 5:
-              _context9.prev = 5;
-              _t11 = _context9["catch"](3);
-              if (!(_t11.name === 'AI_APICallError')) {
-                _context9.next = 6;
+              _context0.prev = 5;
+              _t12 = _context0["catch"](3);
+              if (!(_t12.name === 'AI_APICallError')) {
+                _context0.next = 6;
                 break;
               }
-              throw new Error("API call error: ".concat(_t11.responseBody, " URL: ").concat(_t11.url));
+              throw new Error("API call error: ".concat(_t12.responseBody, " URL: ").concat(_t12.url));
             case 6:
-              throw _t11;
+              throw _t12;
             case 7:
-              _context9.prev = 7;
+              _context0.prev = 7;
               // Remove the abort controller from the array when request is finished
               this._removeAbortController(abortController);
-              return _context9.finish(7);
+              return _context0.finish(7);
             case 8:
             case "end":
-              return _context9.stop();
+              return _context0.stop();
           }
-        }, _callee8, this, [[3, 5, 7, 8]]);
+        }, _callee9, this, [[3, 5, 7, 8]]);
       }));
-      function requestEmbedding(_x11) {
+      function requestEmbedding(_x12) {
         return _requestEmbedding.apply(this, arguments);
       }
       return requestEmbedding;
@@ -47838,70 +48012,70 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "clearBrowserLLMModelCache",
     value: (function () {
-      var _clearBrowserLLMModelCache = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee9(modelIndex) {
-        var apiType, models, idx, targetModelId, _this$_parseModelId, targetRepo, targetDtype, deleteCount, cacheNames, _iterator7, _step7, cacheName, cache, requests, _iterator8, _step8, req, url, repo, match, pathParts, resolveIdx, dtype, dtypeMatch, isModelFile, success, _t12, _t13, _t14;
-        return _regeneratorRuntime.wrap(function (_context0) {
-          while (1) switch (_context0.prev = _context0.next) {
+      var _clearBrowserLLMModelCache = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee0(modelIndex) {
+        var apiType, models, idx, targetModelId, _this$_parseModelId, targetRepo, targetDtype, deleteCount, cacheNames, _iterator7, _step7, cacheName, cache, requests, _iterator8, _step8, req, url, repo, match, pathParts, resolveIdx, dtype, dtypeMatch, isModelFile, success, _t13, _t14, _t15;
+        return _regeneratorRuntime.wrap(function (_context1) {
+          while (1) switch (_context1.prev = _context1.next) {
             case 0:
               apiType = this.getApiType();
               if (!(apiType !== 'BrowserLLM')) {
-                _context0.next = 1;
+                _context1.next = 1;
                 break;
               }
-              return _context0.abrupt("return", 'API type is not BrowserLLM');
+              return _context1.abrupt("return", 'API type is not BrowserLLM');
             case 1:
-              _context0.next = 2;
+              _context1.next = 2;
               return this.getModels();
             case 2:
-              models = _context0.sent;
+              models = _context1.sent;
               idx = Math.round(modelIndex) - 1;
               if (!(idx < 0 || idx >= models.length)) {
-                _context0.next = 3;
+                _context1.next = 3;
                 break;
               }
-              return _context0.abrupt("return", "Model index ".concat(modelIndex, " out of bounds"));
+              return _context1.abrupt("return", "Model index ".concat(modelIndex, " out of bounds"));
             case 3:
               targetModelId = models[idx].id;
               _this$_parseModelId = this._parseModelId(targetModelId), targetRepo = _this$_parseModelId.name, targetDtype = _this$_parseModelId.dtype;
               console.log("[BrowserAI] Starting cache clear for model ID: \"".concat(targetModelId, "\"") + " (Repo: ".concat(targetRepo, ", Dtype: ").concat(targetDtype, ", Index: ").concat(modelIndex, ")"));
               deleteCount = 0;
-              _context0.prev = 4;
+              _context1.prev = 4;
               if (!(typeof caches !== 'undefined')) {
-                _context0.next = 21;
+                _context1.next = 21;
                 break;
               }
-              _context0.next = 5;
+              _context1.next = 5;
               return caches.keys();
             case 5:
-              cacheNames = _context0.sent;
+              cacheNames = _context1.sent;
               _iterator7 = _createForOfIteratorHelper$2(cacheNames);
-              _context0.prev = 6;
+              _context1.prev = 6;
               _iterator7.s();
             case 7:
               if ((_step7 = _iterator7.n()).done) {
-                _context0.next = 18;
+                _context1.next = 18;
                 break;
               }
               cacheName = _step7.value;
               if (!(cacheName.includes('transformers') || cacheName.includes('onnxruntime'))) {
-                _context0.next = 17;
+                _context1.next = 17;
                 break;
               }
               console.log("[BrowserAI] Scanning cache: ".concat(cacheName));
-              _context0.next = 8;
+              _context1.next = 8;
               return caches.open(cacheName);
             case 8:
-              cache = _context0.sent;
-              _context0.next = 9;
+              cache = _context1.sent;
+              _context1.next = 9;
               return cache.keys();
             case 9:
-              requests = _context0.sent;
+              requests = _context1.sent;
               _iterator8 = _createForOfIteratorHelper$2(requests);
-              _context0.prev = 10;
+              _context1.prev = 10;
               _iterator8.s();
             case 11:
               if ((_step8 = _iterator8.n()).done) {
-                _context0.next = 14;
+                _context1.next = 14;
                 break;
               }
               req = _step8.value;
@@ -47922,7 +48096,7 @@ var AIAdapter = /*#__PURE__*/function () {
                 }
               }
               if (!(repo === targetRepo)) {
-                _context0.next = 13;
+                _context1.next = 13;
                 break;
               }
               dtype = 'fp32';
@@ -47934,53 +48108,53 @@ var AIAdapter = /*#__PURE__*/function () {
               }
               isModelFile = url.includes('.onnx') || url.includes('.onnx_data');
               if (!(!isModelFile || dtype === targetDtype)) {
-                _context0.next = 13;
+                _context1.next = 13;
                 break;
               }
               console.log("[BrowserAI] Deleting cached file: ".concat(url));
-              _context0.next = 12;
+              _context1.next = 12;
               return cache.delete(req);
             case 12:
-              success = _context0.sent;
+              success = _context1.sent;
               if (success) {
                 deleteCount++;
               }
             case 13:
-              _context0.next = 11;
+              _context1.next = 11;
               break;
             case 14:
-              _context0.next = 16;
+              _context1.next = 16;
               break;
             case 15:
-              _context0.prev = 15;
-              _t12 = _context0["catch"](10);
-              _iterator8.e(_t12);
+              _context1.prev = 15;
+              _t13 = _context1["catch"](10);
+              _iterator8.e(_t13);
             case 16:
-              _context0.prev = 16;
+              _context1.prev = 16;
               _iterator8.f();
-              return _context0.finish(16);
+              return _context1.finish(16);
             case 17:
-              _context0.next = 7;
+              _context1.next = 7;
               break;
             case 18:
-              _context0.next = 20;
+              _context1.next = 20;
               break;
             case 19:
-              _context0.prev = 19;
-              _t13 = _context0["catch"](6);
-              _iterator7.e(_t13);
+              _context1.prev = 19;
+              _t14 = _context1["catch"](6);
+              _iterator7.e(_t14);
             case 20:
-              _context0.prev = 20;
+              _context1.prev = 20;
               _iterator7.f();
-              return _context0.finish(20);
+              return _context1.finish(20);
             case 21:
-              _context0.next = 23;
+              _context1.next = 23;
               break;
             case 22:
-              _context0.prev = 22;
-              _t14 = _context0["catch"](4);
-              console.warn('[BrowserAI] Failed to delete cache for model:', _t14);
-              return _context0.abrupt("return", "Error clearing cache: ".concat(_t14.message));
+              _context1.prev = 22;
+              _t15 = _context1["catch"](4);
+              console.warn('[BrowserAI] Failed to delete cache for model:', _t15);
+              return _context1.abrupt("return", "Error clearing cache: ".concat(_t15.message));
             case 23:
               console.log("[BrowserAI] Successfully cleared ".concat(deleteCount, " cache entries for model \"").concat(targetModelId, "\""));
 
@@ -47998,14 +48172,14 @@ var AIAdapter = /*#__PURE__*/function () {
                 this._browserAI.resetCache();
               }
               this._removeRecordedModel(targetModelId);
-              return _context0.abrupt("return", "Cleared ".concat(deleteCount, " cache entries for model \"").concat(targetModelId, "\""));
+              return _context1.abrupt("return", "Cleared ".concat(deleteCount, " cache entries for model \"").concat(targetModelId, "\""));
             case 24:
             case "end":
-              return _context0.stop();
+              return _context1.stop();
           }
-        }, _callee9, this, [[4, 22], [6, 19, 20, 21], [10, 15, 16, 17]]);
+        }, _callee0, this, [[4, 22], [6, 19, 20, 21], [10, 15, 16, 17]]);
       }));
-      function clearBrowserLLMModelCache(_x12) {
+      function clearBrowserLLMModelCache(_x13) {
         return _clearBrowserLLMModelCache.apply(this, arguments);
       }
       return clearBrowserLLMModelCache;
@@ -48021,10 +48195,10 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "downloadBrowserLLMModel",
     value: (function () {
-      var _downloadBrowserLLMModel = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee0(modelID, modelType, progressCallback) {
+      var _downloadBrowserLLMModel = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee1(modelID, modelType, progressCallback) {
         var effectiveBaseUrl, effectiveModelId, pipelinePromise, effectiveEmbeddingModelId, _pipelinePromise;
-        return _regeneratorRuntime.wrap(function (_context1) {
-          while (1) switch (_context1.prev = _context1.next) {
+        return _regeneratorRuntime.wrap(function (_context10) {
+          while (1) switch (_context10.prev = _context10.next) {
             case 0:
               this.applyConfigFromVariables();
               effectiveBaseUrl = this.baseUrl;
@@ -48043,25 +48217,25 @@ var AIAdapter = /*#__PURE__*/function () {
               // before starting a new one. Otherwise the new download's fetch
               // interceptor would be installed on top of the old, aborted one.
               if (!this._browserAI._downloadInFlight) {
-                _context1.next = 4;
+                _context10.next = 4;
                 break;
               }
               this._browserAI.cancelDownload();
-              _context1.prev = 1;
-              _context1.next = 2;
+              _context10.prev = 1;
+              _context10.next = 2;
               return this._browserAI._downloadInFlight;
             case 2:
-              _context1.next = 4;
+              _context10.next = 4;
               break;
             case 3:
-              _context1.prev = 3;
-              _context1["catch"](1);
+              _context10.prev = 3;
+              _context10["catch"](1);
             case 4:
               this._browserAI.onProgress = progressCallback;
               this._browserAI._cancelDownload = false;
-              _context1.prev = 5;
+              _context10.prev = 5;
               if (!(modelType === 'generative')) {
-                _context1.next = 9;
+                _context10.next = 9;
                 break;
               }
               effectiveModelId = modelID || this.modelID;
@@ -48072,20 +48246,20 @@ var AIAdapter = /*#__PURE__*/function () {
               this._browserAI.setModel(effectiveModelId);
               pipelinePromise = this._browserAI._getPipeline(true);
               this._browserAI._downloadInFlight = pipelinePromise;
-              _context1.prev = 6;
-              _context1.next = 7;
+              _context10.prev = 6;
+              _context10.next = 7;
               return pipelinePromise;
             case 7:
-              _context1.prev = 7;
+              _context10.prev = 7;
               this._browserAI._downloadInFlight = null;
-              return _context1.finish(7);
+              return _context10.finish(7);
             case 8:
               this._recordDownloadedModel(effectiveModelId);
-              _context1.next = 13;
+              _context10.next = 13;
               break;
             case 9:
               if (!(modelType === 'embedding')) {
-                _context1.next = 13;
+                _context10.next = 13;
                 break;
               }
               effectiveEmbeddingModelId = modelID || this.modelID;
@@ -48096,27 +48270,27 @@ var AIAdapter = /*#__PURE__*/function () {
               this._browserAI.setEmbeddingModel(effectiveEmbeddingModelId);
               _pipelinePromise = this._browserAI._getEmbeddingPipeline(true);
               this._browserAI._downloadInFlight = _pipelinePromise;
-              _context1.prev = 10;
-              _context1.next = 11;
+              _context10.prev = 10;
+              _context10.next = 11;
               return _pipelinePromise;
             case 11:
-              _context1.prev = 11;
+              _context10.prev = 11;
               this._browserAI._downloadInFlight = null;
-              return _context1.finish(11);
+              return _context10.finish(11);
             case 12:
               this._recordDownloadedModel(effectiveEmbeddingModelId);
             case 13:
-              _context1.prev = 13;
+              _context10.prev = 13;
               this._browserAI.onProgress = null;
               this._resetModelsForAllAdapters();
-              return _context1.finish(13);
+              return _context10.finish(13);
             case 14:
             case "end":
-              return _context1.stop();
+              return _context10.stop();
           }
-        }, _callee0, this, [[1, 3], [5,, 13, 14], [6,, 7, 8], [10,, 11, 12]]);
+        }, _callee1, this, [[1, 3], [5,, 13, 14], [6,, 7, 8], [10,, 11, 12]]);
       }));
-      function downloadBrowserLLMModel(_x13, _x14, _x15) {
+      function downloadBrowserLLMModel(_x14, _x15, _x16) {
         return _downloadBrowserLLMModel.apply(this, arguments);
       }
       return downloadBrowserLLMModel;
@@ -48723,7 +48897,13 @@ function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.lengt
  * @returns {string[]} - content part directives
  */
 var parseContentPartsText = function parseContentPartsText(contentPartsText) {
-  var parser = /(.*?)[\s\u3000"'`[{(,.]*(data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+)[\s\u3000"'`\]}),.]*|(.*)/gi;
+  // The `s` flag lets `.` cross newlines: without it, a multi-line prompt is
+  // split into one directive per line and the newline separators are lost
+  // when the text parts are re-joined into a single message (Xcratch's
+  // Cast.toString turns a typed `\n` into a real newline, so multi-line
+  // prompts are common). Text around a data URL is still trimmed by the
+  // bracketing whitespace classes.
+  var parser = /([^]*?)[\s\u3000"'`[{(,.]*(data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+)[\s\u3000"'`\]}),.]*|([^]*)/gi;
   var contentPartDirectives = [];
   var matches = contentPartsText.matchAll(parser);
   var _iterator = _createForOfIteratorHelper$1(matches),
@@ -49180,9 +49360,34 @@ var GAIBlocks = /*#__PURE__*/function () {
   }
 
   /**
-   * Register this extension's public cross-extension interface (V1) on the
-   * shared runtime so sibling xcx-* extensions can discover and call it via
+   * Register this extension's public cross-extension interface on the shared
+   * runtime so sibling xcx-* extensions can discover and call it via
    * `runtime.getExtensionInterface('gai')` without importing this module.
+   *
+   * V2 adds `registerTools`/`unregisterTools`, letting sibling extensions
+   * contribute plain-JS tools to this extension's AI function calling.
+   * All V1 members (`hasAI`, `ensureAI`, `resetHistory`, `abort`, `chat`)
+   * keep their V1 signature and behavior unchanged; existing V1 callers are
+   * unaffected.
+   *
+   * `registerTools(ownerExtensionId, factory)` — register a `factory` that
+   * builds tools for a given target. `factory` has the shape
+   * `(target: Target) => {[toolName: string]: {description: string,
+   * parameters: object, execute: (input: object) => Promise<any>|any}}`,
+   * where `parameters` is a plain JSON Schema object describing the tool's
+   * input and `execute` is a pure JS function whose return value is sent
+   * back to the AI as the tool result. Because `execute` runs outside any
+   * Scratch thread, it can only do plain JS work — it cannot run Scratch
+   * procedures/blocks (unlike this extension's own custom-procedure
+   * function calling). Registering again with the same `ownerExtensionId`
+   * replaces the previous registration.
+   *
+   * `unregisterTools(ownerExtensionId)` — remove a previously registered
+   * factory for `ownerExtensionId`; a no-op if none is registered.
+   *
+   * The registry backing these two lives on the shared `runtime`
+   * (`runtime._gaiExternalToolFactories`), not on this extension instance,
+   * so registrations survive this extension being reloaded.
    * @param {Runtime} runtime - the Scratch 3.0 runtime.
    * @returns {void}
    * @private
@@ -49196,7 +49401,7 @@ var GAIBlocks = /*#__PURE__*/function () {
          * Interface version. Bumped on breaking changes; callers should
          * feature-detect members with `typeof` rather than assume a version.
          */
-        version: 1,
+        version: 2,
         /**
          * Whether an AI adapter already exists for the target.
          * @param {Target} target - the target to check.
@@ -49248,6 +49453,33 @@ var GAIBlocks = /*#__PURE__*/function () {
          */
         chat: function chat(target, promptText, options) {
           return _this4._chatViaExternalApi(target, promptText, options);
+        },
+        /**
+         * Register a factory that contributes plain-JS tools to this
+         * extension's AI function calling. See the `_registerExtensionInterface`
+         * doc above for the factory's shape and constraints.
+         * @param {string} ownerExtensionId - the id of the extension registering
+         * the tools (used to identify/replace/remove the registration).
+         * @param {Function} factory - `(target) => {[toolName]: {description,
+         * parameters, execute}}`.
+         * @returns {void}
+         */
+        registerTools: function registerTools(ownerExtensionId, factory) {
+          if (!ownerExtensionId || typeof factory !== 'function') return;
+          if (!runtime._gaiExternalToolFactories) {
+            runtime._gaiExternalToolFactories = new Map();
+          }
+          runtime._gaiExternalToolFactories.set(ownerExtensionId, factory);
+        },
+        /**
+         * Remove a previously registered tool factory.
+         * @param {string} ownerExtensionId - the id passed to `registerTools`.
+         * @returns {void}
+         */
+        unregisterTools: function unregisterTools(ownerExtensionId) {
+          if (runtime._gaiExternalToolFactories) {
+            runtime._gaiExternalToolFactories.delete(ownerExtensionId);
+          }
         }
       });
     }

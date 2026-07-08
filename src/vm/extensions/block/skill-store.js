@@ -1,4 +1,4 @@
-import {refreshVariablePalette} from './variable-util.js';
+import {refreshVariablePalette, scheduleGlowResync} from './variable-util.js';
 
 const SKILLS_LIST_NAME = 'skills';
 const SKILLS_LIST_ID = 'gai_skills';
@@ -91,6 +91,10 @@ export const ensureSkillsList = function (target) {
             // Then force the (dynamic) variable/list flyout to re-render so the
             // list shows in the palette without re-opening the code tab.
             refreshVariablePalette();
+            // The workspace reload above races the script-glow events of
+            // whatever script triggered the adapter creation (see
+            // variable-util.js).
+            scheduleGlowResync(target.runtime);
         }
     }
     return list;

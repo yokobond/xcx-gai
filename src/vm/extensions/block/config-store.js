@@ -1,4 +1,4 @@
-import {refreshVariablePalette} from './variable-util.js';
+import {refreshVariablePalette, scheduleGlowResync} from './variable-util.js';
 
 // Scalar variables are looked up with the empty-string type in scratch-vm.
 const SCALAR_TYPE = '';
@@ -203,6 +203,9 @@ export const ensureConfigVariables = function (target) {
             target.runtime.requestBlocksUpdate();
         }
         refreshVariablePalette();
+        // The workspace reload above races the script-glow events of whatever
+        // script triggered the adapter creation (see variable-util.js).
+        scheduleGlowResync(target.runtime);
     }
 };
 
@@ -276,6 +279,9 @@ export const setConfigVariable = function (target, key, raw) {
         if (created && typeof target.runtime.requestBlocksUpdate === 'function') {
             target.runtime.requestBlocksUpdate();
             refreshVariablePalette();
+            // The workspace reload above races the script-glow events of the
+            // running script that set this config value (see variable-util.js).
+            scheduleGlowResync(target.runtime);
         }
     }
 };
