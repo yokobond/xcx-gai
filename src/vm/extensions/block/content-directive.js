@@ -4,7 +4,13 @@
  * @returns {string[]} - content part directives
  */
 export const parseContentPartsText = function (contentPartsText) {
-    const parser = /(.*?)[\s\u3000"'`[{(,.]*(data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+)[\s\u3000"'`\]}),.]*|(.*)/gi;
+    // The `s` flag lets `.` cross newlines: without it, a multi-line prompt is
+    // split into one directive per line and the newline separators are lost
+    // when the text parts are re-joined into a single message (Xcratch's
+    // Cast.toString turns a typed `\n` into a real newline, so multi-line
+    // prompts are common). Text around a data URL is still trimmed by the
+    // bracketing whitespace classes.
+    const parser = /(.*?)[\s\u3000"'`[{(,.]*(data:\w+\/[\w+-]+;base64,[a-zA-Z0-9+/=]+)[\s\u3000"'`\]}),.]*|(.*)/gis;
     const contentPartDirectives = [];
     const matches = contentPartsText.matchAll(parser);
     for (const match of matches) {
