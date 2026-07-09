@@ -55,6 +55,8 @@ if (gai) {
 | `chat` | `(target, promptText, options) => Promise<string>` | Send `promptText` to AI as a chat message (appended to conversation history) and resolve with the response text. |
 | `registerTools` | `(ownerExtensionId, factory) => void` | Register a `factory` that contributes plain-JS tools to this extension's AI function calling. See "External Tools (V2)" below. |
 | `unregisterTools` | `(ownerExtensionId) => void` | Remove a previously registered `factory` for `ownerExtensionId`. No-op if none is registered. |
+| `registerInstructions` | `(ownerExtensionId, factory) => void` | Register a `factory` that contributes a section of text merged into this extension's AI system instruction. See "External Instructions (V2)" below. |
+| `unregisterInstructions` | `(ownerExtensionId) => void` | Remove a previously registered `factory` for `ownerExtensionId`. No-op if none is registered. |
 
 All V1 members keep their V1 signature and behavior unchanged.
 
@@ -144,6 +146,42 @@ if (gai && typeof gai.registerTools === 'function') {
   configured provider supports function calling and function calling mode is
   not `none`.
 
+### External Instructions (V2)
+
+A sibling extension can contribute a section of text merged into xcx-gai's AI
+system instruction via `registerInstructions`, without xcx-gai importing that
+extension's code:
+
+```js
+const gai = runtime.getExtensionInterface('gai');
+if (gai && typeof gai.registerInstructions === 'function') {
+    gai.registerInstructions('my-extension-id', target =>
+        'When emitting Scratch blocks, use English scratchblocks syntax.');
+}
+```
+
+- `factory` has the shape `(target) => string` and is called every time the
+  system instruction is composed (`_composeSystemInstruction` in
+  ai-adapter.js) — once per request, not just once at registration time — so
+  it can return per-target text (or vary text by target state).
+- Merge order is base instruction → external instructions → Agent Skills
+  section, each separated by a blank line; sections that are empty (or
+  whitespace-only after trimming) are skipped.
+- **Not gated by function-calling support**, unlike External Tools above: a
+  contributed instruction is plain text unrelated to function calling, so it
+  is merged for every provider and function-calling mode, including the
+  browser LLM path. (External Tools *are* gated because tool calling itself
+  requires provider/mode support; instructions carry no such requirement.)
+- If a factory throws, the facade catches it, logs the error with the
+  `ownerExtensionId`, and continues merging the other registered factories'
+  text instead of propagating the exception.
+- Registering again with the same `ownerExtensionId` replaces the previous
+  factory; `unregisterInstructions(ownerExtensionId)` removes it.
+- The registry lives on the shared `runtime`
+  (`runtime._gaiExternalInstructions`), not on this extension instance, so
+  registrations survive this extension being reloaded — same as External
+  Tools' `runtime._gaiExternalToolFactories`.
+
 ## Versioning Policy
 
 - Consumers should feature-detect members with `typeof gai.someMethod ===
@@ -159,3 +197,6 @@ if (gai && typeof gai.registerTools === 'function') {
   a new capability class (tool contribution, not just data calls) easy to
   detect at a glance. Future purely-additive changes may continue to skip the
   bump per the rule above.
+- `registerInstructions`/`unregisterInstructions` follow that precedent: they
+  are purely additive to the V2 facade (no existing member's signature or
+  behavior changed), so they were added without a further version bump.

@@ -101,6 +101,33 @@ describe('AIAdapter Agent Skills', () => {
             const adapter = new AIAdapter(fakeTarget('t-empty', null));
             expect(adapter._composeSystemInstruction()).toBe('');
         });
+
+        test('merges base, then external instructions, then skills, in that order', () => {
+            const adapter = new AIAdapter(fakeTarget('t-order', [GREETING_SKILL]));
+            adapter.generationConfig.systemInstruction = 'BASE_MARKER';
+            adapter.target.runtime = {
+                _gaiExternalInstructions: new Map([
+                    ['owner-a', () => 'EXTERNAL_MARKER']
+                ])
+            };
+
+            const system = adapter._composeSystemInstruction();
+
+            expect(system.indexOf('BASE_MARKER')).toBeGreaterThanOrEqual(0);
+            expect(system.indexOf('EXTERNAL_MARKER')).toBeGreaterThan(system.indexOf('BASE_MARKER'));
+            expect(system.indexOf('name: greeting')).toBeGreaterThan(system.indexOf('EXTERNAL_MARKER'));
+        });
+
+        test('external instructions appear even when base instruction and skills are both empty', () => {
+            const adapter = new AIAdapter(fakeTarget('t-external-only', null));
+            adapter.target.runtime = {
+                _gaiExternalInstructions: new Map([
+                    ['owner-a', () => 'EXTERNAL_ONLY_MARKER']
+                ])
+            };
+
+            expect(adapter._composeSystemInstruction()).toBe('EXTERNAL_ONLY_MARKER');
+        });
     });
 
     describe('_buildSkillTools', () => {

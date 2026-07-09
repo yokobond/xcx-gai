@@ -46794,10 +46794,11 @@ var AIAdapter = /*#__PURE__*/function () {
         params.stopSequences = this.generationConfig.stopSequences;
       }
 
-      // Handle system instruction - merge base instruction with the Agent
-      // Skills section (when the target owns skills). Only set when non-empty
-      // so behavior is unchanged when there is neither a base instruction nor
-      // any skills.
+      // Handle system instruction - merge base instruction, External
+      // Instructions (sibling extensions), and the Agent Skills section
+      // (when the target owns skills). Only set when non-empty so behavior
+      // is unchanged when there is neither a base instruction nor any
+      // external instructions/skills.
       var system = this._composeSystemInstruction();
       if (system) {
         params.system = system;
@@ -46831,8 +46832,10 @@ var AIAdapter = /*#__PURE__*/function () {
     }
 
     /**
-     * Compose the system instruction by merging the configured base instruction
-     * with the Agent Skills section. With tool calling available, only skill
+     * Compose the system instruction by merging, in order: the configured
+     * base instruction, the External Instructions section contributed by
+     * sibling xcx-* extensions (see `_buildExternalInstructions`), and the
+     * Agent Skills section. With tool calling available, only skill
      * name/description are listed (the model fetches bodies via `loadSkill`);
      * otherwise the full skill bodies are inlined.
      * @returns {string} - the composed system instruction, or '' if empty
@@ -46842,10 +46845,14 @@ var AIAdapter = /*#__PURE__*/function () {
     key: "_composeSystemInstruction",
     value: function _composeSystemInstruction() {
       var base = this.generationConfig.systemInstruction;
+      var external = this._buildExternalInstructions();
       var skills = this.target ? this._canUseSkillTool() ? buildSkillsPrompt(this.target) : composeSkillsPrompt(this.target) : '';
       var sections = [];
       if (base && String(base).trim()) {
         sections.push(String(base).trim());
+      }
+      if (external) {
+        sections.push(external);
       }
       if (skills) {
         sections.push(skills);
@@ -46905,6 +46912,55 @@ var AIAdapter = /*#__PURE__*/function () {
     }
 
     /**
+     * Build the External Instructions section contributed by sibling xcx-*
+     * extensions through the `gai` facade's `registerInstructions` (see
+     * `_registerExtensionInterface` in index.js). The factory registry lives
+     * on the shared runtime (`runtime._gaiExternalInstructions`), not on this
+     * adapter, so it survives this extension being reloaded; each registered
+     * factory is called with this adapter's `target` and its returned string
+     * is merged into the composed system instruction (see
+     * `_composeSystemInstruction`). A factory that throws is logged and
+     * skipped; the rest still run. Falsy or whitespace-only results are
+     * skipped.
+     *
+     * Deliberately NOT gated by `_canUseSkillTool()` (unlike
+     * `_buildExternalTools`/`_buildSkillTools`): contributed instruction text
+     * has nothing to do with function calling, so it must be merged for
+     * every provider and function-calling mode, including the browser LLM
+     * path (`_requestGenerateBrowserLLM`). Do not add that gate here.
+     * @returns {string} - the joined external instructions, or '' when none apply
+     * @private
+     */
+  }, {
+    key: "_buildExternalInstructions",
+    value: function _buildExternalInstructions() {
+      var _this2 = this;
+      if (!this.target) {
+        return '';
+      }
+      var runtime = this.target.runtime;
+      var factories = runtime && runtime._gaiExternalInstructions;
+      if (!factories || factories.size === 0) {
+        return '';
+      }
+      var sections = [];
+      factories.forEach(function (factory, ownerExtensionId) {
+        var text;
+        try {
+          text = factory(_this2.target);
+        } catch (error) {
+          console.error("gai: external instructions factory for \"".concat(ownerExtensionId, "\" threw"), error);
+          return;
+        }
+        if (!text) return;
+        var trimmed = String(text).trim();
+        if (!trimmed) return;
+        sections.push(trimmed);
+      });
+      return sections.join('\n\n');
+    }
+
+    /**
      * Build tools contributed by sibling xcx-* extensions through the `gai`
      * facade's `registerTools` (see `_registerExtensionInterface` in index.js).
      * Gated by the same provider/function-calling-mode check as
@@ -46919,7 +46975,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "_buildExternalTools",
     value: function _buildExternalTools() {
-      var _this2 = this;
+      var _this3 = this;
       if (!this.target || !this._canUseSkillTool()) {
         return {};
       }
@@ -46932,7 +46988,7 @@ var AIAdapter = /*#__PURE__*/function () {
       factories.forEach(function (factory, ownerExtensionId) {
         var entries;
         try {
-          entries = factory(_this2.target);
+          entries = factory(_this3.target);
         } catch (error) {
           console.error("gai: external tool factory for \"".concat(ownerExtensionId, "\" threw"), error);
           return;
@@ -46991,7 +47047,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "_buildTools",
     value: function _buildTools(functionDispatcher) {
-      var _this3 = this;
+      var _this4 = this;
       var tools = {};
       Object.values(this.functionRegistry).forEach(function (funcSpec) {
         tools[funcSpec.name] = tool({
@@ -47011,7 +47067,7 @@ var AIAdapter = /*#__PURE__*/function () {
                       options: options
                     }); // Function execution logic here
                     _context6.next = 1;
-                    return _this3._executeFunctionCall(functionCall, functionDispatcher);
+                    return _this4._executeFunctionCall(functionCall, functionDispatcher);
                   case 1:
                     result = _context6.sent;
                     if (!result) {
@@ -47056,7 +47112,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "getTextFromResponse",
     value: function getTextFromResponse(responses) {
-      var _this4 = this;
+      var _this5 = this;
       if (!responses) {
         return '';
       }
@@ -47065,7 +47121,7 @@ var AIAdapter = /*#__PURE__*/function () {
       }
       if (Array.isArray(responses)) {
         return responses.map(function (r) {
-          return _this4._extractTextFromSingleResponse(r);
+          return _this5._extractTextFromSingleResponse(r);
         }).join('');
       }
       return this._extractTextFromSingleResponse(responses);
@@ -47237,7 +47293,7 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "registerFunction",
     value: function registerFunction(procedureCode, functionDescription, procedureArguments) {
-      var _this5 = this;
+      var _this6 = this;
       var functionName;
       var existingSpec = this.getFunctionSpec(procedureCode);
       if (existingSpec) {
@@ -47255,7 +47311,7 @@ var AIAdapter = /*#__PURE__*/function () {
       var argumentDict = {};
       if (procedureArguments && procedureArguments.length > 0) {
         procedureArguments.forEach(function (argSpec, index) {
-          var paramName = "".concat(_this5.functionArgPrefix).concat(index);
+          var paramName = "".concat(_this6.functionArgPrefix).concat(index);
           parameters.properties[paramName] = {
             type: argSpec.type,
             description: argSpec.description
@@ -47307,9 +47363,9 @@ var AIAdapter = /*#__PURE__*/function () {
   }, {
     key: "clearRegisteredFunctions",
     value: function clearRegisteredFunctions() {
-      var _this6 = this;
+      var _this7 = this;
       Object.keys(this.functionRegistry).forEach(function (key) {
-        delete _this6.functionRegistry[key];
+        delete _this7.functionRegistry[key];
       });
       this.functionIndex = 0;
     }
@@ -47339,7 +47395,7 @@ var AIAdapter = /*#__PURE__*/function () {
     key: "_requestGenerateBrowserLLM",
     value: (function () {
       var _requestGenerateBrowserLLM2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee7(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
-        var _this7 = this;
+        var _this8 = this;
         var effectiveBaseUrl, effectiveModelId, promptMessage, messages, chatMessages, systemInstruction, functionCallingEnabled, localRegistry, useSkillTool, toolsPrompt, options, _this$generationConfi, temperature, maxOutputTokens, loopCount, maxLoops, text, callRequest, trimmed, parsed, name, instructions, _result, funcSpec, functionCall, resultVal, result, _t0;
         return _regeneratorRuntime.wrap(function (_context8) {
           while (1) switch (_context8.prev = _context8.next) {
@@ -47452,7 +47508,7 @@ var AIAdapter = /*#__PURE__*/function () {
               options.useCache = isChat;
               if (typeof partialTextHandler === 'function') {
                 options.onToken = function (token) {
-                  _this7.setLastPartialText(token);
+                  _this8.setLastPartialText(token);
                   partialTextHandler(token);
                 };
               }
@@ -47619,7 +47675,7 @@ var AIAdapter = /*#__PURE__*/function () {
     key: "requestGenerate",
     value: (function () {
       var _requestGenerate = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee8(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
-        var _this8 = this;
+        var _this9 = this;
         var promptMessage, messages, abortController, client, tools, externalTools, functionCallingEnabled, toolExists, generator, modelId, generationParams, streamError, result, hasSchema, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialObject, partialText, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, textPart, _this$messages, response, _t1, _t10, _t11;
         return _regeneratorRuntime.wrap(function (_context9) {
           while (1) switch (_context9.prev = _context9.next) {
@@ -47674,7 +47730,7 @@ var AIAdapter = /*#__PURE__*/function () {
                 abortSignal: abortController.signal,
                 stopWhen: stepCountIs(5),
                 onStepFinish: function onStepFinish(step) {
-                  _this8.setLastResponseText(step.text);
+                  _this9.setLastResponseText(step.text);
                   if (typeof responseTextHandler === 'function') {
                     responseTextHandler(step.text);
                   }
@@ -49365,7 +49421,9 @@ var GAIBlocks = /*#__PURE__*/function () {
    * `runtime.getExtensionInterface('gai')` without importing this module.
    *
    * V2 adds `registerTools`/`unregisterTools`, letting sibling extensions
-   * contribute plain-JS tools to this extension's AI function calling.
+   * contribute plain-JS tools to this extension's AI function calling, and
+   * `registerInstructions`/`unregisterInstructions`, letting sibling
+   * extensions contribute text merged into the AI system instruction.
    * All V1 members (`hasAI`, `ensureAI`, `resetHistory`, `abort`, `chat`)
    * keep their V1 signature and behavior unchanged; existing V1 callers are
    * unaffected.
@@ -49385,9 +49443,21 @@ var GAIBlocks = /*#__PURE__*/function () {
    * `unregisterTools(ownerExtensionId)` — remove a previously registered
    * factory for `ownerExtensionId`; a no-op if none is registered.
    *
-   * The registry backing these two lives on the shared `runtime`
-   * (`runtime._gaiExternalToolFactories`), not on this extension instance,
-   * so registrations survive this extension being reloaded.
+   * `registerInstructions(ownerExtensionId, factory)` — register a
+   * `factory` with the shape `(target: Target) => string` that contributes
+   * a section of text merged into the AI system instruction every time it
+   * is composed (see `_buildExternalInstructions` in ai-adapter.js).
+   * Registering again with the same `ownerExtensionId` replaces the
+   * previous registration.
+   *
+   * `unregisterInstructions(ownerExtensionId)` — remove a previously
+   * registered factory for `ownerExtensionId`; a no-op if none is
+   * registered.
+   *
+   * The registries backing these four live on the shared `runtime`
+   * (`runtime._gaiExternalToolFactories`, `runtime._gaiExternalInstructions`),
+   * not on this extension instance, so registrations survive this
+   * extension being reloaded.
    * @param {Runtime} runtime - the Scratch 3.0 runtime.
    * @returns {void}
    * @private
@@ -49479,6 +49549,33 @@ var GAIBlocks = /*#__PURE__*/function () {
         unregisterTools: function unregisterTools(ownerExtensionId) {
           if (runtime._gaiExternalToolFactories) {
             runtime._gaiExternalToolFactories.delete(ownerExtensionId);
+          }
+        },
+        /**
+         * Register a factory that contributes a section of text merged
+         * into this extension's AI system instruction. See the
+         * `_registerExtensionInterface` doc above for the factory's
+         * shape and replace semantics.
+         * @param {string} ownerExtensionId - the id of the extension registering
+         * the instructions (used to identify/replace/remove the registration).
+         * @param {Function} factory - `(target) => string`.
+         * @returns {void}
+         */
+        registerInstructions: function registerInstructions(ownerExtensionId, factory) {
+          if (!ownerExtensionId || typeof factory !== 'function') return;
+          if (!runtime._gaiExternalInstructions) {
+            runtime._gaiExternalInstructions = new Map();
+          }
+          runtime._gaiExternalInstructions.set(ownerExtensionId, factory);
+        },
+        /**
+         * Remove a previously registered instructions factory.
+         * @param {string} ownerExtensionId - the id passed to `registerInstructions`.
+         * @returns {void}
+         */
+        unregisterInstructions: function unregisterInstructions(ownerExtensionId) {
+          if (runtime._gaiExternalInstructions) {
+            runtime._gaiExternalInstructions.delete(ownerExtensionId);
           }
         }
       });

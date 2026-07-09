@@ -234,6 +234,8 @@ describe("blockClass", () => {
             expect(typeof iface.chat).toBe('function');
             expect(typeof iface.registerTools).toBe('function');
             expect(typeof iface.unregisterTools).toBe('function');
+            expect(typeof iface.registerInstructions).toBe('function');
+            expect(typeof iface.unregisterInstructions).toBe('function');
         });
 
         describe('registerTools / unregisterTools', () => {
@@ -287,6 +289,60 @@ describe("blockClass", () => {
                 const iface = freshRuntime.getExtensionInterface('gai');
 
                 expect(() => iface.unregisterTools('nobody')).not.toThrow();
+            });
+        });
+
+        describe('registerInstructions / unregisterInstructions', () => {
+            it('stores the factory on runtime._gaiExternalInstructions, keyed by ownerExtensionId', () => {
+                const iface = runtime.getExtensionInterface('gai');
+                const factory = () => '';
+
+                iface.registerInstructions('owner-a', factory);
+
+                expect(runtime._gaiExternalInstructions).toBeInstanceOf(Map);
+                expect(runtime._gaiExternalInstructions.get('owner-a')).toBe(factory);
+            });
+
+            it('replaces a previous registration for the same ownerExtensionId', () => {
+                const iface = runtime.getExtensionInterface('gai');
+                const firstFactory = () => '';
+                const secondFactory = () => '';
+
+                iface.registerInstructions('owner-b', firstFactory);
+                iface.registerInstructions('owner-b', secondFactory);
+
+                expect(runtime._gaiExternalInstructions.get('owner-b')).toBe(secondFactory);
+            });
+
+            it('ignores registration with a missing ownerExtensionId or non-function factory', () => {
+                const iface = runtime.getExtensionInterface('gai');
+
+                iface.registerInstructions('', () => '');
+                iface.registerInstructions('owner-c', 'not-a-function');
+
+                expect(runtime._gaiExternalInstructions?.has('')).toBeFalsy();
+                expect(runtime._gaiExternalInstructions?.has('owner-c')).toBeFalsy();
+            });
+
+            it('removes a registered factory via unregisterInstructions', () => {
+                const iface = runtime.getExtensionInterface('gai');
+                iface.registerInstructions('owner-d', () => '');
+
+                iface.unregisterInstructions('owner-d');
+
+                expect(runtime._gaiExternalInstructions.has('owner-d')).toBe(false);
+            });
+
+            it('unregisterInstructions is a no-op when nothing is registered yet', () => {
+                const freshRuntime = {
+                    formatMessage: msg => msg.default,
+                    on: () => {},
+                    emit: () => {}
+                };
+                new blockClass(freshRuntime);
+                const iface = freshRuntime.getExtensionInterface('gai');
+
+                expect(() => iface.unregisterInstructions('nobody')).not.toThrow();
             });
         });
 

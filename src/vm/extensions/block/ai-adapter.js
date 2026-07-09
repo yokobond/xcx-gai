@@ -705,10 +705,11 @@ export class AIAdapter {
             params.stopSequences = this.generationConfig.stopSequences;
         }
         
-        // Handle system instruction - merge base instruction with the Agent
-        // Skills section (when the target owns skills). Only set when non-empty
-        // so behavior is unchanged when there is neither a base instruction nor
-        // any skills.
+        // Handle system instruction - merge base instruction, External
+        // Instructions (sibling extensions), and the Agent Skills section
+        // (when the target owns skills). Only set when non-empty so behavior
+        // is unchanged when there is neither a base instruction nor any
+        // external instructions/skills.
         const system = this._composeSystemInstruction();
         if (system) {
             params.system = system;
@@ -739,8 +740,10 @@ export class AIAdapter {
     }
 
     /**
-     * Compose the system instruction by merging the configured base instruction
-     * with the Agent Skills section. With tool calling available, only skill
+     * Compose the system instruction by merging, in order: the configured
+     * base instruction, the External Instructions section contributed by
+     * sibling xcx-* extensions (see `_buildExternalInstructions`), and the
+     * Agent Skills section. With tool calling available, only skill
      * name/description are listed (the model fetches bodies via `loadSkill`);
      * otherwise the full skill bodies are inlined.
      * @returns {string} - the composed system instruction, or '' if empty
@@ -748,6 +751,7 @@ export class AIAdapter {
      */
     _composeSystemInstruction () {
         const base = this.generationConfig.systemInstruction;
+        const external = this._buildExternalInstructions();
         const skills = this.target ?
             (this._canUseSkillTool() ?
                 buildSkillsPrompt(this.target) :
@@ -756,6 +760,9 @@ export class AIAdapter {
         const sections = [];
         if (base && String(base).trim()) {
             sections.push(String(base).trim());
+        }
+        if (external) {
+            sections.push(external);
         }
         if (skills) {
             sections.push(skills);
@@ -804,6 +811,52 @@ export class AIAdapter {
                 }
             })
         };
+    }
+
+    /**
+     * Build the External Instructions section contributed by sibling xcx-*
+     * extensions through the `gai` facade's `registerInstructions` (see
+     * `_registerExtensionInterface` in index.js). The factory registry lives
+     * on the shared runtime (`runtime._gaiExternalInstructions`), not on this
+     * adapter, so it survives this extension being reloaded; each registered
+     * factory is called with this adapter's `target` and its returned string
+     * is merged into the composed system instruction (see
+     * `_composeSystemInstruction`). A factory that throws is logged and
+     * skipped; the rest still run. Falsy or whitespace-only results are
+     * skipped.
+     *
+     * Deliberately NOT gated by `_canUseSkillTool()` (unlike
+     * `_buildExternalTools`/`_buildSkillTools`): contributed instruction text
+     * has nothing to do with function calling, so it must be merged for
+     * every provider and function-calling mode, including the browser LLM
+     * path (`_requestGenerateBrowserLLM`). Do not add that gate here.
+     * @returns {string} - the joined external instructions, or '' when none apply
+     * @private
+     */
+    _buildExternalInstructions () {
+        if (!this.target) {
+            return '';
+        }
+        const runtime = this.target.runtime;
+        const factories = runtime && runtime._gaiExternalInstructions;
+        if (!factories || factories.size === 0) {
+            return '';
+        }
+        const sections = [];
+        factories.forEach((factory, ownerExtensionId) => {
+            let text;
+            try {
+                text = factory(this.target);
+            } catch (error) {
+                console.error(`gai: external instructions factory for "${ownerExtensionId}" threw`, error);
+                return;
+            }
+            if (!text) return;
+            const trimmed = String(text).trim();
+            if (!trimmed) return;
+            sections.push(trimmed);
+        });
+        return sections.join('\n\n');
     }
 
     /**

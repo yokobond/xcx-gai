@@ -390,7 +390,9 @@ class GAIBlocks {
      * `runtime.getExtensionInterface('gai')` without importing this module.
      *
      * V2 adds `registerTools`/`unregisterTools`, letting sibling extensions
-     * contribute plain-JS tools to this extension's AI function calling.
+     * contribute plain-JS tools to this extension's AI function calling, and
+     * `registerInstructions`/`unregisterInstructions`, letting sibling
+     * extensions contribute text merged into the AI system instruction.
      * All V1 members (`hasAI`, `ensureAI`, `resetHistory`, `abort`, `chat`)
      * keep their V1 signature and behavior unchanged; existing V1 callers are
      * unaffected.
@@ -410,9 +412,21 @@ class GAIBlocks {
      * `unregisterTools(ownerExtensionId)` — remove a previously registered
      * factory for `ownerExtensionId`; a no-op if none is registered.
      *
-     * The registry backing these two lives on the shared `runtime`
-     * (`runtime._gaiExternalToolFactories`), not on this extension instance,
-     * so registrations survive this extension being reloaded.
+     * `registerInstructions(ownerExtensionId, factory)` — register a
+     * `factory` with the shape `(target: Target) => string` that contributes
+     * a section of text merged into the AI system instruction every time it
+     * is composed (see `_buildExternalInstructions` in ai-adapter.js).
+     * Registering again with the same `ownerExtensionId` replaces the
+     * previous registration.
+     *
+     * `unregisterInstructions(ownerExtensionId)` — remove a previously
+     * registered factory for `ownerExtensionId`; a no-op if none is
+     * registered.
+     *
+     * The registries backing these four live on the shared `runtime`
+     * (`runtime._gaiExternalToolFactories`, `runtime._gaiExternalInstructions`),
+     * not on this extension instance, so registrations survive this
+     * extension being reloaded.
      * @param {Runtime} runtime - the Scratch 3.0 runtime.
      * @returns {void}
      * @private
@@ -502,6 +516,35 @@ class GAIBlocks {
             unregisterTools: ownerExtensionId => {
                 if (runtime._gaiExternalToolFactories) {
                     runtime._gaiExternalToolFactories.delete(ownerExtensionId);
+                }
+            },
+
+            /**
+             * Register a factory that contributes a section of text merged
+             * into this extension's AI system instruction. See the
+             * `_registerExtensionInterface` doc above for the factory's
+             * shape and replace semantics.
+             * @param {string} ownerExtensionId - the id of the extension registering
+             * the instructions (used to identify/replace/remove the registration).
+             * @param {Function} factory - `(target) => string`.
+             * @returns {void}
+             */
+            registerInstructions: (ownerExtensionId, factory) => {
+                if (!ownerExtensionId || typeof factory !== 'function') return;
+                if (!runtime._gaiExternalInstructions) {
+                    runtime._gaiExternalInstructions = new Map();
+                }
+                runtime._gaiExternalInstructions.set(ownerExtensionId, factory);
+            },
+
+            /**
+             * Remove a previously registered instructions factory.
+             * @param {string} ownerExtensionId - the id passed to `registerInstructions`.
+             * @returns {void}
+             */
+            unregisterInstructions: ownerExtensionId => {
+                if (runtime._gaiExternalInstructions) {
+                    runtime._gaiExternalInstructions.delete(ownerExtensionId);
                 }
             }
         });
