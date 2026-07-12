@@ -223,10 +223,10 @@ describe("blockClass", () => {
     });
 
     describe('cross-extension interface', () => {
-        it('registers the "gai" facade with version 2 and the expected members', () => {
+        it('registers the "gai" facade with version 3 and the expected members', () => {
             const iface = runtime.getExtensionInterface('gai');
             expect(iface).toBeTruthy();
-            expect(iface.version).toBe(2);
+            expect(iface.version).toBe(3);
             expect(typeof iface.hasAI).toBe('function');
             expect(typeof iface.ensureAI).toBe('function');
             expect(typeof iface.resetHistory).toBe('function');
@@ -236,6 +236,105 @@ describe("blockClass", () => {
             expect(typeof iface.unregisterTools).toBe('function');
             expect(typeof iface.registerInstructions).toBe('function');
             expect(typeof iface.unregisterInstructions).toBe('function');
+            expect(typeof iface.getHistory).toBe('function');
+            expect(typeof iface.setHistory).toBe('function');
+        });
+
+        describe('getHistory / setHistory', () => {
+            it('getHistory returns [] for a target with no adapter, without creating one', () => {
+                block.aiForTarget.mockReturnValue(null);
+                const iface = runtime.getExtensionInterface('gai');
+
+                const result = iface.getHistory(mockTarget);
+
+                expect(result).toEqual([]);
+                expect(AIAdapter).not.toHaveBeenCalled();
+            });
+
+            it('getHistory returns a fresh copy each time (mutating it does not leak)', () => {
+                mockAIAdapter.getChatHistory = jest.fn().mockReturnValue([
+                    {role: 'user', content: 'Hi'}
+                ]);
+                const iface = runtime.getExtensionInterface('gai');
+
+                const first = iface.getHistory(mockTarget);
+                first.push({role: 'assistant', content: 'injected'});
+                const second = iface.getHistory(mockTarget);
+
+                expect(second).toEqual([{role: 'user', content: 'Hi'}]);
+            });
+
+            it('setHistory creates the adapter, filters malformed entries, and getHistory reflects the filtered set', () => {
+                let stored = [];
+                mockAIAdapter.startChat = jest.fn(history => {
+                    stored = history;
+                });
+                mockAIAdapter.getChatHistory = jest.fn(() => stored);
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                const iface = runtime.getExtensionInterface('gai');
+
+                const input = [
+                    {role: 'user', content: 'Hi'},
+                    {role: 'assistant', content: ['not', 'a', 'string']}, // valid: content is an Array
+                    null, // malformed: not an object
+                    {content: 'no role'}, // malformed: missing role
+                    {role: 'user', content: 42}, // malformed: content neither string nor Array
+                    'not-an-object' // malformed
+                ];
+
+                iface.setHistory(mockTarget, input);
+
+                expect(block.getAI).toHaveBeenCalledWith(mockTarget);
+                expect(mockAIAdapter.startChat).toHaveBeenCalledWith([
+                    {role: 'user', content: 'Hi'},
+                    {role: 'assistant', content: ['not', 'a', 'string']}
+                ]);
+                expect(iface.getHistory(mockTarget)).toEqual([
+                    {role: 'user', content: 'Hi'},
+                    {role: 'assistant', content: ['not', 'a', 'string']}
+                ]);
+            });
+
+            it('setHistory treats a non-array messages argument as empty', () => {
+                mockAIAdapter.startChat = jest.fn();
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                const iface = runtime.getExtensionInterface('gai');
+
+                iface.setHistory(mockTarget, 'not-an-array');
+
+                expect(mockAIAdapter.startChat).toHaveBeenCalledWith([]);
+            });
+        });
+
+        describe('GAI_HISTORY_CHANGED emission from getAI', () => {
+            it('wires a fresh adapter with an onHistoryChanged callback that emits GAI_HISTORY_CHANGED(target) on runtime', () => {
+                const freshTarget = {
+                    id: 'fresh-target-id',
+                    // Made to look like the config/skills variables already exist, so
+                    // ensureSkillsList/ensureConfigVariables (real, un-mocked helpers
+                    // invoked by getAI on first creation) are no-ops for this test.
+                    lookupVariableByNameAndType: jest.fn().mockReturnValue({}),
+                    lookupOrCreateVariable: jest.fn(),
+                    lookupOrCreateList: jest.fn(),
+                    runtime
+                };
+                const emitSpy = jest.spyOn(runtime, 'emit');
+                block.aiForTarget.mockReturnValue(null);
+
+                block.getAI(freshTarget);
+
+                expect(AIAdapter).toHaveBeenCalledWith(
+                    freshTarget,
+                    expect.objectContaining({onHistoryChanged: expect.any(Function)})
+                );
+                const {onHistoryChanged} = AIAdapter.mock.calls[AIAdapter.mock.calls.length - 1][1];
+
+                onHistoryChanged();
+
+                expect(emitSpy).toHaveBeenCalledWith('GAI_HISTORY_CHANGED', freshTarget);
+
+                emitSpy.mockRestore();
+            });
         });
 
         describe('registerTools / unregisterTools', () => {

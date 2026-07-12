@@ -283,8 +283,14 @@ export class AIAdapter {
     /**
      * Constructor for AIAdapter.
      * @param {Target} target - target for the adapter
+     * @param {object} [options] - optional configuration
+     * @param {Function} [options.onHistoryChanged] - called (no arguments) whenever the
+     *  persistent chat history (`this.messages`) is mutated. May fire multiple times per
+     *  turn (e.g. once for the prompt push, once for the reply push); treat it as a
+     *  coalescable "history changed, re-read it" signal rather than a precise diff.
+     *  Errors thrown by the callback are caught and logged, never propagated.
      */
-    constructor (target) {
+    constructor (target, {onHistoryChanged} = {}) {
         target.setCustomState(AIAdapter.STATE_KEY, this);
 
         this.target = target;
@@ -299,16 +305,34 @@ export class AIAdapter {
         this.messages = [];
         this.lastResult = null;
         this.lastPartialText = null;
-        
+        this._onHistoryChanged = typeof onHistoryChanged === 'function' ? onHistoryChanged : null;
+
         // Function calling setup
         this.functionRegistry = {};
         this.functionIndex = 0;
         this.functionArgPrefix = 'arg_';
         this.functionNamePrefix = 'func_';
         this.functionCallingMode = AIAdapter.FUNCTION_CALLING_AUTO;
-        
+
         // Abort controllers for cancelling requests
         this.abortControllers = [];
+    }
+
+    /**
+     * Notify the registered `onHistoryChanged` callback (if any) that the
+     * persistent chat history (`this.messages`) was just mutated. Safe to call
+     * even when no callback was registered. A throwing callback is caught and
+     * logged so it can never break the caller's control flow.
+     * @returns {void}
+     * @private
+     */
+    _notifyHistoryChanged () {
+        if (!this._onHistoryChanged) return;
+        try {
+            this._onHistoryChanged();
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     /**
@@ -1228,6 +1252,7 @@ export class AIAdapter {
         const promptMessage = this._convertToMessage(prompt);
         const messages = isChat ? this.messages : [];
         messages.push(promptMessage);
+        if (isChat) this._notifyHistoryChanged();
 
         const chatMessages = messages.map(m => {
             if (typeof m.content === 'string') {
@@ -1364,6 +1389,7 @@ Do not write any other text if you call a function.
                             role: 'user',
                             content: `Function loadSkill returned: ${JSON.stringify(result)}`
                         });
+                        this._notifyHistoryChanged();
                     }
                     loopCount++;
                     continue;
@@ -1392,6 +1418,7 @@ Do not write any other text if you call a function.
                                 role: 'user',
                                 content: `Function ${callRequest.call} returned: ${JSON.stringify(resultVal)}`
                             });
+                            this._notifyHistoryChanged();
                         }
                         loopCount++;
                         continue;
@@ -1407,6 +1434,7 @@ Do not write any other text if you call a function.
                                 role: 'user',
                                 content: `Error executing ${callRequest.call}: ${err.message}`
                             });
+                            this._notifyHistoryChanged();
                         }
                         loopCount++;
                         continue;
@@ -1422,6 +1450,7 @@ Do not write any other text if you call a function.
 
         if (isChat) {
             this.messages.push({role: 'assistant', content: text});
+            this._notifyHistoryChanged();
         }
 
         const result = {text};
@@ -1460,6 +1489,7 @@ Do not write any other text if you call a function.
         const promptMessage = this._convertToMessage(prompt);
         const messages = isChat ? this.messages : [];
         messages.push(promptMessage);
+        if (isChat) this._notifyHistoryChanged();
         // Create abort controller for this request
         const abortController = this._createAbortController();
         
@@ -1564,6 +1594,7 @@ Do not write any other text if you call a function.
             if (isChat) {
                 const response = await result.response;
                 this.messages.push(...response.messages);
+                this._notifyHistoryChanged();
             }
             return result;
         } catch (error) {
@@ -1591,6 +1622,7 @@ Do not write any other text if you call a function.
     startChat (history) {
         this.messages = history || [];
         if (this._browserAI) this._browserAI.resetCache();
+        this._notifyHistoryChanged();
     }
 
     /**

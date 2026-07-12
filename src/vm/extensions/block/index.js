@@ -427,6 +427,35 @@ class GAIBlocks {
      * (`runtime._gaiExternalToolFactories`, `runtime._gaiExternalInstructions`),
      * not on this extension instance, so registrations survive this
      * extension being reloaded.
+     *
+     * V3 adds `getHistory`/`setHistory`, letting sibling extensions read and
+     * replace a target's persistent chat history (the same array `chat`/
+     * `startChat` read and mutate), and the `GAI_HISTORY_CHANGED` runtime
+     * event: emitted as `runtime.emit('GAI_HISTORY_CHANGED', target)` every
+     * time that target's history is mutated (by a `chat` block call, the
+     * `resetHistory`/`setHistory` facade members, or the underlying
+     * `startChat`/`requestGenerate` methods on `AIAdapter`). It may fire more
+     * than once per turn (e.g. once for the prompt, once for the reply) —
+     * treat it as a coalescable "history changed, re-read it via `getHistory`"
+     * signal rather than a precise diff. Only fires for targets that already
+     * have an AI adapter (created via `getAI`/`ensureAI`/`hasAI`-triggering
+     * calls); it is never emitted for a target with no adapter.
+     *
+     * `getHistory(target)` — returns a fresh copy (`.slice()`) of the
+     * target's persistent chat history, or `[]` if no AI adapter exists yet
+     * for the target (does NOT create one). Each entry is an AI SDK message
+     * of the shape `{role: 'user'|'assistant'|'system'|'tool', content:
+     * string|Array}`, where `content` is either plain text or an array of
+     * content parts (e.g. `{type: 'text', text: string}`,
+     * `{type: 'file', data, mediaType}`).
+     *
+     * `setHistory(target, messages)` — replaces the target's persistent chat
+     * history with `messages`, creating the AI adapter first if needed (via
+     * `getAI`). `messages` is filtered defensively to keep only entries
+     * shaped like `{role: string, content: string|Array}`; malformed entries
+     * are dropped rather than throwing. Internally delegates to
+     * `AIAdapter#startChat`, which itself emits `GAI_HISTORY_CHANGED` — callers
+     * must not emit it again.
      * @param {Runtime} runtime - the Scratch 3.0 runtime.
      * @returns {void}
      * @private
@@ -437,7 +466,7 @@ class GAIBlocks {
              * Interface version. Bumped on breaking changes; callers should
              * feature-detect members with `typeof` rather than assume a version.
              */
-            version: 2,
+            version: 3,
 
             /**
              * Whether an AI adapter already exists for the target.
@@ -546,6 +575,36 @@ class GAIBlocks {
                 if (runtime._gaiExternalInstructions) {
                     runtime._gaiExternalInstructions.delete(ownerExtensionId);
                 }
+            },
+
+            /**
+             * Get a copy of the target's persistent chat history. Does not
+             * create an AI adapter; returns `[]` if none exists yet.
+             * @param {Target} target - the target whose history is read.
+             * @returns {Array.<{role: string, content: (string|Array)}>} - a fresh
+             * copy of the AI SDK messages (`user`/`assistant`/`system`/`tool`).
+             */
+            getHistory: target => {
+                const ai = this.aiForTarget(target);
+                return ai ? ai.getChatHistory().slice() : [];
+            },
+
+            /**
+             * Replace the target's persistent chat history, creating the AI
+             * adapter first if needed. Malformed entries are dropped rather
+             * than throwing. Emits `GAI_HISTORY_CHANGED` (via `startChat`).
+             * @param {Target} target - the target whose history is replaced.
+             * @param {Array.<{role: string, content: (string|Array)}>} messages - the
+             * new history.
+             * @returns {void}
+             */
+            setHistory: (target, messages) => {
+                const ai = this.getAI(target);
+                const filtered = (Array.isArray(messages) ? messages : [])
+                    .filter(m => m && typeof m.role === 'string' &&
+                        (typeof m.content === 'string' || Array.isArray(m.content)))
+                    .map(m => ({role: m.role, content: m.content}));
+                ai.startChat(filtered);
             }
         });
     }
@@ -1699,7 +1758,9 @@ class GAIBlocks {
     getAI (target) {
         let ai = this.aiForTarget(target);
         if (!ai) {
-            ai = new AIAdapter(target);
+            ai = new AIAdapter(target, {
+                onHistoryChanged: () => this.runtime.emit('GAI_HISTORY_CHANGED', target)
+            });
             // First AI use on this sprite: create the `skills` list so users can
             // populate it with Agent Skills. Skills are injected into the prompt
             // automatically once the list has items.

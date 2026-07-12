@@ -801,6 +801,72 @@ describe('AIAdapter', () => {
             });
         });
 
+        describe('History change notification', () => {
+            let onHistoryChanged;
+
+            beforeEach(() => {
+                onHistoryChanged = jest.fn();
+            });
+
+            it('constructor accepts an optional onHistoryChanged callback', () => {
+                const withCallback = new AIAdapter(mockTarget, {onHistoryChanged});
+                expect(withCallback._onHistoryChanged).toBe(onHistoryChanged);
+            });
+
+            it('constructor works fine when onHistoryChanged is omitted', () => {
+                expect(() => new AIAdapter(mockTarget)).not.toThrow();
+                expect(adapter._onHistoryChanged).toBeNull();
+            });
+
+            it('startChat invokes the onHistoryChanged callback', () => {
+                const withCallback = new AIAdapter(mockTarget, {onHistoryChanged});
+                withCallback.startChat([{role: 'user', content: 'Hi'}]);
+                expect(onHistoryChanged).toHaveBeenCalledTimes(1);
+            });
+
+            it('catches and logs an error thrown by onHistoryChanged without propagating it', () => {
+                const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+                const throwingCallback = jest.fn(() => {
+                    throw new Error('boom');
+                });
+                const withCallback = new AIAdapter(mockTarget, {onHistoryChanged: throwingCallback});
+
+                expect(() => withCallback.startChat([])).not.toThrow();
+                expect(throwingCallback).toHaveBeenCalledTimes(1);
+                expect(errorSpy).toHaveBeenCalledTimes(1);
+
+                errorSpy.mockRestore();
+            });
+
+            it('emits once for the prompt push and once for the reply push when isChat=true (cloud path)', async () => {
+                const withCallback = new AIAdapter(mockTarget, {onHistoryChanged});
+                withCallback.setApiKey('test-api-key');
+                generateText.mockResolvedValue({
+                    text: 'AI response',
+                    response: Promise.resolve({
+                        messages: [{role: 'assistant', content: 'AI response'}]
+                    })
+                });
+
+                await withCallback.requestGenerate(['User message'], jest.fn(), jest.fn(), null, true);
+
+                expect(onHistoryChanged).toHaveBeenCalledTimes(2);
+            });
+
+            it('does not emit when isChat=false (cloud path)', async () => {
+                const withCallback = new AIAdapter(mockTarget, {onHistoryChanged});
+                withCallback.setApiKey('test-api-key');
+                generateText.mockResolvedValue({
+                    text: 'AI response',
+                    response: Promise.resolve({messages: []})
+                });
+
+                await withCallback.requestGenerate(['User message'], jest.fn(), jest.fn(), null, false);
+
+                expect(onHistoryChanged).not.toHaveBeenCalled();
+            });
+        });
+
         describe('API management', () => {
             it('should set and get API type', () => {
                 adapter.setApiType('OpenAI');

@@ -30,7 +30,7 @@ Each extension is responsible for calling `runtime.registerExtensionInterface`
 with its own `extensionId` and API object; the polyfill itself does not
 register anything automatically.
 
-## The `gai` Facade (V2)
+## The `gai` Facade (V3)
 
 xcx-gai registers itself under the extension ID `'gai'`. Another extension can
 call it like this:
@@ -47,7 +47,7 @@ if (gai) {
 
 | Member | Signature | Description |
 |---|---|---|
-| `version` | `number` | Interface version, currently `2`. Bumped only on breaking changes (see "Versioning Policy" below for why this addition still bumped it). |
+| `version` | `number` | Interface version, currently `3`. Bumped only on breaking changes (see "Versioning Policy" below for why each bump was made). |
 | `hasAI` | `(target) => boolean` | Whether an AI adapter already exists for `target`. |
 | `ensureAI` | `(target) => void` | Create the AI adapter (and its config sprite variables / skills list) for `target` if it does not exist yet. |
 | `resetHistory` | `(target) => void` | Clear the chat history for `target`'s AI adapter, if any. No-op if no adapter exists. |
@@ -57,8 +57,10 @@ if (gai) {
 | `unregisterTools` | `(ownerExtensionId) => void` | Remove a previously registered `factory` for `ownerExtensionId`. No-op if none is registered. |
 | `registerInstructions` | `(ownerExtensionId, factory) => void` | Register a `factory` that contributes a section of text merged into this extension's AI system instruction. See "External Instructions (V2)" below. |
 | `unregisterInstructions` | `(ownerExtensionId) => void` | Remove a previously registered `factory` for `ownerExtensionId`. No-op if none is registered. |
+| `getHistory` | `(target) => Array<{role, content}>` | Return a fresh copy of `target`'s persistent chat history. See "History Sync (V3)" below. |
+| `setHistory` | `(target, messages) => void` | Replace `target`'s persistent chat history, creating the AI adapter first if needed. See "History Sync (V3)" below. |
 
-All V1 members keep their V1 signature and behavior unchanged.
+All V1 members keep their V1 signature and behavior unchanged. All V2 members keep their V2 signature and behavior unchanged.
 
 `options` (all optional; unknown keys are ignored for forward compatibility):
 
@@ -182,6 +184,59 @@ if (gai && typeof gai.registerInstructions === 'function') {
   registrations survive this extension being reloaded — same as External
   Tools' `runtime._gaiExternalToolFactories`.
 
+### History Sync (V3)
+
+A sibling extension can read and replace a target's persistent chat history —
+the same array `chat`/`startChat` read and mutate — via `getHistory` and
+`setHistory`, and can be notified whenever that history changes via the
+`GAI_HISTORY_CHANGED` runtime event.
+
+```js
+const gai = runtime.getExtensionInterface('gai');
+if (gai && typeof gai.getHistory === 'function') {
+    const history = gai.getHistory(target); // [] if no adapter exists yet
+
+    runtime.on('GAI_HISTORY_CHANGED', changedTarget => {
+        if (changedTarget !== target) return;
+        // Re-read via getHistory(target); treat this as a "changed, refresh"
+        // signal rather than a diff.
+    });
+
+    if (typeof gai.setHistory === 'function') {
+        gai.setHistory(target, [
+            {role: 'user', content: 'Hello!'},
+            {role: 'assistant', content: 'Hi there!'}
+        ]);
+    }
+}
+```
+
+- `getHistory(target)` returns a fresh `.slice()` copy of the AI SDK messages
+  (`{role: 'user'|'assistant'|'system'|'tool', content: string|Array}`, where
+  `content` is either plain text or an array of content parts, e.g.
+  `{type: 'text', text: string}` or `{type: 'file', data, mediaType}`). It
+  returns `[]` if no AI adapter exists yet for `target`, and — unlike
+  `ensureAI`/`chat` — **does not create one** as a side effect.
+- `setHistory(target, messages)` replaces the target's persistent chat
+  history, creating the AI adapter first if needed (via the same path as
+  `getAI`). `messages` is filtered defensively: only entries shaped like
+  `{role: string, content: string|Array}` are kept, malformed entries are
+  dropped rather than throwing. Internally delegates to `AIAdapter#startChat`,
+  which itself emits `GAI_HISTORY_CHANGED` — callers must not emit it again.
+- `'GAI_HISTORY_CHANGED'` is a runtime event emitted as
+  `runtime.emit('GAI_HISTORY_CHANGED', target)` — its single argument is the
+  `target` whose history changed — every time that target's persistent chat
+  history (`this.messages` on its `AIAdapter`) is mutated: by a `chat` block
+  call, the `resetHistory`/`setHistory` facade members, or the underlying
+  `startChat`/`requestGenerate` methods on `AIAdapter` (including every push in
+  the browser-LLM function-call loop). It may fire more than once per turn
+  (e.g. once for the prompt push, once for the reply push) — subscribe with
+  `runtime.on('GAI_HISTORY_CHANGED', handler)` and treat each emission as a
+  coalescable "history changed, re-read it via `getHistory`" signal rather
+  than a precise diff. It is only emitted for targets that already have an AI
+  adapter (created via `getAI`/`ensureAI`/any `hasAI`-triggering call); it is
+  never emitted for a target with no adapter.
+
 ## Versioning Policy
 
 - Consumers should feature-detect members with `typeof gai.someMethod ===
@@ -200,3 +255,13 @@ if (gai && typeof gai.registerInstructions === 'function') {
 - `registerInstructions`/`unregisterInstructions` follow that precedent: they
   are purely additive to the V2 facade (no existing member's signature or
   behavior changed), so they were added without a further version bump.
+- `getHistory`/`setHistory` are also purely additive (no existing member's
+  signature or behavior changed), but `version` was raised to `3` anyway,
+  consistent with the V2 precedent above: they introduce a new capability
+  class (direct history read/replace, plus the `GAI_HISTORY_CHANGED` event)
+  that callers benefit from detecting at a glance, not just per-member via
+  `typeof`. As always, feature-detect the specific members you use —
+  `typeof gai.getHistory === 'function'`, `typeof gai.setHistory ===
+  'function'` — rather than branching on `gai.version`, since older hosts may
+  eventually gain a member without a version bump and newer hosts may in
+  principle omit one.

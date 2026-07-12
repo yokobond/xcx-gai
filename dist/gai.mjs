@@ -46198,8 +46198,16 @@ var AIAdapter = /*#__PURE__*/function () {
   /**
    * Constructor for AIAdapter.
    * @param {Target} target - target for the adapter
+   * @param {object} [options] - optional configuration
+   * @param {Function} [options.onHistoryChanged] - called (no arguments) whenever the
+   *  persistent chat history (`this.messages`) is mutated. May fire multiple times per
+   *  turn (e.g. once for the prompt push, once for the reply push); treat it as a
+   *  coalescable "history changed, re-read it" signal rather than a precise diff.
+   *  Errors thrown by the callback are caught and logged, never propagated.
    */
   function AIAdapter(target) {
+    var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
+      onHistoryChanged = _ref.onHistoryChanged;
     _classCallCheck$1(this, AIAdapter);
     target.setCustomState(AIAdapter.STATE_KEY, this);
     this.target = target;
@@ -46214,6 +46222,7 @@ var AIAdapter = /*#__PURE__*/function () {
     this.messages = [];
     this.lastResult = null;
     this.lastPartialText = null;
+    this._onHistoryChanged = typeof onHistoryChanged === 'function' ? onHistoryChanged : null;
 
     // Function calling setup
     this.functionRegistry = {};
@@ -46227,10 +46236,29 @@ var AIAdapter = /*#__PURE__*/function () {
   }
 
   /**
-   * Set API key.
-   * @param {string} apiKey - API key
+   * Notify the registered `onHistoryChanged` callback (if any) that the
+   * persistent chat history (`this.messages`) was just mutated. Safe to call
+   * even when no callback was registered. A throwing callback is caught and
+   * logged so it can never break the caller's control flow.
+   * @returns {void}
+   * @private
    */
   return _createClass$1(AIAdapter, [{
+    key: "_notifyHistoryChanged",
+    value: function _notifyHistoryChanged() {
+      if (!this._onHistoryChanged) return;
+      try {
+        this._onHistoryChanged();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    /**
+     * Set API key.
+     * @param {string} apiKey - API key
+     */
+  }, {
     key: "setApiKey",
     value: function setApiKey(apiKey) {
       this.apiKey = apiKey;
@@ -46892,8 +46920,8 @@ var AIAdapter = /*#__PURE__*/function () {
             },
             required: ['name']
           }),
-          execute: function execute(_ref) {
-            var name = _ref.name;
+          execute: function execute(_ref2) {
+            var name = _ref2.name;
             var instructions = loadSkillBody(_this.target, name);
             if (!instructions) {
               return {
@@ -46994,10 +47022,10 @@ var AIAdapter = /*#__PURE__*/function () {
           return;
         }
         if (!entries) return;
-        Object.entries(entries).forEach(function (_ref2) {
-          var _ref3 = _slicedToArray(_ref2, 2),
-            name = _ref3[0],
-            spec = _ref3[1];
+        Object.entries(entries).forEach(function (_ref3) {
+          var _ref4 = _slicedToArray(_ref3, 2),
+            name = _ref4[0],
+            spec = _ref4[1];
           tools[name] = tool({
             description: spec.description,
             // Preserve v5 (non-strict) tool-schema behavior; v6 OpenAI defaults strict to true.
@@ -47419,6 +47447,7 @@ var AIAdapter = /*#__PURE__*/function () {
               promptMessage = this._convertToMessage(prompt);
               messages = isChat ? this.messages : [];
               messages.push(promptMessage);
+              if (isChat) this._notifyHistoryChanged();
               chatMessages = messages.map(function (m) {
                 if (typeof m.content === 'string') {
                   return {
@@ -47572,6 +47601,7 @@ var AIAdapter = /*#__PURE__*/function () {
                   role: 'user',
                   content: "Function loadSkill returned: ".concat(JSON.stringify(_result))
                 });
+                this._notifyHistoryChanged();
               }
               loopCount++;
               return _context8.abrupt("continue", 1);
@@ -47607,6 +47637,7 @@ var AIAdapter = /*#__PURE__*/function () {
                   role: 'user',
                   content: "Function ".concat(callRequest.call, " returned: ").concat(JSON.stringify(resultVal))
                 });
+                this._notifyHistoryChanged();
               }
               loopCount++;
               return _context8.abrupt("continue", 1);
@@ -47630,6 +47661,7 @@ var AIAdapter = /*#__PURE__*/function () {
                   role: 'user',
                   content: "Error executing ".concat(callRequest.call, ": ").concat(_t0.message)
                 });
+                this._notifyHistoryChanged();
               }
               loopCount++;
               return _context8.abrupt("continue", 1);
@@ -47643,6 +47675,7 @@ var AIAdapter = /*#__PURE__*/function () {
                   role: 'assistant',
                   content: text
                 });
+                this._notifyHistoryChanged();
               }
               result = {
                 text: text
@@ -47693,6 +47726,7 @@ var AIAdapter = /*#__PURE__*/function () {
               promptMessage = this._convertToMessage(prompt);
               messages = isChat ? this.messages : [];
               messages.push(promptMessage);
+              if (isChat) this._notifyHistoryChanged();
               // Create abort controller for this request
               abortController = this._createAbortController();
               _context9.prev = 2;
@@ -47891,6 +47925,7 @@ var AIAdapter = /*#__PURE__*/function () {
             case 31:
               response = _context9.sent;
               (_this$messages = this.messages).push.apply(_this$messages, _toConsumableArray(response.messages));
+              this._notifyHistoryChanged();
             case 32:
               return _context9.abrupt("return", result);
             case 33:
@@ -47935,6 +47970,7 @@ var AIAdapter = /*#__PURE__*/function () {
     value: function startChat(history) {
       this.messages = history || [];
       if (this._browserAI) this._browserAI.resetCache();
+      this._notifyHistoryChanged();
     }
 
     /**
@@ -49458,6 +49494,35 @@ var GAIBlocks = /*#__PURE__*/function () {
    * (`runtime._gaiExternalToolFactories`, `runtime._gaiExternalInstructions`),
    * not on this extension instance, so registrations survive this
    * extension being reloaded.
+   *
+   * V3 adds `getHistory`/`setHistory`, letting sibling extensions read and
+   * replace a target's persistent chat history (the same array `chat`/
+   * `startChat` read and mutate), and the `GAI_HISTORY_CHANGED` runtime
+   * event: emitted as `runtime.emit('GAI_HISTORY_CHANGED', target)` every
+   * time that target's history is mutated (by a `chat` block call, the
+   * `resetHistory`/`setHistory` facade members, or the underlying
+   * `startChat`/`requestGenerate` methods on `AIAdapter`). It may fire more
+   * than once per turn (e.g. once for the prompt, once for the reply) —
+   * treat it as a coalescable "history changed, re-read it via `getHistory`"
+   * signal rather than a precise diff. Only fires for targets that already
+   * have an AI adapter (created via `getAI`/`ensureAI`/`hasAI`-triggering
+   * calls); it is never emitted for a target with no adapter.
+   *
+   * `getHistory(target)` — returns a fresh copy (`.slice()`) of the
+   * target's persistent chat history, or `[]` if no AI adapter exists yet
+   * for the target (does NOT create one). Each entry is an AI SDK message
+   * of the shape `{role: 'user'|'assistant'|'system'|'tool', content:
+   * string|Array}`, where `content` is either plain text or an array of
+   * content parts (e.g. `{type: 'text', text: string}`,
+   * `{type: 'file', data, mediaType}`).
+   *
+   * `setHistory(target, messages)` — replaces the target's persistent chat
+   * history with `messages`, creating the AI adapter first if needed (via
+   * `getAI`). `messages` is filtered defensively to keep only entries
+   * shaped like `{role: string, content: string|Array}`; malformed entries
+   * are dropped rather than throwing. Internally delegates to
+   * `AIAdapter#startChat`, which itself emits `GAI_HISTORY_CHANGED` — callers
+   * must not emit it again.
    * @param {Runtime} runtime - the Scratch 3.0 runtime.
    * @returns {void}
    * @private
@@ -49471,7 +49536,7 @@ var GAIBlocks = /*#__PURE__*/function () {
          * Interface version. Bumped on breaking changes; callers should
          * feature-detect members with `typeof` rather than assume a version.
          */
-        version: 2,
+        version: 3,
         /**
          * Whether an AI adapter already exists for the target.
          * @param {Target} target - the target to check.
@@ -49577,6 +49642,38 @@ var GAIBlocks = /*#__PURE__*/function () {
           if (runtime._gaiExternalInstructions) {
             runtime._gaiExternalInstructions.delete(ownerExtensionId);
           }
+        },
+        /**
+         * Get a copy of the target's persistent chat history. Does not
+         * create an AI adapter; returns `[]` if none exists yet.
+         * @param {Target} target - the target whose history is read.
+         * @returns {Array.<{role: string, content: (string|Array)}>} - a fresh
+         * copy of the AI SDK messages (`user`/`assistant`/`system`/`tool`).
+         */
+        getHistory: function getHistory(target) {
+          var ai = _this4.aiForTarget(target);
+          return ai ? ai.getChatHistory().slice() : [];
+        },
+        /**
+         * Replace the target's persistent chat history, creating the AI
+         * adapter first if needed. Malformed entries are dropped rather
+         * than throwing. Emits `GAI_HISTORY_CHANGED` (via `startChat`).
+         * @param {Target} target - the target whose history is replaced.
+         * @param {Array.<{role: string, content: (string|Array)}>} messages - the
+         * new history.
+         * @returns {void}
+         */
+        setHistory: function setHistory(target, messages) {
+          var ai = _this4.getAI(target);
+          var filtered = (Array.isArray(messages) ? messages : []).filter(function (m) {
+            return m && typeof m.role === 'string' && (typeof m.content === 'string' || Array.isArray(m.content));
+          }).map(function (m) {
+            return {
+              role: m.role,
+              content: m.content
+            };
+          });
+          ai.startChat(filtered);
         }
       });
     }
@@ -50665,9 +50762,14 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "getAI",
     value: function getAI(target) {
+      var _this5 = this;
       var ai = this.aiForTarget(target);
       if (!ai) {
-        ai = new AIAdapter(target);
+        ai = new AIAdapter(target, {
+          onHistoryChanged: function onHistoryChanged() {
+            return _this5.runtime.emit('GAI_HISTORY_CHANGED', target);
+          }
+        });
         // First AI use on this sprite: create the `skills` list so users can
         // populate it with Agent Skills. Skills are injected into the prompt
         // automatically once the list has items.
@@ -50855,9 +50957,9 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "abortAllRequests",
     value: function abortAllRequests(reason) {
-      var _this5 = this;
+      var _this6 = this;
       this.runtime.targets.forEach(function (target) {
-        var ai = _this5.aiForTarget(target);
+        var ai = _this6.aiForTarget(target);
         if (ai) {
           ai.abortRequests(reason);
         }
@@ -50876,7 +50978,7 @@ var GAIBlocks = /*#__PURE__*/function () {
     key: "_requestAI",
     value: function _requestAI(prompt, isChat, util) {
       var _requestState$functio,
-        _this6 = this;
+        _this7 = this;
       var target = util.target;
       var ai = this.aiForTarget(target);
       var stackFrame = util.stackFrame;
@@ -50905,19 +51007,19 @@ var GAIBlocks = /*#__PURE__*/function () {
         this.updateFunctionRegistry(target);
         var responseTextHandler = function responseTextHandler(responseText) {
           if (responseText !== '') {
-            _this6.runtime.startHats('gai_whenResponseReceived', null, target);
+            _this7.runtime.startHats('gai_whenResponseReceived', null, target);
           }
         };
         var functionDispatcher = function functionDispatcher(call) {
           requestState.functionCalls = requestState.functionCalls || [];
           requestState.functionCalls.push(call);
-          return _this6._dispatchFunctionCall(call, target, util.runtime);
+          return _this7._dispatchFunctionCall(call, target, util.runtime);
         };
         var partialTextHandler;
         if (this.blockIsUsingInTarget('gai_whenPartialResponseReceived', target)) {
           partialTextHandler = function partialTextHandler(partialText) {
             if (partialText !== '') {
-              _this6.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+              _this7.runtime.startHats('gai_whenPartialResponseReceived', null, target);
             }
           };
         }
@@ -50928,7 +51030,7 @@ var GAIBlocks = /*#__PURE__*/function () {
           requestState.error = error;
           // Surface the same localized error through the `response text`
           // reporter so both blocks show a consistent message on failure.
-          ai.setLastResponseText(_this6._formatAIError(error));
+          ai.setLastResponseText(_this7._formatAIError(error));
         });
       }
       util.yield();
@@ -51000,7 +51102,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "_chatViaExternalApi",
     value: function _chatViaExternalApi(target, promptText, options) {
-      var _this7 = this;
+      var _this8 = this;
       var _ref5 = options || {},
         onPartial = _ref5.onPartial,
         _ref5$fireHats = _ref5.fireHats,
@@ -51010,7 +51112,7 @@ var GAIBlocks = /*#__PURE__*/function () {
       var prompt = interpretContentPartsText(Cast.toString(promptText));
       var responseTextHandler = fireHats ? function (responseText) {
         if (responseText !== '') {
-          _this7.runtime.startHats('gai_whenResponseReceived', null, target);
+          _this8.runtime.startHats('gai_whenResponseReceived', null, target);
         }
       } : null;
 
@@ -51036,7 +51138,7 @@ var GAIBlocks = /*#__PURE__*/function () {
           var accumulated = hasSchema ? partialText : accumulatedText += partialText;
           if (typeof onPartial === 'function') onPartial(accumulated);
           if (fireHats && partialText !== '') {
-            _this7.runtime.startHats('gai_whenPartialResponseReceived', null, target);
+            _this8.runtime.startHats('gai_whenPartialResponseReceived', null, target);
           }
         };
       }
@@ -51044,7 +51146,7 @@ var GAIBlocks = /*#__PURE__*/function () {
         return ai.getLastResponseText();
       }).catch(function (error) {
         console.error(error);
-        return _this7._formatAIError(error);
+        return _this8._formatAIError(error);
       });
     }
 
@@ -51098,11 +51200,11 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "snapshotData",
     value: function snapshotData(args, util) {
-      var _this8 = this;
+      var _this9 = this;
       var runtime = this.runtime;
       var requester = util.target;
       return new Promise(function (resolve) {
-        _this8.runtime.renderer.requestSnapshot(function (imageDataURL) {
+        _this9.runtime.renderer.requestSnapshot(function (imageDataURL) {
           if (DEBUG) {
             insertImageAsSvgCostume(runtime, requester, imageDataURL, null, null, 'snapshot', requester.currentCostume + 1).catch(function (e) {
               console.error(e);
@@ -51146,20 +51248,20 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "startSoundRecorder",
     value: function startSoundRecorder() {
-      var _this9 = this;
+      var _this0 = this;
       return navigator.mediaDevices.getUserMedia({
         audio: true
       }).then(function (stream) {
-        _this9.runtime.emitMicListening(true);
+        _this0.runtime.emitMicListening(true);
         var mediaRecorder = new MediaRecorder(stream);
-        _this9.soundRecorder = mediaRecorder;
-        _this9.soundRecorderChunks = [];
+        _this0.soundRecorder = mediaRecorder;
+        _this0.soundRecorderChunks = [];
         mediaRecorder.ondataavailable = function (event) {
-          _this9.soundRecorderChunks.push(event.data);
+          _this0.soundRecorderChunks.push(event.data);
         };
         mediaRecorder.start();
-        _this9.listeningTimeout = setTimeout(function () {
-          _this9.stopSoundRecorder();
+        _this0.listeningTimeout = setTimeout(function () {
+          _this0.stopSoundRecorder();
         }, 60 * 1000);
       });
     }
@@ -51172,29 +51274,29 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "stopSoundRecorder",
     value: function stopSoundRecorder() {
-      var _this0 = this;
+      var _this1 = this;
       if (this.listeningTimeout) {
         clearTimeout(this.listeningTimeout);
         this.listeningTimeout = null;
       }
       if (this.soundRecorder) {
         return new Promise(function (resolve) {
-          _this0.soundRecorder.onstop = function () {
-            _this0.runtime.emitMicListening(false);
-            var audioBlob = new Blob(_this0.soundRecorderChunks, {
+          _this1.soundRecorder.onstop = function () {
+            _this1.runtime.emitMicListening(false);
+            var audioBlob = new Blob(_this1.soundRecorderChunks, {
               type: 'audio/wav'
             });
             var reader = new FileReader();
             reader.readAsDataURL(audioBlob);
             reader.onloadend = function () {
               var dataURL = reader.result;
-              _this0.recordedSoundData = dataURL;
-              _this0.isListening = false;
-              _this0.soundRecorder = null;
+              _this1.recordedSoundData = dataURL;
+              _this1.isListening = false;
+              _this1.soundRecorder = null;
               resolve(dataURL);
             };
           };
-          _this0.soundRecorder.stop();
+          _this1.soundRecorder.stop();
         });
       }
       return null;
@@ -51207,14 +51309,14 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "startListening",
     value: function startListening() {
-      var _this1 = this;
+      var _this10 = this;
       if (this.isListening) {
         return;
       }
       this.isListening = true;
       return this.startSoundRecorder().catch(function (e) {
         console.warn('Failed to start listening', e);
-        _this1.isListening = false;
+        _this10.isListening = false;
       });
     }
 
@@ -51878,7 +51980,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "downloadBrowserLLMModel",
     value: function downloadBrowserLLMModel(args, util) {
-      var _this10 = this;
+      var _this11 = this;
       var target = util.target;
       var ai = this.getAI(target);
       if (!ai) {
@@ -51910,8 +52012,8 @@ var GAIBlocks = /*#__PURE__*/function () {
         ai.cancelDownloadBrowserLLMModel();
         if (progressBar) progressBar.destroy();
         cancelResolve('Download cancelled');
-        if (_this10._activeDownload === handle) {
-          _this10._activeDownload = null;
+        if (_this11._activeDownload === handle) {
+          _this11._activeDownload = null;
         }
       };
       progressBar = new DownloadProgressBar(titleMsg, doCancel);
@@ -51967,14 +52069,14 @@ var GAIBlocks = /*#__PURE__*/function () {
       var downloadPromise = ai.downloadBrowserLLMModel(modelID, modelType, progressCallback).then(function () {
         progressBar.update(100, 'Complete!');
         progressBar.destroy();
-        if (_this10._activeDownload === handle) {
-          _this10._activeDownload = null;
+        if (_this11._activeDownload === handle) {
+          _this11._activeDownload = null;
         }
         return 'Download complete';
       }).catch(function (error) {
         progressBar.destroy();
-        if (_this10._activeDownload === handle) {
-          _this10._activeDownload = null;
+        if (_this11._activeDownload === handle) {
+          _this11._activeDownload = null;
         }
         if (error.message && error.message.includes('DOWNLOAD_CANCELLED')) {
           return 'Download cancelled';
@@ -52367,7 +52469,7 @@ var GAIBlocks = /*#__PURE__*/function () {
   }, {
     key: "openApiKeyDialog",
     value: function openApiKeyDialog() {
-      var _this11 = this;
+      var _this12 = this;
       var targetName = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
       var defaultApiKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
       var customMessage = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
@@ -52444,7 +52546,7 @@ var GAIBlocks = /*#__PURE__*/function () {
         inputDialog.showModal();
       }).finally(function () {
         document.body.removeChild(inputDialog);
-        _this11.apiKeyDialogOpened = false;
+        _this12.apiKeyDialogOpened = false;
       });
     }
 
