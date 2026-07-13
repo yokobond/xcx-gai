@@ -8,6 +8,26 @@ import {readConfigFromVariables} from './config-store.js';
 import {BrowserAIProvider} from './browser-ai.js';
 
 /**
+ * Default maximum number of model steps (tool-call rounds plus the final
+ * reply) per request. Agentic turns that edit the project (e.g. xcx-agent's
+ * editor tools) routinely need several tool calls before the wrap-up text,
+ * so this must leave room for them. Overridable per target via
+ * `generationConfig.maxSteps`.
+ * @type {number}
+ */
+const DEFAULT_MAX_STEPS = 10;
+
+/**
+ * How long an external (sibling-extension) tool's execute() may run before
+ * it is failed with a timeout result. Without this, a tool that never
+ * settles (e.g. an asset fetch hanging with no timeout of its own) would
+ * stall the whole generateText/streamText step loop forever and the chat
+ * turn would never resolve.
+ * @type {number}
+ */
+const EXTERNAL_TOOL_TIMEOUT_MS = 30000;
+
+/**
  * Function Call class for AI adapter function calling.
  */
 class FunctionCall {
@@ -305,6 +325,7 @@ export class AIAdapter {
         this.messages = [];
         this.lastResult = null;
         this.lastPartialText = null;
+        this.lastFinishReason = null;
         this._onHistoryChanged = typeof onHistoryChanged === 'function' ? onHistoryChanged : null;
 
         // Function calling setup
@@ -922,7 +943,28 @@ export class AIAdapter {
                     inputSchema: jsonSchema(spec.parameters),
                     execute: async input => {
                         try {
-                            return await spec.execute(input);
+                            // Guard against an execute() that never settles: the SDK
+                            // waits on it indefinitely, which would freeze the whole
+                            // chat turn. Failing the tool lets the model report back.
+                            return await new Promise((resolve, reject) => {
+                                const timer = setTimeout(
+                                    () => reject(new Error(
+                                        `tool "${name}" did not finish within ${EXTERNAL_TOOL_TIMEOUT_MS}ms`)),
+                                    EXTERNAL_TOOL_TIMEOUT_MS
+                                );
+                                Promise.resolve()
+                                    .then(() => spec.execute(input))
+                                    .then(
+                                        result => {
+                                            clearTimeout(timer);
+                                            resolve(result);
+                                        },
+                                        error => {
+                                            clearTimeout(timer);
+                                            reject(error);
+                                        }
+                                    );
+                            });
                         } catch (error) {
                             return {success: false, error: String((error && error.message) || error)};
                         }
@@ -1105,6 +1147,19 @@ export class AIAdapter {
      */
     setLastResponseText (text) {
         this.lastResponseText = text;
+    }
+
+    /**
+     * Get the finish reason of the last generation's final step, as reported
+     * by the AI SDK ('stop' | 'length' | 'content-filter' | 'tool-calls' |
+     * 'error' | 'other'). 'tool-calls' means the run was cut off by the step
+     * limit while the model was still requesting tools (unfinished work).
+     * Null when unknown (no request yet, or a path that does not report it,
+     * e.g. BrowserLLM).
+     * @returns {?string} - finish reason of the last request, or null
+     */
+    getLastFinishReason () {
+        return this.lastFinishReason;
     }
 
     /**
@@ -1476,6 +1531,7 @@ Do not write any other text if you call a function.
         isChat
     ) {
         this.lastStructuredOutput = null;
+        this.lastFinishReason = null;
         // Load baseUrl/modelID/generation config from the sprite variables before
         // building the client and request params.
         this.applyConfigFromVariables();
@@ -1529,9 +1585,18 @@ Do not write any other text if you call a function.
                 ...(toolExists && {tools, toolChoice: this.functionCallingMode}),
                 ...generationParams,
                 abortSignal: abortController.signal,
-                stopWhen: stepCountIs(5),
+                stopWhen: stepCountIs(
+                    Number(this.generationConfig.maxSteps) > 0 ?
+                        Number(this.generationConfig.maxSteps) :
+                        DEFAULT_MAX_STEPS
+                ),
                 onStepFinish: step => {
                     this.setLastResponseText(step.text);
+                    // The final step's finish reason tells completed ('stop')
+                    // apart from cut off by the step limit ('tool-calls');
+                    // recording it here covers streaming and non-streaming
+                    // alike without awaiting result.finishReason.
+                    this.lastFinishReason = step.finishReason || null;
                     if (typeof responseTextHandler === 'function') {
                         responseTextHandler(step.text);
                     }

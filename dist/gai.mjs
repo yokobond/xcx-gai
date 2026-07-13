@@ -46008,6 +46008,26 @@ function _asyncIterator(r) { var n, t, o, e = 2; for ("undefined" != typeof Symb
 function AsyncFromSyncIterator(r) { function AsyncFromSyncIteratorContinuation(r) { if (Object(r) !== r) return Promise.reject(new TypeError(r + " is not an object.")); var n = r.done; return Promise.resolve(r.value).then(function (r) { return { value: r, done: n }; }); } return AsyncFromSyncIterator = function AsyncFromSyncIterator(r) { this.s = r, this.n = r.next; }, AsyncFromSyncIterator.prototype = { s: null, n: null, next: function next() { return AsyncFromSyncIteratorContinuation(this.n.apply(this.s, arguments)); }, return: function _return(r) { var n = this.s.return; return void 0 === n ? Promise.resolve({ value: r, done: true }) : AsyncFromSyncIteratorContinuation(n.apply(this.s, arguments)); }, throw: function _throw(r) { var n = this.s.return; return void 0 === n ? Promise.reject(r) : AsyncFromSyncIteratorContinuation(n.apply(this.s, arguments)); } }, new AsyncFromSyncIterator(r); }
 
 /**
+ * Default maximum number of model steps (tool-call rounds plus the final
+ * reply) per request. Agentic turns that edit the project (e.g. xcx-agent's
+ * editor tools) routinely need several tool calls before the wrap-up text,
+ * so this must leave room for them. Overridable per target via
+ * `generationConfig.maxSteps`.
+ * @type {number}
+ */
+var DEFAULT_MAX_STEPS = 10;
+
+/**
+ * How long an external (sibling-extension) tool's execute() may run before
+ * it is failed with a timeout result. Without this, a tool that never
+ * settles (e.g. an asset fetch hanging with no timeout of its own) would
+ * stall the whole generateText/streamText step loop forever and the chat
+ * turn would never resolve.
+ * @type {number}
+ */
+var EXTERNAL_TOOL_TIMEOUT_MS = 30000;
+
+/**
  * Function Call class for AI adapter function calling.
  */
 var FunctionCall = /*#__PURE__*/function () {
@@ -46222,6 +46242,7 @@ var AIAdapter = /*#__PURE__*/function () {
     this.messages = [];
     this.lastResult = null;
     this.lastPartialText = null;
+    this.lastFinishReason = null;
     this._onHistoryChanged = typeof onHistoryChanged === 'function' ? onHistoryChanged : null;
 
     // Function calling setup
@@ -47039,7 +47060,20 @@ var AIAdapter = /*#__PURE__*/function () {
                     case 0:
                       _context5.prev = 0;
                       _context5.next = 1;
-                      return spec.execute(input);
+                      return new Promise(function (resolve, reject) {
+                        var timer = setTimeout(function () {
+                          return reject(new Error("tool \"".concat(name, "\" did not finish within ").concat(EXTERNAL_TOOL_TIMEOUT_MS, "ms")));
+                        }, EXTERNAL_TOOL_TIMEOUT_MS);
+                        Promise.resolve().then(function () {
+                          return spec.execute(input);
+                        }).then(function (result) {
+                          clearTimeout(timer);
+                          resolve(result);
+                        }, function (error) {
+                          clearTimeout(timer);
+                          reject(error);
+                        });
+                      });
                     case 1:
                       return _context5.abrupt("return", _context5.sent);
                     case 2:
@@ -47287,6 +47321,21 @@ var AIAdapter = /*#__PURE__*/function () {
     key: "setLastResponseText",
     value: function setLastResponseText(text) {
       this.lastResponseText = text;
+    }
+
+    /**
+     * Get the finish reason of the last generation's final step, as reported
+     * by the AI SDK ('stop' | 'length' | 'content-filter' | 'tool-calls' |
+     * 'error' | 'other'). 'tool-calls' means the run was cut off by the step
+     * limit while the model was still requesting tools (unfinished work).
+     * Null when unknown (no request yet, or a path that does not report it,
+     * e.g. BrowserLLM).
+     * @returns {?string} - finish reason of the last request, or null
+     */
+  }, {
+    key: "getLastFinishReason",
+    value: function getLastFinishReason() {
+      return this.lastFinishReason;
     }
 
     /**
@@ -47714,6 +47763,7 @@ var AIAdapter = /*#__PURE__*/function () {
           while (1) switch (_context9.prev = _context9.next) {
             case 0:
               this.lastStructuredOutput = null;
+              this.lastFinishReason = null;
               // Load baseUrl/modelID/generation config from the sprite variables before
               // building the client and request params.
               this.applyConfigFromVariables();
@@ -47762,9 +47812,14 @@ var AIAdapter = /*#__PURE__*/function () {
                 toolChoice: this.functionCallingMode
               }), generationParams), {}, {
                 abortSignal: abortController.signal,
-                stopWhen: stepCountIs(5),
+                stopWhen: stepCountIs(Number(this.generationConfig.maxSteps) > 0 ? Number(this.generationConfig.maxSteps) : DEFAULT_MAX_STEPS),
                 onStepFinish: function onStepFinish(step) {
                   _this9.setLastResponseText(step.text);
+                  // The final step's finish reason tells completed ('stop')
+                  // apart from cut off by the step limit ('tool-calls');
+                  // recording it here covers streaming and non-streaming
+                  // alike without awaiting result.finishReason.
+                  _this9.lastFinishReason = step.finishReason || null;
                   if (typeof responseTextHandler === 'function') {
                     responseTextHandler(step.text);
                   }
@@ -51093,10 +51148,18 @@ var GAIBlocks = /*#__PURE__*/function () {
      * @param {Function} [options.onPartial] - called with the accumulated response text
      * so far while streaming (or the latest JSON snapshot so far when the target's AI is
      * configured with a `responseSchema`, mirroring ai-adapter's own partial-text semantics).
+     * @param {Function} [options.onFinish] - called once with `{finishReason}` just before
+     * the promise resolves, on success only. `finishReason` is the AI SDK finish reason of
+     * the final step ('stop' = the model finished on its own; 'tool-calls' = cut off by the
+     * step limit while still requesting tools; 'length' = token-limit truncation), or null
+     * when unknown (e.g. BrowserLLM). Not called on the error path (the promise then
+     * resolves with a non-empty error message instead).
      * @param {boolean} [options.fireHats] - whether to fire the `gai_whenResponseReceived`
      * and `gai_whenPartialResponseReceived` hat blocks (default false).
-     * @returns {Promise<string>} - a Promise that resolves with the response text;
-     * never rejects, resolving with a localized error message on failure instead.
+     * @returns {Promise<string>} - a Promise that resolves with the response text
+     * (the non-empty texts of all steps joined with blank lines when the turn
+     * involved tool calls); never rejects, resolving with a localized error
+     * message on failure instead.
      * @private
      */
   }, {
@@ -51105,16 +51168,26 @@ var GAIBlocks = /*#__PURE__*/function () {
       var _this8 = this;
       var _ref5 = options || {},
         onPartial = _ref5.onPartial,
+        onFinish = _ref5.onFinish,
         _ref5$fireHats = _ref5.fireHats,
         fireHats = _ref5$fireHats === void 0 ? false : _ref5$fireHats;
       var ai = this.getAI(target);
       this.updateFunctionRegistry(target);
       var prompt = interpretContentPartsText(Cast.toString(promptText));
-      var responseTextHandler = fireHats ? function (responseText) {
-        if (responseText !== '') {
+
+      // Collect every step's text (each tool-call round is one step). The
+      // promise must resolve with the whole visible reply, not only the last
+      // step's text — a multi-step turn whose final step is a tool call cut
+      // off by the step limit would otherwise resolve with '' even though
+      // earlier steps produced text.
+      var stepTexts = [];
+      var responseTextHandler = function responseTextHandler(responseText) {
+        if (responseText === '') return;
+        stepTexts.push(responseText);
+        if (fireHats) {
           _this8.runtime.startHats('gai_whenResponseReceived', null, target);
         }
-      } : null;
+      };
 
       // Custom-procedure function calling is unsupported via this entry point (see
       // the method doc above): fail the call instead of dispatching to a thread that
@@ -51143,7 +51216,17 @@ var GAIBlocks = /*#__PURE__*/function () {
         };
       }
       return ai.requestGenerate(prompt, responseTextHandler, functionDispatcher, partialTextHandler, true).then(function () {
-        return ai.getLastResponseText();
+        if (typeof onFinish === 'function') {
+          onFinish({
+            finishReason: typeof ai.getLastFinishReason === 'function' ? ai.getLastFinishReason() : null
+          });
+        }
+        // A structured (responseSchema) reply is a single JSON document;
+        // joining per-step snapshots would corrupt it, so keep the last
+        // response text as-is in that case.
+        var hasSchema = ai.generationConfig && Object.prototype.hasOwnProperty.call(ai.generationConfig, 'responseSchema');
+        if (hasSchema) return ai.getLastResponseText();
+        return stepTexts.join('\n\n') || ai.getLastResponseText();
       }).catch(function (error) {
         console.error(error);
         return _this8._formatAIError(error);

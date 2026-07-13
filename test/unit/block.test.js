@@ -487,6 +487,93 @@ describe("blockClass", () => {
                 expect(block.updateFunctionRegistry).toHaveBeenCalledWith(mockTarget);
             });
 
+            it('reports the finish reason through options.onFinish before resolving', async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                mockAIAdapter.generationConfig = {};
+                mockAIAdapter.requestGenerate = jest.fn().mockResolvedValue();
+                mockAIAdapter.getLastResponseText = jest.fn().mockReturnValue('');
+                mockAIAdapter.getLastFinishReason = jest.fn().mockReturnValue('tool-calls');
+
+                const onFinish = jest.fn();
+                await block._chatViaExternalApi(mockTarget, 'hello', {onFinish});
+
+                expect(onFinish).toHaveBeenCalledTimes(1);
+                expect(onFinish).toHaveBeenCalledWith({finishReason: 'tool-calls'});
+            });
+
+            it('passes {finishReason: null} to onFinish when the adapter has no getLastFinishReason', async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                mockAIAdapter.generationConfig = {};
+                mockAIAdapter.requestGenerate = jest.fn().mockResolvedValue();
+                mockAIAdapter.getLastResponseText = jest.fn().mockReturnValue('hi');
+                delete mockAIAdapter.getLastFinishReason;
+
+                const onFinish = jest.fn();
+                await block._chatViaExternalApi(mockTarget, 'hello', {onFinish});
+
+                expect(onFinish).toHaveBeenCalledWith({finishReason: null});
+            });
+
+            it('does not call onFinish on the error path', async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                mockAIAdapter.requestGenerate = jest.fn().mockRejectedValue(new Error('boom'));
+                mockAIAdapter.getLastResponseText = jest.fn();
+
+                const onFinish = jest.fn();
+                const result = await block._chatViaExternalApi(mockTarget, 'hello', {onFinish});
+
+                expect(result).toBe('boom');
+                expect(onFinish).not.toHaveBeenCalled();
+            });
+
+            it("resolves with all steps' texts joined when the turn used tool calls", async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                mockAIAdapter.generationConfig = {};
+                // requestGenerate reports each step's text through the
+                // responseTextHandler (one call per onStepFinish round);
+                // a tool-call-only step reports ''.
+                mockAIAdapter.requestGenerate = jest.fn().mockImplementation(
+                    (prompt, responseTextHandler) => {
+                        responseTextHandler('using a tool now');
+                        responseTextHandler('');
+                        responseTextHandler('all done');
+                        return Promise.resolve();
+                    }
+                );
+                mockAIAdapter.getLastResponseText = jest.fn().mockReturnValue('all done');
+
+                const result = await block._chatViaExternalApi(mockTarget, 'hello');
+
+                expect(result).toBe('using a tool now\n\nall done');
+            });
+
+            it('does not resolve empty when the turn ends on a cut-off tool-call step', async () => {
+                jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
+                jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});
+                mockAIAdapter.generationConfig = {};
+                // Regression: the step limit can stop the turn while the model
+                // is still calling tools, so the *last* step text is '' even
+                // though an earlier step produced text. The old implementation
+                // resolved with getLastResponseText() (= '') and the chat UI
+                // showed an empty bubble that looked like a hung request.
+                mockAIAdapter.requestGenerate = jest.fn().mockImplementation(
+                    (prompt, responseTextHandler) => {
+                        responseTextHandler('built the script');
+                        responseTextHandler('');
+                        return Promise.resolve();
+                    }
+                );
+                mockAIAdapter.getLastResponseText = jest.fn().mockReturnValue('');
+
+                const result = await block._chatViaExternalApi(mockTarget, 'hello');
+
+                expect(result).toBe('built the script');
+            });
+
             it('resolves with error text instead of rejecting when the request fails', async () => {
                 jest.spyOn(block, 'getAI').mockReturnValue(mockAIAdapter);
                 jest.spyOn(block, 'updateFunctionRegistry').mockImplementation(() => {});

@@ -130,6 +130,33 @@ describe('AIAdapter _buildExternalTools', () => {
         });
     });
 
+    test('fails an execute() that never settles with a timeout result instead of hanging', async () => {
+        jest.useFakeTimers();
+        try {
+            const factories = new Map();
+            factories.set('my-extension', () => ({
+                hangingTool: {
+                    description: 'Never settles.',
+                    parameters: {type: 'object', properties: {}},
+                    // e.g. an asset fetch with no timeout of its own
+                    execute: () => new Promise(() => {})
+                }
+            }));
+            const adapter = new AIAdapter(fakeTarget('t-hanging-execute', factories));
+
+            const tools = adapter._buildExternalTools();
+            const resultPromise = tools.hangingTool.execute({});
+            await jest.advanceTimersByTimeAsync(30000);
+
+            await expect(resultPromise).resolves.toEqual({
+                success: false,
+                error: expect.stringContaining('did not finish within')
+            });
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
     test('skips a factory that throws, logs the error, and still returns other factories\' tools', () => {
         const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         const factories = new Map();

@@ -637,6 +637,31 @@ describe('AIAdapter', () => {
                     expect(responseTextHandler).toHaveBeenCalledWith('partial response');
                 });
 
+                it('records the final step finish reason and resets it on the next request', async () => {
+                    // A run cut off by the step limit ends with a 'tool-calls' step.
+                    streamText.mockImplementation(async ({ onStepFinish }) => {
+                        if (onStepFinish) {
+                            onStepFinish({ text: '', finishReason: 'tool-calls' });
+                        }
+                        return {
+                            textStream: (async function* () {})(),
+                            response: Promise.resolve({ messages: [] }),
+                            toText: async () => ''
+                        };
+                    });
+
+                    await adapter.requestGenerate(['prompt'], responseTextHandler, functionDispatcher, partialTextHandler, false);
+                    expect(adapter.getLastFinishReason()).toBe('tool-calls');
+
+                    // The next request must not inherit the stale reason.
+                    streamText.mockResolvedValue({
+                        textStream: (async function* () {})(),
+                        response: Promise.resolve({ messages: [] })
+                    });
+                    await adapter.requestGenerate(['prompt'], responseTextHandler, functionDispatcher, partialTextHandler, false);
+                    expect(adapter.getLastFinishReason()).toBeNull();
+                });
+
                 it('should surface a streaming error captured by onError (v6)', async () => {
                     // In v6, streamText routes stream errors to onError instead of
                     // throwing from textStream. requestGenerate must re-throw it so the

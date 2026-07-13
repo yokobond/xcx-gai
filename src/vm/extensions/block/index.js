@@ -2064,25 +2064,39 @@ class GAIBlocks {
      * @param {Function} [options.onPartial] - called with the accumulated response text
      * so far while streaming (or the latest JSON snapshot so far when the target's AI is
      * configured with a `responseSchema`, mirroring ai-adapter's own partial-text semantics).
+     * @param {Function} [options.onFinish] - called once with `{finishReason}` just before
+     * the promise resolves, on success only. `finishReason` is the AI SDK finish reason of
+     * the final step ('stop' = the model finished on its own; 'tool-calls' = cut off by the
+     * step limit while still requesting tools; 'length' = token-limit truncation), or null
+     * when unknown (e.g. BrowserLLM). Not called on the error path (the promise then
+     * resolves with a non-empty error message instead).
      * @param {boolean} [options.fireHats] - whether to fire the `gai_whenResponseReceived`
      * and `gai_whenPartialResponseReceived` hat blocks (default false).
-     * @returns {Promise<string>} - a Promise that resolves with the response text;
-     * never rejects, resolving with a localized error message on failure instead.
+     * @returns {Promise<string>} - a Promise that resolves with the response text
+     * (the non-empty texts of all steps joined with blank lines when the turn
+     * involved tool calls); never rejects, resolving with a localized error
+     * message on failure instead.
      * @private
      */
     _chatViaExternalApi (target, promptText, options) {
-        const {onPartial, fireHats = false} = options || {};
+        const {onPartial, onFinish, fireHats = false} = options || {};
         const ai = this.getAI(target);
         this.updateFunctionRegistry(target);
         const prompt = interpretContentPartsText(Cast.toString(promptText));
 
-        const responseTextHandler = fireHats ?
-            responseText => {
-                if (responseText !== '') {
-                    this.runtime.startHats('gai_whenResponseReceived', null, target);
-                }
-            } :
-            null;
+        // Collect every step's text (each tool-call round is one step). The
+        // promise must resolve with the whole visible reply, not only the last
+        // step's text — a multi-step turn whose final step is a tool call cut
+        // off by the step limit would otherwise resolve with '' even though
+        // earlier steps produced text.
+        const stepTexts = [];
+        const responseTextHandler = responseText => {
+            if (responseText === '') return;
+            stepTexts.push(responseText);
+            if (fireHats) {
+                this.runtime.startHats('gai_whenResponseReceived', null, target);
+            }
+        };
 
         // Custom-procedure function calling is unsupported via this entry point (see
         // the method doc above): fail the call instead of dispatching to a thread that
@@ -2113,7 +2127,22 @@ class GAIBlocks {
         }
 
         return ai.requestGenerate(prompt, responseTextHandler, functionDispatcher, partialTextHandler, true)
-            .then(() => ai.getLastResponseText())
+            .then(() => {
+                if (typeof onFinish === 'function') {
+                    onFinish({
+                        finishReason: typeof ai.getLastFinishReason === 'function' ?
+                            ai.getLastFinishReason() :
+                            null
+                    });
+                }
+                // A structured (responseSchema) reply is a single JSON document;
+                // joining per-step snapshots would corrupt it, so keep the last
+                // response text as-is in that case.
+                const hasSchema = ai.generationConfig &&
+                    Object.prototype.hasOwnProperty.call(ai.generationConfig, 'responseSchema');
+                if (hasSchema) return ai.getLastResponseText();
+                return stepTexts.join('\n\n') || ai.getLastResponseText();
+            })
             .catch(error => {
                 console.error(error);
                 return this._formatAIError(error);
