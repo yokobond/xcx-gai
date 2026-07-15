@@ -72,6 +72,14 @@ All V1 members keep their V1 signature and behavior unchanged. All V2 members ke
   streaming plain text; the `chat` facade accumulates those deltas for you so
   callers always receive the full text so far, matching what they would see
   rendered.
+- `onFinish({finishReason})` — called once, just before the Promise resolves,
+  on success only. `finishReason` is the AI SDK finish reason of the final
+  step: `'stop'` (the model finished on its own), `'tool-calls'` (cut off by
+  the step limit while still requesting tools), `'length'` (token-limit
+  truncation), or `null` when unknown (e.g. BrowserLLM). Not called on the
+  error path (the Promise then resolves with a non-empty error message
+  instead). Callers use this to tell "finished with nothing to say" apart
+  from "cut off mid-work" when the resolved text is empty.
 - `fireHats` — when `true`, also fires the `gai_whenResponseReceived` and
   `gai_whenPartialResponseReceived` hat blocks in the Scratch project, the
   same way the built-in `chat` block does. Defaults to `false`, since a
@@ -85,6 +93,13 @@ Promise resolves with a localized, human-readable error message instead (the
 same message the `chat`/`generate` blocks would show in
 `response candidate`). Callers should not wrap `chat` in `try/catch` to detect
 failures — inspect the resolved string instead.
+
+When a turn is aborted (`abort`, red-light stop, ...), the Promise resolves
+with the abort reason string. Any steps that had already fully completed
+before the interruption — assistant tool-call messages and their tool
+results — are still persisted into the chat history (and announced via
+`GAI_HISTORY_CHANGED`), so a follow-up "continue" turn sees what was already
+done instead of redoing it.
 
 ### V1 limitation: custom-procedure function calling
 
@@ -138,6 +153,17 @@ if (gai && typeof gai.registerTools === 'function') {
   restriction as the V1 custom-procedure limitation above. If `execute`
   throws, the facade catches it and returns `{success: false, error: <message>}`
   to the AI instead of propagating the exception.
+- While a registered tool's `execute` is running, aborts of that adapter's
+  own requests are suppressed. This lets a tool stop or restart the Scratch
+  project (`vm.greenFlag()` fires `PROJECT_STOP_ALL` via `stopAll()`,
+  `vm.stopAll()` fires it directly) without those stop events aborting the
+  very chat turn that invoked the tool. A user-initiated stop that genuinely
+  coincides with the few-ms tool window is dropped — accepted trade-off.
+- A tool-call chain within one turn is bounded by the AI SDK step limit
+  (`stopWhen: stepCountIs(...)`, default 25 as a runaway-loop backstop);
+  a sprite can override it via the generation config's `maxSteps`. A turn
+  cut off by the limit reports `finishReason: 'tool-calls'` through
+  `onFinish`, with all completed steps already persisted to history.
 - If a registered tool name collides with a tool xcx-gai already defines for
   that request (a sprite's own custom-procedure function, or the built-in
   `loadSkill` tool), the built-in tool wins; the external registration is
