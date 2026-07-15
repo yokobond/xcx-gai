@@ -2378,6 +2378,14 @@ class GAIBlocks {
         if (!error) {
             return '';
         }
+        // An aborted fetch rejects with the raw AbortController.abort(reason)
+        // value, which here is a plain string (e.g. 'Project stopped'). A string
+        // has no .message/.name, so without this branch the whole error would
+        // silently format to '' and the caller would show a misleading
+        // "empty AI reply" state instead of the abort reason.
+        if (typeof error === 'string') {
+            return error.trim();
+        }
         const detail = (error.message || error.name || '').trim();
         if (detail === 'MODEL_NOT_DOWNLOADED') {
             return formatMessage({

@@ -66,6 +66,22 @@ describe("blockClass", () => {
         });
     });
 
+    describe("_formatAIError", () => {
+        it("returns the string itself for a plain-string error (abort reason)", () => {
+            // AbortController.abort(reason) rejects fetch with the raw reason
+            // value; formatting it to '' would masquerade as an empty AI reply.
+            expect(block._formatAIError("Project stopped")).toBe("Project stopped");
+        });
+
+        it("returns '' for a falsy error", () => {
+            expect(block._formatAIError(null)).toBe("");
+        });
+
+        it("still formats Error objects via their message", () => {
+            expect(block._formatAIError(new Error("boom"))).toBe("boom");
+        });
+    });
+
     describe('File methods', () => {
         describe('getFileDataAtIndex', () => {
             it('should return empty string when no AI adapter', async () => {

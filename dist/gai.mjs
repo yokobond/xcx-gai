@@ -46010,12 +46010,15 @@ function AsyncFromSyncIterator(r) { function AsyncFromSyncIteratorContinuation(r
 /**
  * Default maximum number of model steps (tool-call rounds plus the final
  * reply) per request. Agentic turns that edit the project (e.g. xcx-agent's
- * editor tools) routinely need several tool calls before the wrap-up text,
- * so this must leave room for them. Overridable per target via
- * `generationConfig.maxSteps`.
+ * editor tools) routinely need many tool calls — read scripts, create
+ * variables and sprites, build scripts, add costumes, run the project —
+ * before the wrap-up text, and every cutoff surfaces to the user as a
+ * "work stopped partway, send continue" notice. The limit is a runaway-loop
+ * backstop, not a work quota, so it should be comfortably above what a real
+ * editing turn needs. Overridable per target via `generationConfig.maxSteps`.
  * @type {number}
  */
-var DEFAULT_MAX_STEPS = 10;
+var DEFAULT_MAX_STEPS = 25;
 
 /**
  * How long an external (sibling-extension) tool's execute() may run before
@@ -46254,6 +46257,10 @@ var AIAdapter = /*#__PURE__*/function () {
 
     // Abort controllers for cancelling requests
     this.abortControllers = [];
+
+    // > 0 while an external (facade-registered) tool is executing; abortRequests
+    // is suppressed during that window (see abortRequests / _buildExternalTools).
+    this._externalToolDepth = 0;
   }
 
   /**
@@ -47054,40 +47061,58 @@ var AIAdapter = /*#__PURE__*/function () {
             inputSchema: jsonSchema(spec.parameters),
             execute: function () {
               var _execute = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee4(input) {
-                var _t7;
+                var released, release, _t7;
                 return _regeneratorRuntime.wrap(function (_context5) {
                   while (1) switch (_context5.prev = _context5.next) {
                     case 0:
-                      _context5.prev = 0;
-                      _context5.next = 1;
+                      // While the tool body runs, self-aborts must be suppressed
+                      // (see abortRequests): a tool like an editor's runProject
+                      // triggers the runtime's PROJECT_STOP_ALL synchronously
+                      // (green flag calls stopAll() first), which would abort the
+                      // very turn that invoked the tool — the chat then resolves
+                      // empty and the completed steps never reach history. The
+                      // release() guard keeps the depth balanced on every exit
+                      // path, including the never-settles timeout below.
+                      released = false;
+                      release = function release() {
+                        if (released) return;
+                        released = true;
+                        _this3._externalToolDepth = Math.max(0, _this3._externalToolDepth - 1);
+                      };
+                      _context5.prev = 1;
+                      _context5.next = 2;
                       return new Promise(function (resolve, reject) {
                         var timer = setTimeout(function () {
-                          return reject(new Error("tool \"".concat(name, "\" did not finish within ").concat(EXTERNAL_TOOL_TIMEOUT_MS, "ms")));
+                          release();
+                          reject(new Error("tool \"".concat(name, "\" did not finish within ").concat(EXTERNAL_TOOL_TIMEOUT_MS, "ms")));
                         }, EXTERNAL_TOOL_TIMEOUT_MS);
                         Promise.resolve().then(function () {
+                          _this3._externalToolDepth += 1;
                           return spec.execute(input);
                         }).then(function (result) {
+                          release();
                           clearTimeout(timer);
                           resolve(result);
                         }, function (error) {
+                          release();
                           clearTimeout(timer);
                           reject(error);
                         });
                       });
-                    case 1:
-                      return _context5.abrupt("return", _context5.sent);
                     case 2:
-                      _context5.prev = 2;
-                      _t7 = _context5["catch"](0);
+                      return _context5.abrupt("return", _context5.sent);
+                    case 3:
+                      _context5.prev = 3;
+                      _t7 = _context5["catch"](1);
                       return _context5.abrupt("return", {
                         success: false,
                         error: String(_t7 && _t7.message || _t7)
                       });
-                    case 3:
+                    case 4:
                     case "end":
                       return _context5.stop();
                   }
-                }, _callee4, null, [[0, 2]]);
+                }, _callee4, null, [[1, 3]]);
               }));
               function execute(_x) {
                 return _execute.apply(this, arguments);
@@ -47758,7 +47783,7 @@ var AIAdapter = /*#__PURE__*/function () {
     value: (function () {
       var _requestGenerate = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime.mark(function _callee8(prompt, responseTextHandler, functionDispatcher, partialTextHandler, isChat) {
         var _this9 = this;
-        var promptMessage, messages, abortController, client, tools, externalTools, functionCallingEnabled, toolExists, generator, modelId, generationParams, streamError, result, hasSchema, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialObject, partialText, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, textPart, _this$messages, response, _t1, _t10, _t11;
+        var promptMessage, messages, abortController, lastCompletedStepMessages, client, tools, externalTools, functionCallingEnabled, toolExists, generator, modelId, generationParams, streamError, result, hasSchema, _iteratorAbruptCompletion, _didIteratorError, _iteratorError, _iterator, _step, partialObject, partialText, _iteratorAbruptCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, textPart, _this$messages, response, _this$messages2, _t1, _t10, _t11;
         return _regeneratorRuntime.wrap(function (_context9) {
           while (1) switch (_context9.prev = _context9.next) {
             case 0:
@@ -47778,7 +47803,14 @@ var AIAdapter = /*#__PURE__*/function () {
               messages.push(promptMessage);
               if (isChat) this._notifyHistoryChanged();
               // Create abort controller for this request
-              abortController = this._createAbortController();
+              abortController = this._createAbortController(); // Snapshot of the chat history as of the most recently *completed* step
+              // (tool-call + its tool-result both recorded), kept in this outer scope
+              // so the catch block below can still see it. onStepFinish only fires
+              // after a step's tool calls have been executed and their results
+              // recorded, so a step-in-progress (a pending tool-call with no result
+              // yet, which the AI SDK message format forbids as a standalone message)
+              // can never end up captured here.
+              lastCompletedStepMessages = null;
               _context9.prev = 2;
               client = this.getClient();
               tools = _objectSpread(_objectSpread({}, this._buildTools(functionDispatcher)), this._buildSkillTools()); // External tools (registered by sibling extensions via the `gai` facade's
@@ -47822,6 +47854,11 @@ var AIAdapter = /*#__PURE__*/function () {
                   _this9.lastFinishReason = step.finishReason || null;
                   if (typeof responseTextHandler === 'function') {
                     responseTextHandler(step.text);
+                  }
+                  // step.response.messages accumulates across steps, so keeping
+                  // only the latest one is enough to have the full history so far.
+                  if (isChat) {
+                    lastCompletedStepMessages = step.response.messages;
                   }
                 }
               }, partialTextHandler && {
@@ -47986,6 +48023,18 @@ var AIAdapter = /*#__PURE__*/function () {
             case 33:
               _context9.prev = 33;
               _t11 = _context9["catch"](2);
+              // The step-call chain can be interrupted mid-run by an abort or a
+              // transport/API error after one or more tool calls already ran with
+              // real side effects (e.g. a sibling extension's tool mutated the
+              // sprite). Without persisting what was already completed, those
+              // steps vanish from history, and a later "continue" prompt drives
+              // the model to re-issue and re-execute the same tool calls. This is
+              // mutually exclusive with the success-path push above (only one of
+              // the two runs per call), so there is no risk of double-push.
+              if (isChat && lastCompletedStepMessages && lastCompletedStepMessages.length) {
+                (_this$messages2 = this.messages).push.apply(_this$messages2, _toConsumableArray(lastCompletedStepMessages));
+                this._notifyHistoryChanged();
+              }
               this.setLastResult(_t11);
               throw _t11;
             case 34:
@@ -48508,12 +48557,21 @@ var AIAdapter = /*#__PURE__*/function () {
     /**
      * Abort all ongoing requests for this adapter.
      * This will cancel all in-flight requests.
+     *
+     * No-op while one of this adapter's external tools is executing: any stop
+     * event arriving at that moment (PROJECT_STOP_ALL from a runProject tool's
+     * green flag, STOP_FOR_TARGET from a stopProject tool, ...) was caused by
+     * the in-flight turn itself, and aborting would kill that turn mid-tool —
+     * the chat resolves empty and the turn's completed steps are lost. A user
+     * stop that genuinely coincides with the few-ms tool window is dropped,
+     * which is an accepted trade-off.
      * @param {string} reason - reason for aborting requests
      * @returns {void}
      */
   }, {
     key: "abortRequests",
     value: function abortRequests(reason) {
+      if (this._externalToolDepth > 0) return;
       this.abortControllers.forEach(function (controller) {
         if (controller) {
           controller.abort(reason);
@@ -51485,6 +51543,14 @@ var GAIBlocks = /*#__PURE__*/function () {
     value: function _formatAIError(error) {
       if (!error) {
         return '';
+      }
+      // An aborted fetch rejects with the raw AbortController.abort(reason)
+      // value, which here is a plain string (e.g. 'Project stopped'). A string
+      // has no .message/.name, so without this branch the whole error would
+      // silently format to '' and the caller would show a misleading
+      // "empty AI reply" state instead of the abort reason.
+      if (typeof error === 'string') {
+        return error.trim();
       }
       var detail = (error.message || error.name || '').trim();
       if (detail === 'MODEL_NOT_DOWNLOADED') {

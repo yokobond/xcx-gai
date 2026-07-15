@@ -10,12 +10,15 @@ import {BrowserAIProvider} from './browser-ai.js';
 /**
  * Default maximum number of model steps (tool-call rounds plus the final
  * reply) per request. Agentic turns that edit the project (e.g. xcx-agent's
- * editor tools) routinely need several tool calls before the wrap-up text,
- * so this must leave room for them. Overridable per target via
- * `generationConfig.maxSteps`.
+ * editor tools) routinely need many tool calls — read scripts, create
+ * variables and sprites, build scripts, add costumes, run the project —
+ * before the wrap-up text, and every cutoff surfaces to the user as a
+ * "work stopped partway, send continue" notice. The limit is a runaway-loop
+ * backstop, not a work quota, so it should be comfortably above what a real
+ * editing turn needs. Overridable per target via `generationConfig.maxSteps`.
  * @type {number}
  */
-const DEFAULT_MAX_STEPS = 10;
+const DEFAULT_MAX_STEPS = 25;
 
 /**
  * How long an external (sibling-extension) tool's execute() may run before
@@ -337,6 +340,10 @@ export class AIAdapter {
 
         // Abort controllers for cancelling requests
         this.abortControllers = [];
+
+        // > 0 while an external (facade-registered) tool is executing; abortRequests
+        // is suppressed during that window (see abortRequests / _buildExternalTools).
+        this._externalToolDepth = 0;
     }
 
     /**
@@ -942,24 +949,46 @@ export class AIAdapter {
                     strict: false,
                     inputSchema: jsonSchema(spec.parameters),
                     execute: async input => {
+                        // While the tool body runs, self-aborts must be suppressed
+                        // (see abortRequests): a tool like an editor's runProject
+                        // triggers the runtime's PROJECT_STOP_ALL synchronously
+                        // (green flag calls stopAll() first), which would abort the
+                        // very turn that invoked the tool — the chat then resolves
+                        // empty and the completed steps never reach history. The
+                        // release() guard keeps the depth balanced on every exit
+                        // path, including the never-settles timeout below.
+                        let released = false;
+                        const release = () => {
+                            if (released) return;
+                            released = true;
+                            this._externalToolDepth = Math.max(0, this._externalToolDepth - 1);
+                        };
                         try {
                             // Guard against an execute() that never settles: the SDK
                             // waits on it indefinitely, which would freeze the whole
                             // chat turn. Failing the tool lets the model report back.
                             return await new Promise((resolve, reject) => {
                                 const timer = setTimeout(
-                                    () => reject(new Error(
-                                        `tool "${name}" did not finish within ${EXTERNAL_TOOL_TIMEOUT_MS}ms`)),
+                                    () => {
+                                        release();
+                                        reject(new Error(
+                                            `tool "${name}" did not finish within ${EXTERNAL_TOOL_TIMEOUT_MS}ms`));
+                                    },
                                     EXTERNAL_TOOL_TIMEOUT_MS
                                 );
                                 Promise.resolve()
-                                    .then(() => spec.execute(input))
+                                    .then(() => {
+                                        this._externalToolDepth += 1;
+                                        return spec.execute(input);
+                                    })
                                     .then(
                                         result => {
+                                            release();
                                             clearTimeout(timer);
                                             resolve(result);
                                         },
                                         error => {
+                                            release();
                                             clearTimeout(timer);
                                             reject(error);
                                         }
@@ -1548,7 +1577,16 @@ Do not write any other text if you call a function.
         if (isChat) this._notifyHistoryChanged();
         // Create abort controller for this request
         const abortController = this._createAbortController();
-        
+
+        // Snapshot of the chat history as of the most recently *completed* step
+        // (tool-call + its tool-result both recorded), kept in this outer scope
+        // so the catch block below can still see it. onStepFinish only fires
+        // after a step's tool calls have been executed and their results
+        // recorded, so a step-in-progress (a pending tool-call with no result
+        // yet, which the AI SDK message format forbids as a standalone message)
+        // can never end up captured here.
+        let lastCompletedStepMessages = null;
+
         try {
             const client = this.getClient();
             const tools = {...this._buildTools(functionDispatcher), ...this._buildSkillTools()};
@@ -1599,6 +1637,11 @@ Do not write any other text if you call a function.
                     this.lastFinishReason = step.finishReason || null;
                     if (typeof responseTextHandler === 'function') {
                         responseTextHandler(step.text);
+                    }
+                    // step.response.messages accumulates across steps, so keeping
+                    // only the latest one is enough to have the full history so far.
+                    if (isChat) {
+                        lastCompletedStepMessages = step.response.messages;
                     }
                 },
                 // onAbort and onError are streamText-only callbacks; only pass them
@@ -1663,6 +1706,18 @@ Do not write any other text if you call a function.
             }
             return result;
         } catch (error) {
+            // The step-call chain can be interrupted mid-run by an abort or a
+            // transport/API error after one or more tool calls already ran with
+            // real side effects (e.g. a sibling extension's tool mutated the
+            // sprite). Without persisting what was already completed, those
+            // steps vanish from history, and a later "continue" prompt drives
+            // the model to re-issue and re-execute the same tool calls. This is
+            // mutually exclusive with the success-path push above (only one of
+            // the two runs per call), so there is no risk of double-push.
+            if (isChat && lastCompletedStepMessages && lastCompletedStepMessages.length) {
+                this.messages.push(...lastCompletedStepMessages);
+                this._notifyHistoryChanged();
+            }
             this.setLastResult(error);
             throw error;
         } finally {
@@ -2043,10 +2098,19 @@ Do not write any other text if you call a function.
     /**
      * Abort all ongoing requests for this adapter.
      * This will cancel all in-flight requests.
+     *
+     * No-op while one of this adapter's external tools is executing: any stop
+     * event arriving at that moment (PROJECT_STOP_ALL from a runProject tool's
+     * green flag, STOP_FOR_TARGET from a stopProject tool, ...) was caused by
+     * the in-flight turn itself, and aborting would kill that turn mid-tool —
+     * the chat resolves empty and the turn's completed steps are lost. A user
+     * stop that genuinely coincides with the few-ms tool window is dropped,
+     * which is an accepted trade-off.
      * @param {string} reason - reason for aborting requests
      * @returns {void}
      */
     abortRequests (reason) {
+        if (this._externalToolDepth > 0) return;
         this.abortControllers.forEach(controller => {
             if (controller) {
                 controller.abort(reason);

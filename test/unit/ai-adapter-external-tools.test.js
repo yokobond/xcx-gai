@@ -181,6 +181,59 @@ describe('AIAdapter _buildExternalTools', () => {
         consoleErrorSpy.mockRestore();
     });
 
+    test('suppresses abortRequests fired from inside a tool execute (self-abort guard)', async () => {
+        const factories = new Map();
+        let adapter;
+        // Mirrors an editor's runProject tool: green flag -> stopAll ->
+        // PROJECT_STOP_ALL -> abortRequests, all synchronously inside execute.
+        factories.set('my-extension', () => ({
+            runProject: {
+                description: 'Run the project.',
+                parameters: {type: 'object', properties: {}},
+                execute: () => {
+                    adapter.abortRequests('Project stopped');
+                    return {success: true};
+                }
+            }
+        }));
+        adapter = new AIAdapter(fakeTarget('t-self-abort', factories));
+        const controller = {signal: {aborted: false}, abort: jest.fn()};
+        adapter.abortControllers = [controller];
+
+        const tools = adapter._buildExternalTools();
+        const result = await tools.runProject.execute({});
+
+        expect(result).toEqual({success: true});
+        expect(controller.abort).not.toHaveBeenCalled();
+        expect(adapter.abortControllers).toEqual([controller]);
+
+        // Once the tool has finished, aborts behave normally again.
+        adapter.abortRequests('Project stopped');
+        expect(controller.abort).toHaveBeenCalledWith('Project stopped');
+        expect(adapter.abortControllers).toEqual([]);
+    });
+
+    test('restores the abort guard when a tool execute rejects', async () => {
+        const factories = new Map();
+        factories.set('my-extension', () => ({
+            failingTool: {
+                description: 'Always fails.',
+                parameters: {type: 'object', properties: {}},
+                execute: () => Promise.reject(new Error('boom'))
+            }
+        }));
+        const adapter = new AIAdapter(fakeTarget('t-tool-error', factories));
+        const tools = adapter._buildExternalTools();
+
+        const result = await tools.failingTool.execute({});
+        expect(result).toEqual({success: false, error: 'boom'});
+
+        const controller = {signal: {aborted: false}, abort: jest.fn()};
+        adapter.abortControllers = [controller];
+        adapter.abortRequests('later stop');
+        expect(controller.abort).toHaveBeenCalledWith('later stop');
+    });
+
     test('returns {} when function calling is disabled (same gate as _buildSkillTools)', () => {
         const factories = new Map();
         factories.set('my-extension', () => ({

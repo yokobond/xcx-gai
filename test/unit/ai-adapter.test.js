@@ -684,6 +684,88 @@ describe('AIAdapter', () => {
                     ).rejects.toThrow('quota exceeded');
                 });
 
+                describe('interrupted tool-call chains in chat mode', () => {
+                    // AbortError (user cancels) or a transport/API error can interrupt the
+                    // step loop after one or more tool calls already ran with real side
+                    // effects (e.g. a sibling extension's tool mutated the sprite). If those
+                    // completed steps are dropped from history, a later "continue" prompt
+                    // makes the model re-issue and re-execute the same tool calls.
+                    const completedStepMessages = [
+                        {role: 'assistant', content: [
+                            {type: 'tool-call', toolCallId: 'call1', toolName: 'proc1', args: {}}
+                        ]},
+                        {role: 'tool', content: [
+                            {type: 'tool-result', toolCallId: 'call1', toolName: 'proc1', result: 'ok'}
+                        ]}
+                    ];
+
+                    const makeAbortError = () => {
+                        const abortErr = new Error('The operation was aborted');
+                        abortErr.name = 'AbortError';
+                        return abortErr;
+                    };
+
+                    it('keeps the completed step in history when generateText aborts after onStepFinish', async () => {
+                        generateText.mockImplementation(async ({onStepFinish}) => {
+                            if (onStepFinish) {
+                                onStepFinish({
+                                    text: '',
+                                    finishReason: 'tool-calls',
+                                    response: {messages: completedStepMessages}
+                                });
+                            }
+                            throw makeAbortError();
+                        });
+
+                        await expect(
+                            adapter.requestGenerate(['User message'], responseTextHandler, functionDispatcher, null, true)
+                        ).rejects.toThrow('aborted');
+
+                        expect(adapter.getChatHistory()).toEqual([
+                            {role: 'user', content: 'User message'},
+                            ...completedStepMessages
+                        ]);
+                    });
+
+                    it('leaves only the user prompt in history when no step completes before the abort', async () => {
+                        generateText.mockImplementation(async () => {
+                            throw makeAbortError();
+                        });
+
+                        await expect(
+                            adapter.requestGenerate(['User message'], responseTextHandler, functionDispatcher, null, true)
+                        ).rejects.toThrow('aborted');
+
+                        expect(adapter.getChatHistory()).toEqual([
+                            {role: 'user', content: 'User message'}
+                        ]);
+                    });
+
+                    it('keeps the completed step in history when streamText aborts after onStepFinish', async () => {
+                        streamText.mockImplementation(async ({onStepFinish}) => {
+                            if (onStepFinish) {
+                                onStepFinish({
+                                    text: '',
+                                    finishReason: 'tool-calls',
+                                    response: {messages: completedStepMessages}
+                                });
+                            }
+                            throw makeAbortError();
+                        });
+
+                        await expect(
+                            adapter.requestGenerate(
+                                ['User message'], responseTextHandler, functionDispatcher, partialTextHandler, true
+                            )
+                        ).rejects.toThrow('aborted');
+
+                        expect(adapter.getChatHistory()).toEqual([
+                            {role: 'user', content: 'User message'},
+                            ...completedStepMessages
+                        ]);
+                    });
+                });
+
                 it('should handle function calls', async () => {
                     adapter.registerFunction('proc1', 'desc', []);
                     const spec = adapter.getFunctionSpec('proc1');
@@ -707,6 +789,24 @@ describe('AIAdapter', () => {
                 it('should use generateText when partialTextHandler is null', async () => {
                     await adapter.requestGenerate(['prompt'], responseTextHandler, functionDispatcher, null, false);
                     expect(generateText).toHaveBeenCalled();
+                });
+
+                it('passes the default step limit (25) as stopWhen when maxSteps is not configured', async () => {
+                    await adapter.requestGenerate(['prompt'], responseTextHandler, functionDispatcher, null, false);
+
+                    // The stepCountIs mock returns its argument (see top of file),
+                    // so stopWhen carries the raw step count.
+                    const args = generateText.mock.calls[0][0];
+                    expect(args.stopWhen).toBe(25);
+                });
+
+                it('passes generationConfig.maxSteps as stopWhen when configured', async () => {
+                    adapter.generationConfig.maxSteps = 4;
+
+                    await adapter.requestGenerate(['prompt'], responseTextHandler, functionDispatcher, null, false);
+
+                    const args = generateText.mock.calls[0][0];
+                    expect(args.stopWhen).toBe(4);
                 });
 
                 it('should build tools when function calling is enabled', async () => {
@@ -889,6 +989,30 @@ describe('AIAdapter', () => {
                 await withCallback.requestGenerate(['User message'], jest.fn(), jest.fn(), null, false);
 
                 expect(onHistoryChanged).not.toHaveBeenCalled();
+            });
+
+            it('emits again for the completed-step persist in the catch path when aborted mid-run', async () => {
+                const withCallback = new AIAdapter(mockTarget, {onHistoryChanged});
+                withCallback.setApiKey('test-api-key');
+                generateText.mockImplementation(async ({onStepFinish}) => {
+                    if (onStepFinish) {
+                        onStepFinish({
+                            text: '',
+                            finishReason: 'tool-calls',
+                            response: {messages: [{role: 'assistant', content: 'partial'}]}
+                        });
+                    }
+                    const abortErr = new Error('The operation was aborted');
+                    abortErr.name = 'AbortError';
+                    throw abortErr;
+                });
+
+                await expect(
+                    withCallback.requestGenerate(['User message'], jest.fn(), jest.fn(), null, true)
+                ).rejects.toThrow('aborted');
+
+                // Once for the prompt push, once for persisting the completed step in catch.
+                expect(onHistoryChanged).toHaveBeenCalledTimes(2);
             });
         });
 
@@ -1123,8 +1247,26 @@ describe('AIAdapter', () => {
 
                 it('should do nothing if no controllers exist', () => {
                     adapter.abortControllers = [];
-                    
+
                     expect(() => adapter.abortRequests()).not.toThrow();
+                });
+
+                it('is suppressed while an external tool is executing', () => {
+                    const mockController = {
+                        signal: { aborted: false },
+                        abort: jest.fn()
+                    };
+                    adapter.abortControllers = [mockController];
+                    adapter._externalToolDepth = 1;
+
+                    adapter.abortRequests('Project stopped');
+
+                    expect(mockController.abort).not.toHaveBeenCalled();
+                    expect(adapter.abortControllers).toEqual([mockController]);
+
+                    adapter._externalToolDepth = 0;
+                    adapter.abortRequests('Project stopped');
+                    expect(mockController.abort).toHaveBeenCalledWith('Project stopped');
                 });
             });
 
