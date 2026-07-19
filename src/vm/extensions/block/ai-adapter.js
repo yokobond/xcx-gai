@@ -21,14 +21,24 @@ import {BrowserAIProvider} from './browser-ai.js';
 const DEFAULT_MAX_STEPS = 25;
 
 /**
- * How long an external (sibling-extension) tool's execute() may run before
- * it is failed with a timeout result. Without this, a tool that never
- * settles (e.g. an asset fetch hanging with no timeout of its own) would
- * stall the whole generateText/streamText step loop forever and the chat
- * turn would never resolve.
+ * Default (and fallback) timeout for an external (sibling-extension) tool's
+ * execute() before it is failed with a timeout result. Without this, a tool
+ * that never settles (e.g. an asset fetch hanging with no timeout of its
+ * own) would stall the whole generateText/streamText step loop forever and
+ * the chat turn would never resolve. A tool spec may override this per-tool
+ * via an optional `timeoutMs` (see `_buildExternalTools`); this constant is
+ * what's used when that's absent or not a usable positive number.
  * @type {number}
  */
 const EXTERNAL_TOOL_TIMEOUT_MS = 30000;
+
+/**
+ * Upper bound a tool spec's `timeoutMs` is clamped to, regardless of how
+ * large a value it requests - a runaway-loop backstop for the whole chat
+ * turn, not just this one tool.
+ * @type {number}
+ */
+const MAX_EXTERNAL_TOOL_TIMEOUT_MS = 600000;
 
 /**
  * Function Call class for AI adapter function calling.
@@ -920,6 +930,15 @@ export class AIAdapter {
      * survives this extension being reloaded; each registered factory is
      * called with this adapter's `target` to build that target's tools.
      * A factory that throws is logged and skipped; the rest still run.
+     *
+     * A spec may declare an optional `timeoutMs` to override
+     * `EXTERNAL_TOOL_TIMEOUT_MS` for that tool alone (e.g. a tool that
+     * legitimately runs long, like a visual animation dressing up its own
+     * side effects) — coerced to a finite positive number and clamped to
+     * `MAX_EXTERNAL_TOOL_TIMEOUT_MS`; anything else (absent, non-numeric,
+     * zero, negative) falls back to the default. Older sibling extensions
+     * that don't set `timeoutMs` at all keep the pre-existing 30s behavior
+     * unchanged.
      * @returns {object} - tools map for Vercel AI SDK, or {} when unavailable
      * @private
      */
@@ -943,6 +962,8 @@ export class AIAdapter {
             }
             if (!entries) return;
             Object.entries(entries).forEach(([name, spec]) => {
+                const timeoutMs = (Number.isFinite(spec.timeoutMs) && spec.timeoutMs > 0) ?
+                    Math.min(spec.timeoutMs, MAX_EXTERNAL_TOOL_TIMEOUT_MS) : EXTERNAL_TOOL_TIMEOUT_MS;
                 tools[name] = tool({
                     description: spec.description,
                     // Preserve v5 (non-strict) tool-schema behavior; v6 OpenAI defaults strict to true.
@@ -972,9 +993,9 @@ export class AIAdapter {
                                     () => {
                                         release();
                                         reject(new Error(
-                                            `tool "${name}" did not finish within ${EXTERNAL_TOOL_TIMEOUT_MS}ms`));
+                                            `tool "${name}" did not finish within ${timeoutMs}ms`));
                                     },
-                                    EXTERNAL_TOOL_TIMEOUT_MS
+                                    timeoutMs
                                 );
                                 Promise.resolve()
                                     .then(() => {

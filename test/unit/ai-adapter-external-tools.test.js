@@ -157,6 +157,91 @@ describe('AIAdapter _buildExternalTools', () => {
         }
     });
 
+    test('honors a per-tool timeoutMs, both in timing and in the error message', async () => {
+        jest.useFakeTimers();
+        try {
+            const factories = new Map();
+            factories.set('my-extension', () => ({
+                slowTool: {
+                    description: 'Takes a while but has its own timeout budget.',
+                    parameters: {type: 'object', properties: {}},
+                    timeoutMs: 5000,
+                    execute: () => new Promise(() => {})
+                }
+            }));
+            const adapter = new AIAdapter(fakeTarget('t-custom-timeout', factories));
+
+            const tools = adapter._buildExternalTools();
+            const resultPromise = tools.slowTool.execute({});
+            await jest.advanceTimersByTimeAsync(5000);
+
+            await expect(resultPromise).resolves.toEqual({
+                success: false,
+                error: expect.stringContaining('did not finish within 5000ms')
+            });
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    test('clamps an oversized timeoutMs to 10 minutes (600000ms)', async () => {
+        jest.useFakeTimers();
+        try {
+            const factories = new Map();
+            factories.set('my-extension', () => ({
+                reallySlowTool: {
+                    description: 'Requests an absurdly long budget.',
+                    parameters: {type: 'object', properties: {}},
+                    timeoutMs: 999999999,
+                    execute: () => new Promise(() => {})
+                }
+            }));
+            const adapter = new AIAdapter(fakeTarget('t-clamped-timeout', factories));
+
+            const tools = adapter._buildExternalTools();
+            const resultPromise = tools.reallySlowTool.execute({});
+            await jest.advanceTimersByTimeAsync(600000);
+
+            await expect(resultPromise).resolves.toEqual({
+                success: false,
+                error: expect.stringContaining('did not finish within 600000ms')
+            });
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    test.each([
+        ['omitted', undefined],
+        ['non-numeric', 'soon'],
+        ['zero', 0],
+        ['negative', -5000]
+    ])('falls back to the 30-second default when timeoutMs is %s', async (label, timeoutMs) => {
+        jest.useFakeTimers();
+        try {
+            const factories = new Map();
+            const spec = {
+                description: 'Never settles.',
+                parameters: {type: 'object', properties: {}},
+                execute: () => new Promise(() => {})
+            };
+            if (timeoutMs !== undefined) spec.timeoutMs = timeoutMs;
+            factories.set('my-extension', () => ({invalidTimeoutTool: spec}));
+            const adapter = new AIAdapter(fakeTarget(`t-invalid-timeout-${label}`, factories));
+
+            const tools = adapter._buildExternalTools();
+            const resultPromise = tools.invalidTimeoutTool.execute({});
+            await jest.advanceTimersByTimeAsync(30000);
+
+            await expect(resultPromise).resolves.toEqual({
+                success: false,
+                error: expect.stringContaining('did not finish within 30000ms')
+            });
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
     test('skips a factory that throws, logs the error, and still returns other factories\' tools', () => {
         const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         const factories = new Map();

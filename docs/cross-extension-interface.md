@@ -153,6 +153,13 @@ if (gai && typeof gai.registerTools === 'function') {
   restriction as the V1 custom-procedure limitation above. If `execute`
   throws, the facade catches it and returns `{success: false, error: <message>}`
   to the AI instead of propagating the exception.
+- `timeoutMs` (optional, number): overrides the default 30-second limit on
+  how long this tool's `execute` may run before it is failed with a timeout
+  result (`{success: false, error: '...did not finish within <ms>ms'}`),
+  letting the turn continue instead of hanging forever. Coerced to a finite
+  positive number and clamped to 10 minutes (600000); anything else (omitted,
+  non-numeric, zero, negative) uses the 30-second default. Existing tool
+  specs that don't set it are unaffected.
 - While a registered tool's `execute` is running, aborts of that adapter's
   own requests are suppressed. This lets a tool stop or restart the Scratch
   project (`vm.greenFlag()` fires `PROJECT_STOP_ALL` via `stopAll()`,
