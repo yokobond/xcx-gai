@@ -456,6 +456,27 @@ class GAIBlocks {
      * are dropped rather than throwing. Internally delegates to
      * `AIAdapter#startChat`, which itself emits `GAI_HISTORY_CHANGED` — callers
      * must not emit it again.
+     *
+     * V4 adds `transferAISettings`, letting sibling extensions carry a
+     * target's non-persisted AI settings over to a different target — the
+     * settings that live only on the `AIAdapter` instance and would
+     * otherwise be lost when a target is discarded and rebuilt (e.g. a
+     * project history/undo restore, which reconstructs targets from the
+     * project JSON and so loses any in-memory adapter state). Settings that
+     * are already persisted elsewhere (sprite variables for baseUrl/modelID/
+     * generationConfig, or chat history via `getHistory`/`setHistory`) are
+     * out of scope here and unaffected.
+     *
+     * `transferAISettings(fromTarget, toTarget)` — copies `fromTarget`'s AI
+     * adapter's API key, explicitly-set API type, function calling mode, and
+     * BrowserLLM dtype onto `toTarget`'s AI adapter (created via `getAI` if
+     * it doesn't exist yet). A no-op if `fromTarget` has no AI adapter (does
+     * NOT create one for `fromTarget`, and does NOT create one for `toTarget`
+     * in that case either). API key and API type are only copied if
+     * `fromTarget` has them explicitly set (non-null); this avoids
+     * clobbering `toTarget`'s own explicit values — or the shared static
+     * fallback used when neither is set — with unset `null`s. Does not
+     * expose the API key value itself to callers; there is no `getApiKey`.
      * @param {Runtime} runtime - the Scratch 3.0 runtime.
      * @returns {void}
      * @private
@@ -466,7 +487,7 @@ class GAIBlocks {
              * Interface version. Bumped on breaking changes; callers should
              * feature-detect members with `typeof` rather than assume a version.
              */
-            version: 3,
+            version: 4,
 
             /**
              * Whether an AI adapter already exists for the target.
@@ -605,6 +626,26 @@ class GAIBlocks {
                         (typeof m.content === 'string' || Array.isArray(m.content)))
                     .map(m => ({role: m.role, content: m.content}));
                 ai.startChat(filtered);
+            },
+
+            /**
+             * Copy `fromTarget`'s AI adapter settings (API key, explicitly-set
+             * API type, function calling mode, BrowserLLM dtype) onto
+             * `toTarget`'s AI adapter, creating it first if needed. A no-op if
+             * `fromTarget` has no AI adapter.
+             * @param {Target} fromTarget - the target whose settings are copied.
+             * @param {Target} toTarget - the target that receives the settings.
+             * @returns {void}
+             */
+            transferAISettings: (fromTarget, toTarget) => {
+                const fromAI = this.aiForTarget(fromTarget);
+                if (!fromAI) return; // from has no adapter -> no-op (don't create one)
+                const toAI = this.getAI(toTarget); // to is created if needed
+                if (fromAI === toAI) return;
+                if (fromAI.apiKey !== null) toAI.setApiKey(fromAI.apiKey);
+                if (fromAI.apiType !== null) toAI.setApiType(fromAI.apiType);
+                toAI.setFunctionCallingMode(fromAI.functionCallingMode);
+                toAI.browserLLMDtype = fromAI.browserLLMDtype;
             }
         });
     }

@@ -239,10 +239,10 @@ describe("blockClass", () => {
     });
 
     describe('cross-extension interface', () => {
-        it('registers the "gai" facade with version 3 and the expected members', () => {
+        it('registers the "gai" facade with version 4 and the expected members', () => {
             const iface = runtime.getExtensionInterface('gai');
             expect(iface).toBeTruthy();
-            expect(iface.version).toBe(3);
+            expect(iface.version).toBe(4);
             expect(typeof iface.hasAI).toBe('function');
             expect(typeof iface.ensureAI).toBe('function');
             expect(typeof iface.resetHistory).toBe('function');
@@ -254,6 +254,7 @@ describe("blockClass", () => {
             expect(typeof iface.unregisterInstructions).toBe('function');
             expect(typeof iface.getHistory).toBe('function');
             expect(typeof iface.setHistory).toBe('function');
+            expect(typeof iface.transferAISettings).toBe('function');
         });
 
         describe('getHistory / setHistory', () => {
@@ -319,6 +320,96 @@ describe("blockClass", () => {
                 iface.setHistory(mockTarget, 'not-an-array');
 
                 expect(mockAIAdapter.startChat).toHaveBeenCalledWith([]);
+            });
+        });
+
+        describe('transferAISettings', () => {
+            let toTarget;
+
+            beforeEach(() => {
+                toTarget = {id: 'to-target-id'};
+            });
+
+            it('is a no-op when fromTarget has no AI adapter (does not call getAI)', () => {
+                block.aiForTarget.mockReturnValue(null);
+                jest.spyOn(block, 'getAI');
+                const iface = runtime.getExtensionInterface('gai');
+
+                iface.transferAISettings(mockTarget, toTarget);
+
+                expect(block.getAI).not.toHaveBeenCalled();
+            });
+
+            it('copies apiKey, apiType, functionCallingMode and browserLLMDtype onto the to-adapter', () => {
+                const fromAI = {
+                    apiKey: 'K',
+                    apiType: 'OpenAI',
+                    functionCallingMode: 'none',
+                    browserLLMDtype: 'q4f32'
+                };
+                const toAI = {
+                    setApiKey: jest.fn(),
+                    setApiType: jest.fn(),
+                    setFunctionCallingMode: jest.fn(),
+                    browserLLMDtype: 'q4f16'
+                };
+                block.aiForTarget.mockReturnValue(fromAI);
+                jest.spyOn(block, 'getAI').mockReturnValue(toAI);
+                const iface = runtime.getExtensionInterface('gai');
+
+                iface.transferAISettings(mockTarget, toTarget);
+
+                expect(block.getAI).toHaveBeenCalledWith(toTarget);
+                expect(toAI.setApiKey).toHaveBeenCalledWith('K');
+                expect(toAI.setApiType).toHaveBeenCalledWith('OpenAI');
+                expect(toAI.setFunctionCallingMode).toHaveBeenCalledWith('none');
+                expect(toAI.browserLLMDtype).toBe('q4f32');
+            });
+
+            it('does not call setApiKey/setApiType when the from-adapter has them unset (null)', () => {
+                const fromAI = {
+                    apiKey: null,
+                    apiType: null,
+                    functionCallingMode: 'auto',
+                    browserLLMDtype: 'q4f16'
+                };
+                const toAI = {
+                    setApiKey: jest.fn(),
+                    setApiType: jest.fn(),
+                    setFunctionCallingMode: jest.fn(),
+                    browserLLMDtype: 'q4f16'
+                };
+                block.aiForTarget.mockReturnValue(fromAI);
+                jest.spyOn(block, 'getAI').mockReturnValue(toAI);
+                const iface = runtime.getExtensionInterface('gai');
+
+                iface.transferAISettings(mockTarget, toTarget);
+
+                expect(toAI.setApiKey).not.toHaveBeenCalled();
+                expect(toAI.setApiType).not.toHaveBeenCalled();
+                expect(toAI.setFunctionCallingMode).toHaveBeenCalledWith('auto');
+                expect(toAI.browserLLMDtype).toBe('q4f16');
+            });
+
+            it('is a no-op when fromTarget and toTarget already share the same adapter', () => {
+                const sharedAI = {
+                    apiKey: 'K',
+                    apiType: 'OpenAI',
+                    functionCallingMode: 'none',
+                    browserLLMDtype: 'q4f32',
+                    setApiKey: jest.fn(),
+                    setApiType: jest.fn(),
+                    setFunctionCallingMode: jest.fn()
+                };
+                block.aiForTarget.mockReturnValue(sharedAI);
+                jest.spyOn(block, 'getAI').mockReturnValue(sharedAI);
+                const iface = runtime.getExtensionInterface('gai');
+
+                iface.transferAISettings(mockTarget, toTarget);
+
+                expect(sharedAI.setApiKey).not.toHaveBeenCalled();
+                expect(sharedAI.setApiType).not.toHaveBeenCalled();
+                expect(sharedAI.setFunctionCallingMode).not.toHaveBeenCalled();
             });
         });
 

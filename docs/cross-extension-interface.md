@@ -30,7 +30,7 @@ Each extension is responsible for calling `runtime.registerExtensionInterface`
 with its own `extensionId` and API object; the polyfill itself does not
 register anything automatically.
 
-## The `gai` Facade (V3)
+## The `gai` Facade (V4)
 
 xcx-gai registers itself under the extension ID `'gai'`. Another extension can
 call it like this:
@@ -47,7 +47,7 @@ if (gai) {
 
 | Member | Signature | Description |
 |---|---|---|
-| `version` | `number` | Interface version, currently `3`. Bumped only on breaking changes (see "Versioning Policy" below for why each bump was made). |
+| `version` | `number` | Interface version, currently `4`. Bumped only on breaking changes (see "Versioning Policy" below for why each bump was made). |
 | `hasAI` | `(target) => boolean` | Whether an AI adapter already exists for `target`. |
 | `ensureAI` | `(target) => void` | Create the AI adapter (and its config sprite variables / skills list) for `target` if it does not exist yet. |
 | `resetHistory` | `(target) => void` | Clear the chat history for `target`'s AI adapter, if any. No-op if no adapter exists. |
@@ -59,8 +59,9 @@ if (gai) {
 | `unregisterInstructions` | `(ownerExtensionId) => void` | Remove a previously registered `factory` for `ownerExtensionId`. No-op if none is registered. |
 | `getHistory` | `(target) => Array<{role, content}>` | Return a fresh copy of `target`'s persistent chat history. See "History Sync (V3)" below. |
 | `setHistory` | `(target, messages) => void` | Replace `target`'s persistent chat history, creating the AI adapter first if needed. See "History Sync (V3)" below. |
+| `transferAISettings` | `(fromTarget, toTarget) => void` | Copy `fromTarget`'s AI adapter settings (API key, explicitly-set API type, function calling mode, BrowserLLM dtype) onto `toTarget`'s AI adapter, creating it first if needed. See "Settings Transfer (V4)" below. |
 
-All V1 members keep their V1 signature and behavior unchanged. All V2 members keep their V2 signature and behavior unchanged.
+All V1 members keep their V1 signature and behavior unchanged. All V2 members keep their V2 signature and behavior unchanged. All V3 members keep their V3 signature and behavior unchanged.
 
 `options` (all optional; unknown keys are ignored for forward compatibility):
 
@@ -270,6 +271,41 @@ if (gai && typeof gai.getHistory === 'function') {
   adapter (created via `getAI`/`ensureAI`/any `hasAI`-triggering call); it is
   never emitted for a target with no adapter.
 
+### Settings Transfer (V4)
+
+A sibling extension can carry a target's non-persisted AI settings over to a
+different target via `transferAISettings`. This exists for hosts that discard
+and rebuild targets — for example a project history/undo restore, which
+reconstructs targets from the project JSON and so loses any in-memory adapter
+state — and want the "old" target's AI settings to survive onto the "new"
+target that replaces it.
+
+```js
+const gai = runtime.getExtensionInterface('gai');
+if (gai && typeof gai.transferAISettings === 'function') {
+    gai.transferAISettings(oldTarget, newTarget);
+}
+```
+
+- Only settings that live solely on the `AIAdapter` instance are copied: API
+  key, explicitly-set API type, function calling mode, and BrowserLLM dtype.
+  Settings persisted elsewhere are out of scope and unaffected: baseUrl /
+  modelID / generationConfig live on sprite variables (restored with the
+  project JSON itself, so nothing to transfer), and chat history is the
+  responsibility of `getHistory`/`setHistory` above.
+- A no-op if `fromTarget` has no AI adapter — it does **not** create one for
+  `fromTarget`, nor does it create one for `toTarget` in that case.
+  Otherwise `toTarget`'s AI adapter is created first if needed (same path as
+  `getAI`).
+- API key and API type are only copied when `fromTarget` has them explicitly
+  set (non-`null`); an unset value on `fromTarget` leaves `toTarget`'s own
+  value (explicit or the shared static fallback) untouched instead of being
+  clobbered with `null`.
+- A no-op (nothing is copied) if `fromTarget` and `toTarget` already resolve
+  to the same adapter instance.
+- Does not expose the API key value itself to callers anywhere — there is no
+  `getApiKey` member, by design.
+
 ## Versioning Policy
 
 - Consumers should feature-detect members with `typeof gai.someMethod ===
@@ -298,3 +334,10 @@ if (gai && typeof gai.getHistory === 'function') {
   'function'` — rather than branching on `gai.version`, since older hosts may
   eventually gain a member without a version bump and newer hosts may in
   principle omit one.
+- `transferAISettings` is also purely additive (no existing member's
+  signature or behavior changed), but `version` was raised to `4` anyway for
+  the same reason as V2/V3: it introduces a new capability class (settings
+  transfer between targets) worth flagging at a glance. As always,
+  feature-detect with `typeof gai.transferAISettings === 'function'` before
+  calling it; a caller targeting older hosts should fall back to `ensureAI`
+  (which at least creates the adapter, without carrying over settings).
