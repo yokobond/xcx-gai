@@ -12,5 +12,8 @@
   * [Function Calling](example-function_calling "Execute Scratch code by AI")
   * [AI Generated Files](example-files "Work with AI generated files")
 
+* Developers
+  * [Cross-Extension Interface](cross-extension-interface "Call xcx-gai from another xcx-* extension")
+
 ----
 <a href="./ja/" target="_self">日本語</a>
