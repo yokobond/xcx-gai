@@ -2,6 +2,11 @@
   "extensionId": "gai",
   "versions": [
     {
+      "version": "1.4.0",
+      "buildDate": "2026-08-05T01:56:35.285Z",
+      "module": "1.4.0/gai.mjs"
+    },
+    {
       "version": "1.3.0",
       "buildDate": "2026-06-27T09:03:22.794Z",
       "module": "1.3.0/gai.mjs"
@@ -22,5 +27,5 @@
       "module": "1.1.0/gai.mjs"
     }
   ],
-  "latest": "1.3.0"
+  "latest": "1.4.0"
 }
